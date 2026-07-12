@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Caveat:wght@500;700&family=Playfair+Display:wght@600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Poppins:wght@500;600;700&family=Source+Serif+4:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&family=Nunito+Sans:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap');
+
+@media print {
+  body { background: #fff !important; }
+  .no-print, .toolbar, .design-panel, .format-bar, .page-drawer, .overlay-scrim { display: none !important; }
+  .canvas-wrap { padding: 0 !important; }
+  .page { box-shadow: none !important; margin: 0 !important; width: 100% !important; padding: 0 !important; }
+  .manual-break { page-break-before: always; }
+  .print-avoid-break { break-inside: avoid; }
+  .print-break-after-avoid { break-after: avoid-page; page-break-after: avoid; }
+  [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent !important; box-shadow: none !important; }
+}
+
+/* Style Toggles */
+.no-italic-body .summary,
+.no-italic-body .bullet-list > li,
+.no-italic-body .skills-grid .cat-items,
+.no-italic-body .exp-entry li,
+.no-italic-body .exp-line2,
+.no-italic-body .edu-entry li,
+.no-italic-body .edu-entry .edu-school {
+  font-style: normal;
+}
+
+.heading-underline .section-heading {
+  background: none;
+  box-shadow: none;
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+.heading-plain .section-heading {
+  background: none;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+.heading-smallcaps .section-heading .heading-left {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 0.82rem;
+}
+
+/* Sidebar Layout */
+.layout-sidebar #sections-container {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  column-gap: 1.1rem;
+  align-items: start;
+}
+.layout-sidebar .section[data-section="licenses"],
+.layout-sidebar .section[data-section="skills"],
+.layout-sidebar .section[data-section="education"] {
+  grid-column: 1;
+}
+.layout-sidebar .section[data-section="summary"],
+.layout-sidebar .section[data-section="experience"] {
+  grid-column: 2;
+}
+.layout-sidebar .skills-grid {
+  grid-template-columns: 1fr;
+  padding: 1rem 1.2rem;
+}
+.layout-sidebar .bullet-list {
+  padding: 1rem 1.2rem 1rem 2.6rem;
+}
+.layout-sidebar .section-heading {
+  font-size: 0.92rem;
+  padding: 0.5rem 1.1rem;
+}
+
+/* Base styles for contenteditable to avoid tailwind reset issues */
+[contenteditable="true"] {
+  outline: none;
+  border-radius: 3px;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+[contenteditable="true"]:hover {
+  background: rgba(60, 55, 58, 0.07);
+}
+[contenteditable="true"]:focus {
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--accent);
+}
