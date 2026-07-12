@@ -295,7 +295,13 @@ export default function ResumeBuilder() {
         if (breakStarts[breakStarts.length - 1] !== breakEl) breakStarts.push(breakEl);
       }
     });
-    setPageBreaks(breakStarts.map(el => el.getBoundingClientRect().top - resumeRect.top));
+    const newBreaks = breakStarts.map(el => el.getBoundingClientRect().top - resumeRect.top);
+    setPageBreaks(prev => {
+      if (prev.length === newBreaks.length && prev.every((v, i) => v === newBreaks[i])) {
+        return prev;
+      }
+      return newBreaks;
+    });
   }, [design.pageSize]);
 
   useEffect(() => {
