@@ -24,6 +24,8 @@ import {
   Scissors,
   Eye,
   Camera,
+  Undo,
+  Redo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -287,7 +289,73 @@ const SaveResponseSchema = z.object({
   id: z.string().optional(),
 });
 
+interface DesignConfig {
+  template: string;
+  fontHeading: string;
+  fontBody: string;
+  accent: string;
+  panel: string;
+  paper: string;
+  layout: string;
+  scale: number;
+  radius: number;
+  lineHeight: number;
+  gap: number;
+  headingStyle: string;
+  italic: boolean;
+  pageSize: string;
+  headerAlign: string;
+  listStyle: string;
+  pageMargin: number;
+  itemSpacing: number;
+  jobLayout: string;
+  boxOpacity: number;
+  boxShadow: string;
+  borderStyle: string;
+  backdropBlur: number;
+}
+
+interface ProfilePhotoConfig {
+  enabled: boolean;
+  url: string;
+  rawUploadedUrl: string;
+  opacity: number;
+  scale: number;
+  radius: number;
+  filter: string;
+  tone: string;
+  xOffset: number;
+  yOffset: number;
+  borderWidth: number;
+  borderColor: string;
+  aspectRatio: string;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  blur: number;
+  hueRotate: number;
+  sepia: number;
+  animation: string;
+}
+
 export default function ResumeBuilder() {
+  // --- Local Draft Retrieval ---
+  let localDraft: any = null;
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    if (!id) {
+      try {
+        const saved = localStorage.getItem("resume_autosave_content");
+        if (saved) {
+          localDraft = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error("Failed to parse localDraft:", e);
+      }
+    }
+  }
+
   // --- UI State ---
   const [templateGalleryOpen, setTemplateGalleryOpen] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(false);
@@ -296,7 +364,7 @@ export default function ResumeBuilder() {
   const [pageDrawerOpen, setPageDrawerOpen] = useState(false);
 
   // --- Design State ---
-  const [design, setDesign] = useState({
+  const [design, setDesign] = useState<DesignConfig>(() => localDraft?.design ?? {
     template: "classic",
     fontHeading: "'Kalam',cursive",
     fontBody: "'Lora',serif",
@@ -323,7 +391,7 @@ export default function ResumeBuilder() {
   });
 
   // --- Profile Photo State ---
-  const [profilePhoto, setProfilePhoto] = useState({
+  const [profilePhoto, setProfilePhoto] = useState<ProfilePhotoConfig>(() => localDraft?.profilePhoto ?? {
     enabled: false,
     url: "https://picsum.photos/seed/portrait/150/150",
     rawUploadedUrl: "",
@@ -450,7 +518,7 @@ export default function ResumeBuilder() {
     const canvas = eraserCanvasRef.current;
     if (!canvas) return;
     const resultUrl = canvas.toDataURL("image/png");
-    setProfilePhoto(p => ({
+    setProfilePhoto((p: any) => ({
       ...p,
       url: resultUrl
     }));
@@ -464,7 +532,7 @@ export default function ResumeBuilder() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const b64 = event.target?.result as string;
-      setProfilePhoto((p) => ({
+      setProfilePhoto((p: any) => ({
         ...p,
         enabled: true,
         url: b64,
@@ -508,7 +576,7 @@ export default function ResumeBuilder() {
       }
       ctx.putImageData(imgData, 0, 0);
       const resultUrl = canvas.toDataURL("image/png");
-      setProfilePhoto(p => ({
+      setProfilePhoto((p: any) => ({
         ...p,
         url: resultUrl
       }));
@@ -552,7 +620,7 @@ export default function ResumeBuilder() {
       }
       ctx.putImageData(imgData, 0, 0);
       const resultUrl = canvas.toDataURL("image/png");
-      setProfilePhoto(p => ({
+      setProfilePhoto((p: any) => ({
         ...p,
         url: resultUrl
       }));
@@ -610,16 +678,38 @@ export default function ResumeBuilder() {
   };
 
   // --- Content State ---
-  const [sections, setSections] = useState([
+  const [name, setName] = useState(() => localDraft?.name ?? "YOUR NAME");
+  const [contactLine, setContactLine] = useState(() => localDraft?.contactLine ??
+    'City, State ZIP <span class="text-[var(--hairline)] mx-2">|</span> (555) 123-4567 <span class="text-[var(--hairline)] mx-2">|</span> your.email@example.com'
+  );
+  const [summary, setSummary] = useState(() => localDraft?.summary ??
+    "A two-to-three sentence pitch: your title/field, years of experience, and the kind of impact you make. Write it last — it's easiest once the rest of the resume is filled in."
+  );
+  const [footer, setFooter] = useState(() => localDraft?.footer ?? "Your Name");
+
+  // --- History & Undo/Redo State ---
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const isHistoryActionRef = useRef(false);
+  const historyRef = useRef<any[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+
+  // Synchronize history refs for keyboard events & stable callbacks
+  useEffect(() => {
+    historyRef.current = history;
+    historyIndexRef.current = historyIndex;
+  }, [history, historyIndex]);
+
+  const [sections, setSections] = useState<any[]>(() => localDraft?.sections ?? [
     { id: "summary" },
     { id: "licenses" },
     { id: "skills" },
     { id: "experience" },
     { id: "education" },
   ]);
-  const [manualBreaks, setManualBreaks] = useState<Record<string, boolean>>({});
+  const [manualBreaks, setManualBreaks] = useState<Record<string, boolean>>(() => localDraft?.manualBreaks ?? {});
 
-  const [licenses, setLicenses] = useState([
+  const [licenses, setLicenses] = useState<any[]>(() => localDraft?.licenses ?? [
     {
       id: "lic-1",
       text: "<b>Credential Name</b> — Issuing Organization (Expires: Month Year)",
@@ -630,7 +720,7 @@ export default function ResumeBuilder() {
     },
   ]);
 
-  const [skills, setSkills] = useState([
+  const [skills, setSkills] = useState<any[]>(() => localDraft?.skills ?? [
     {
       id: "sk-1",
       title: "Core Skills",
@@ -643,7 +733,7 @@ export default function ResumeBuilder() {
     },
   ]);
 
-  const [experiences, setExperiences] = useState([
+  const [experiences, setExperiences] = useState<any[]>(() => localDraft?.experiences ?? [
     {
       id: "exp-1",
       title: "Job Title | Company Name – City, State",
@@ -678,7 +768,7 @@ export default function ResumeBuilder() {
     },
   ]);
 
-  const [educations, setEducations] = useState([
+  const [educations, setEducations] = useState<any[]>(() => localDraft?.educations ?? [
     {
       id: "edu-1",
       degree: "Degree | School Name – City, State",
@@ -735,6 +825,17 @@ export default function ResumeBuilder() {
       if (error) throw error;
       if (data && data.content) {
         const c = data.content as any;
+        isHistoryActionRef.current = true;
+
+        const loadedName = c.name !== undefined ? c.name : "YOUR NAME";
+        const loadedContactLine = c.contactLine !== undefined ? c.contactLine : 'City, State ZIP <span class="text-[var(--hairline)] mx-2">|</span> (555) 123-4567 <span class="text-[var(--hairline)] mx-2">|</span> your.email@example.com';
+        const loadedSummary = c.summary !== undefined ? c.summary : "A two-to-three sentence pitch: your title/field, years of experience, and the kind of impact you make. Write it last — it's easiest once the rest of the resume is filled in.";
+        const loadedFooter = c.footer !== undefined ? c.footer : "Your Name";
+
+        if (c.name !== undefined) setName(c.name);
+        if (c.contactLine !== undefined) setContactLine(c.contactLine);
+        if (c.summary !== undefined) setSummary(c.summary);
+        if (c.footer !== undefined) setFooter(c.footer);
         if (c.design) setDesign(c.design);
         if (c.sections) setSections(c.sections);
         if (c.manualBreaks) setManualBreaks(c.manualBreaks);
@@ -743,11 +844,169 @@ export default function ResumeBuilder() {
         if (c.experiences) setExperiences(c.experiences);
         if (c.educations) setEducations(c.educations);
         if (c.profilePhoto) setProfilePhoto(c.profilePhoto);
+
+        const loadedSnapshot = {
+          name: loadedName,
+          contactLine: loadedContactLine,
+          summary: loadedSummary,
+          footer: loadedFooter,
+          design: c.design || design,
+          sections: c.sections || sections,
+          manualBreaks: c.manualBreaks || {},
+          licenses: c.licenses || [],
+          skills: c.skills || [],
+          experiences: c.experiences || [],
+          educations: c.educations || [],
+          profilePhoto: c.profilePhoto || profilePhoto,
+        };
+        setHistory([loadedSnapshot]);
+        setHistoryIndex(0);
       }
     } catch (err: any) {
       toast.error("Failed to load resume: " + err.message);
     }
   };
+
+  const handleUndo = useCallback(() => {
+    const idx = historyIndexRef.current;
+    const hist = historyRef.current;
+    if (idx > 0) {
+      isHistoryActionRef.current = true;
+      const prevIndex = idx - 1;
+      const prevState = hist[prevIndex];
+      if (prevState) {
+        if (prevState.name !== undefined) setName(prevState.name);
+        if (prevState.contactLine !== undefined) setContactLine(prevState.contactLine);
+        if (prevState.summary !== undefined) setSummary(prevState.summary);
+        if (prevState.footer !== undefined) setFooter(prevState.footer);
+        setSections(prevState.sections);
+        setManualBreaks(prevState.manualBreaks);
+        setLicenses(prevState.licenses);
+        setSkills(prevState.skills);
+        setExperiences(prevState.experiences);
+        setEducations(prevState.educations);
+        setDesign(prevState.design);
+        setProfilePhoto(prevState.profilePhoto);
+        setHistoryIndex(prevIndex);
+      }
+    }
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    const idx = historyIndexRef.current;
+    const hist = historyRef.current;
+    if (idx < hist.length - 1) {
+      isHistoryActionRef.current = true;
+      const nextIndex = idx + 1;
+      const nextState = hist[nextIndex];
+      if (nextState) {
+        if (nextState.name !== undefined) setName(nextState.name);
+        if (nextState.contactLine !== undefined) setContactLine(nextState.contactLine);
+        if (nextState.summary !== undefined) setSummary(nextState.summary);
+        if (nextState.footer !== undefined) setFooter(nextState.footer);
+        setSections(nextState.sections);
+        setManualBreaks(nextState.manualBreaks);
+        setLicenses(nextState.licenses);
+        setSkills(nextState.skills);
+        setExperiences(nextState.experiences);
+        setEducations(nextState.educations);
+        setDesign(nextState.design);
+        setProfilePhoto(nextState.profilePhoto);
+        setHistoryIndex(nextIndex);
+      }
+    }
+  }, []);
+
+  // Keyboard shortcut listener for Ctrl+Z / Ctrl+Y
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = typeof window !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modifier && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if (modifier && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleUndo, handleRedo]);
+
+  // Handle active contentEditable blur on window beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  // Unified auto-save and history tracking
+  useEffect(() => {
+    const payload = {
+      name,
+      contactLine,
+      summary,
+      footer,
+      design,
+      sections,
+      manualBreaks,
+      licenses,
+      skills,
+      experiences,
+      educations,
+      profilePhoto,
+    };
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("resume_autosave_content", JSON.stringify(payload));
+    }
+
+    if (isHistoryActionRef.current) {
+      isHistoryActionRef.current = false;
+      return;
+    }
+
+    setHistory((prev) => {
+      const current = prev[historyIndex];
+      if (current && JSON.stringify(current) === JSON.stringify(payload)) {
+        return prev;
+      }
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(payload);
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      }
+      setHistoryIndex(newHistory.length - 1);
+      return newHistory;
+    });
+  }, [
+    name,
+    contactLine,
+    summary,
+    footer,
+    sections,
+    manualBreaks,
+    licenses,
+    skills,
+    experiences,
+    educations,
+    design,
+    profilePhoto,
+  ]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -789,6 +1048,10 @@ export default function ResumeBuilder() {
       experiences,
       educations,
       profilePhoto,
+      name,
+      contactLine,
+      summary,
+      footer,
     };
 
     try {
@@ -1112,7 +1375,7 @@ export default function ResumeBuilder() {
   }, [calcPages]);
 
   const applyTemplate = (t: any) => {
-    setDesign((prev) => ({
+    setDesign((prev: any) => ({
       ...prev,
       template: t.id,
       fontHeading: t.heading,
@@ -1156,22 +1419,22 @@ export default function ResumeBuilder() {
   const panelRgb = hexToRgb(design.panel);
   const accentRgb = hexToRgb(design.accent);
 
-  const shadowValue = {
+  const shadowValue = ({
     none: "none",
     soft: "0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)",
     medium: "0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03)",
     deep: "0 10px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)",
     glass: "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
     neon: `0 0 15px ${design.accent}25, 0 0 5px ${design.accent}15`,
-  }[design.boxShadow || "soft"] || "none";
+  } as any)[design.boxShadow || "soft"] || "none";
 
-  const borderValue = {
+  const borderValue = ({
     none: "none",
     hairline: "1px solid var(--hairline)",
     accent: `1px solid rgba(${accentRgb}, 0.25)`,
     dashed: `1px dashed rgba(${accentRgb}, 0.4)`,
     double: `3px double var(--hairline)`,
-  }[design.borderStyle || "hairline"] || "none";
+  } as any)[design.borderStyle || "hairline"] || "none";
 
   const pageStyles = {
     "--ink": "#232025",
@@ -2664,6 +2927,24 @@ export default function ResumeBuilder() {
                 Saved
               </span>
             )}
+            <div className="flex items-center gap-0.5 md:gap-1 border-l border-gray-200 pl-2 md:pl-3 ml-1">
+              <button
+                onClick={handleUndo}
+                disabled={historyIndex <= 0}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo size={15} />
+              </button>
+              <button
+                onClick={handleRedo}
+                disabled={historyIndex >= history.length - 1}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo size={15} />
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <button
@@ -2794,19 +3075,22 @@ export default function ResumeBuilder() {
                     className="name font-[family:var(--font-heading)] font-bold text-3xl text-[var(--ink)] m-0 mb-1.5 tracking-wide outline-none"
                     contentEditable
                     suppressContentEditableWarning
-                  >
-                    YOUR NAME
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: name }}
+                    onBlur={(e) => {
+                      const val = e.currentTarget.innerHTML;
+                      setName(val);
+                    }}
+                  />
                   <div
                     className="contact-line font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] outline-none"
                     contentEditable
                     suppressContentEditableWarning
-                  >
-                    City, State ZIP{" "}
-                    <span className="text-[var(--hairline)] mx-2">|</span> (555)
-                    123-4567 <span className="text-[var(--hairline)] mx-2">|</span>{" "}
-                    your.email@example.com
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: contactLine }}
+                    onBlur={(e) => {
+                      const val = e.currentTarget.innerHTML;
+                      setContactLine(val);
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -2818,7 +3102,7 @@ export default function ResumeBuilder() {
               id="sections-container"
               className="w-full"
             >
-              {sections.map((section) => (
+              {sections.map((section: any) => (
                 <SectionWrapper key={section.id} id={section.id} item={section}>
                   {/* SUMMARY */}
                   {section.id === "summary" && (
@@ -2835,13 +3119,14 @@ export default function ResumeBuilder() {
                           WebkitBackdropFilter: "blur(var(--backdrop-blur))",
                           breakBefore: pageBreakElementIds.includes("summary-content") ? "page" : "auto",
                         }}
-                      contentEditable
-                      suppressContentEditableWarning
-                    >
-                      A two-to-three sentence pitch: your title/field, years of
-                      experience, and the kind of impact you make. Write it last
-                      — it&apos;s easiest once the rest of the resume is filled in.
-                    </div>
+                        contentEditable
+                        suppressContentEditableWarning
+                        dangerouslySetInnerHTML={{ __html: summary }}
+                        onBlur={(e) => {
+                          const val = e.currentTarget.innerHTML;
+                          setSummary(val);
+                        }}
+                      />
                     </>
                   )}
 
@@ -2865,7 +3150,7 @@ export default function ResumeBuilder() {
                           breakBefore: pageBreakElementIds.includes("lic-list") ? "page" : "auto",
                         }}
                       >
-                        {licenses.map((lic) => {
+                        {licenses.map((lic: any) => {
                           const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
                           return (
                             <Reorder.Item
@@ -2884,6 +3169,14 @@ export default function ResumeBuilder() {
                                 contentEditable
                                 suppressContentEditableWarning
                                 dangerouslySetInnerHTML={{ __html: lic.text }}
+                                onBlur={(e) => {
+                                  const val = e.currentTarget.innerHTML;
+                                  setLicenses((prev) =>
+                                    prev.map((x) =>
+                                      x.id === lic.id ? { ...x, text: val } : x,
+                                    ),
+                                  );
+                                }}
                               />
                               <button
                                 className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
@@ -2921,7 +3214,7 @@ export default function ResumeBuilder() {
                           breakBefore: pageBreakElementIds.includes("skills-grid") ? "page" : "auto",
                         }}
                       >
-                        {skills.map((sk) => {
+                        {skills.map((sk: any) => {
                           const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
                           return (
                             <Reorder.Item
@@ -2949,12 +3242,28 @@ export default function ResumeBuilder() {
                                 contentEditable
                                 suppressContentEditableWarning
                                 dangerouslySetInnerHTML={{ __html: sk.title }}
+                                onBlur={(e) => {
+                                  const val = e.currentTarget.innerHTML;
+                                  setSkills((prev) =>
+                                    prev.map((x) =>
+                                      x.id === sk.id ? { ...x, title: val } : x,
+                                    ),
+                                  );
+                                }}
                               />
                               <div
                                 className="cat-items font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
                                 contentEditable
                                 suppressContentEditableWarning
                                 dangerouslySetInnerHTML={{ __html: sk.items }}
+                                onBlur={(e) => {
+                                  const val = e.currentTarget.innerHTML;
+                                  setSkills((prev) =>
+                                    prev.map((x) =>
+                                      x.id === sk.id ? { ...x, items: val } : x,
+                                    ),
+                                  );
+                                }}
                               />
                             </Reorder.Item>
                           );
@@ -2969,7 +3278,7 @@ export default function ResumeBuilder() {
                       values={experiences}
                       onReorder={setExperiences}
                     >
-                      {experiences.map((exp) => {
+                      {experiences.map((exp: any) => {
                         const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
                         return (
                           <React.Fragment key={exp.id}>
@@ -3012,11 +3321,19 @@ export default function ResumeBuilder() {
                                     : "",
                                 )}
                               >
-                                <div
+                                 <div
                                   className="exp-line1 font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none"
                                   contentEditable
                                   suppressContentEditableWarning
                                   dangerouslySetInnerHTML={{ __html: exp.title }}
+                                  onBlur={(e) => {
+                                    const val = e.currentTarget.innerHTML;
+                                    setExperiences((prev) =>
+                                      prev.map((x) =>
+                                        x.id === exp.id ? { ...x, title: val } : x,
+                                      ),
+                                    );
+                                  }}
                                 />
                                 <div
                                   className={cn(
@@ -3028,10 +3345,18 @@ export default function ResumeBuilder() {
                                   contentEditable
                                   suppressContentEditableWarning
                                   dangerouslySetInnerHTML={{ __html: exp.date }}
+                                  onBlur={(e) => {
+                                    const val = e.currentTarget.innerHTML;
+                                    setExperiences((prev) =>
+                                      prev.map((x) =>
+                                        x.id === exp.id ? { ...x, date: val } : x,
+                                      ),
+                                    );
+                                  }}
                                 />
                               </div>
                               <ul className="m-0 pl-5 exp-bullets mt-2">
-                                {exp.bullets.map((b) => (
+                                {exp.bullets.map((b: any) => (
                                   <li
                                     key={b.id}
                                     className="relative group/bullet pl-1 mb-1.5"
@@ -3041,6 +3366,21 @@ export default function ResumeBuilder() {
                                       contentEditable
                                       suppressContentEditableWarning
                                       dangerouslySetInnerHTML={{ __html: b.text }}
+                                      onBlur={(e) => {
+                                        const val = e.currentTarget.innerHTML;
+                                        setExperiences((prev) =>
+                                          prev.map((x) =>
+                                            x.id === exp.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.map((y: any) =>
+                                                    y.id === b.id ? { ...y, text: val } : y,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        );
+                                      }}
                                     />
                                     <button
                                       className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
@@ -3051,7 +3391,7 @@ export default function ResumeBuilder() {
                                               ? {
                                                   ...x,
                                                   bullets: x.bullets.filter(
-                                                    (y) => y.id !== b.id,
+                                                    (y: any) => y.id !== b.id,
                                                   ),
                                                 }
                                               : x,
@@ -3093,6 +3433,14 @@ export default function ResumeBuilder() {
                                   contentEditable
                                   suppressContentEditableWarning
                                   dangerouslySetInnerHTML={{ __html: exp.meta }}
+                                  onBlur={(e) => {
+                                    const val = e.currentTarget.innerHTML;
+                                    setExperiences((prev) =>
+                                      prev.map((x) =>
+                                        x.id === exp.id ? { ...x, meta: val } : x,
+                                      ),
+                                    );
+                                  }}
                                 />
                               )}
                             </Reorder.Item>
@@ -3108,7 +3456,7 @@ export default function ResumeBuilder() {
                       values={educations}
                       onReorder={setEducations}
                     >
-                      {educations.map((edu) => {
+                      {educations.map((edu: any) => {
                         const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
                         return (
                           <React.Fragment key={edu.id}>
@@ -3148,9 +3496,17 @@ export default function ResumeBuilder() {
                                 contentEditable
                                 suppressContentEditableWarning
                                 dangerouslySetInnerHTML={{ __html: edu.degree }}
+                                onBlur={(e) => {
+                                  const val = e.currentTarget.innerHTML;
+                                  setEducations((prev) =>
+                                    prev.map((x) =>
+                                      x.id === edu.id ? { ...x, degree: val } : x,
+                                    ),
+                                  );
+                                }}
                               />
                               <ul className="m-0 pl-5 edu-bullets mt-1">
-                                {edu.bullets.map((b) => (
+                                {edu.bullets.map((b: any) => (
                                   <li
                                     key={b.id}
                                     className="relative group/bullet pl-1 mb-1"
@@ -3160,6 +3516,21 @@ export default function ResumeBuilder() {
                                       contentEditable
                                       suppressContentEditableWarning
                                       dangerouslySetInnerHTML={{ __html: b.text }}
+                                      onBlur={(e) => {
+                                        const val = e.currentTarget.innerHTML;
+                                        setEducations((prev) =>
+                                          prev.map((x) =>
+                                            x.id === edu.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.map((y: any) =>
+                                                    y.id === b.id ? { ...y, text: val } : y,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        );
+                                      }}
                                     />
                                     <button
                                       className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
@@ -3170,7 +3541,7 @@ export default function ResumeBuilder() {
                                               ? {
                                                   ...x,
                                                   bullets: x.bullets.filter(
-                                                    (y) => y.id !== b.id,
+                                                    (y: any) => y.id !== b.id,
                                                   ),
                                                 }
                                               : x,
@@ -3220,9 +3591,12 @@ export default function ResumeBuilder() {
               className="page-footer text-center font-sans text-[10px] text-[#a19b9d] mt-4 outline-none"
               contentEditable
               suppressContentEditableWarning
-            >
-              Your Name
-            </div>
+              dangerouslySetInnerHTML={{ __html: footer }}
+              onBlur={(e) => {
+                const val = e.currentTarget.innerHTML;
+                setFooter(val);
+              }}
+            />
           </div>
         </div>
       </div>
