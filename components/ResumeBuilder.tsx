@@ -26,6 +26,7 @@ import {
   Camera,
   Undo,
   Redo,
+  User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -58,6 +59,17 @@ function shadeColor(hex: string, percent: number) {
     "#" + (0x1000000 + nR * 0x10000 + nG * 0x100 + nB).toString(16).slice(1)
   );
 }
+
+const PRESET_AVATARS = [
+  { id: "avatar-1", name: "Alex", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex" },
+  { id: "avatar-2", name: "Jordan", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jordan" },
+  { id: "avatar-3", name: "Taylor", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Taylor" },
+  { id: "avatar-4", name: "Morgan", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Morgan" },
+  { id: "avatar-5", name: "Robin", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Robin" },
+  { id: "avatar-6", name: "Sam", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Sam" },
+  { id: "avatar-7", name: "Casey", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Casey" },
+  { id: "avatar-8", name: "Riley", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Riley" },
+];
 
 interface PageBreakGapProps {
   id: string;
@@ -1851,12 +1863,16 @@ export default function ResumeBuilder() {
               )}
             >
               {user ? (
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs">
-                  {user.email?.charAt(0).toUpperCase()}
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center">
+                  <img
+                    src={user.user_metadata?.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex"}
+                    alt="User avatar"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 border border-gray-300 font-bold flex items-center justify-center text-xs">
-                  ?
+                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 border border-gray-300 flex items-center justify-center">
+                  <UserIcon size={18} />
                 </div>
               )}
             </button>
@@ -2832,6 +2848,40 @@ export default function ResumeBuilder() {
                     </div>
                     <div className="text-sm font-bold text-gray-900 truncate">
                       {user.email}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                      Choose Profile Avatar
+                    </h3>
+                    <div className="grid grid-cols-4 gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      {PRESET_AVATARS.map((av) => {
+                        const isSelected = user?.user_metadata?.avatar === av.url;
+                        return (
+                          <button
+                            key={av.id}
+                            title={av.name}
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase.auth.updateUser({
+                                  data: { avatar: av.url },
+                                });
+                                if (error) throw error;
+                                toast.success(`Avatar updated to ${av.name}!`);
+                              } catch (err: any) {
+                                toast.error(err.message || "Failed to update avatar");
+                              }
+                            }}
+                            className={cn(
+                              "relative rounded-full overflow-hidden border-2 transition-all p-0.5 hover:scale-105 flex items-center justify-center bg-white",
+                              isSelected ? "border-blue-600 bg-blue-50/50 scale-105 shadow-sm" : "border-gray-200 hover:border-gray-300"
+                            )}
+                          >
+                            <img src={av.url} alt={av.name} className="w-8 h-8 rounded-full" />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
