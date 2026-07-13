@@ -27,6 +27,9 @@ import {
   Undo,
   Redo,
   User as UserIcon,
+  Lock,
+  Copy,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -812,6 +815,126 @@ export default function ResumeBuilder() {
   const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(
     "templates",
   );
+
+  // Password update states
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || !confirmNewPassword || !currentPassword) {
+      toast.error("Please fill in all password fields.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      // 1. Reauthenticate user using current password by logging in
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: currentPassword,
+      });
+
+      if (reauthError) {
+        throw new Error("Reauthentication failed. Please verify your current password.");
+      }
+
+      // 2. Perform the actual password update
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success("Password successfully updated!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update password");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  // --- Groq AI Assistant State & Methods ---
+  const [aiInput, setAiInput] = useState("");
+  const [aiOutput, setAiOutput] = useState("");
+  const [aiIsGenerating, setAiIsGenerating] = useState(false);
+  const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom">("summary");
+
+  const handleGenerateAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error("Please log in to use AI assistant features.");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    if (!aiInput.trim()) {
+      toast.error("Please enter some text or context for the AI.");
+      return;
+    }
+
+    setAiIsGenerating(true);
+    setAiOutput("");
+
+    try {
+      // 1. Get current supabase session to obtain JWT
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        throw new Error("Unable to retrieve authentication session. Please sign in again.");
+      }
+
+      // 2. Formulate prompts based on active preset
+      let systemPrompt = "You are a professional resume writer.";
+      if (aiPresetType === "summary") {
+        systemPrompt = "You are an elite, professional resume-writing assistant. Refine, improve, or suggest professional phrasing for the user's summary. Make it impact-driven, professional, and clear. Do NOT use generic buzzwords or fluff. Return ONLY the polished summary text. Do not include any introduction, conversational chat, greeting, or outer quotes.";
+      } else if (aiPresetType === "bullets") {
+        systemPrompt = "You are an elite resume editor. Rewrite the user's raw experience or bullet points into highly professional, action-oriented bullet points using the STAR method (Situation, Task, Action, Result). Use strong, metric-focused active verbs. Start each line with a bullet symbol (•) or a clean list format. Return ONLY the updated bullet points. Do not write introductory or conversational text.";
+      } else {
+        systemPrompt = "You are an expert resume writer. Help the user with their custom request regarding their resume content. Be concise, impact-oriented, and return ONLY the relevant rewritten resume text or direct suggestions without any conversational chat.";
+      }
+
+      // 3. Make fetch request to our server proxy
+      const response = await fetch("/api/groq", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt: aiInput,
+          systemPrompt,
+          temperature: 0.4
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.error || "Failed to generate text from Groq API.");
+      }
+
+      setAiOutput(resData.text);
+      toast.success("AI suggestions generated successfully! ✨");
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred during AI generation");
+    } finally {
+      setAiIsGenerating(false);
+    }
+  };
 
   const fetchMyResumes = async () => {
     try {
@@ -1839,6 +1962,20 @@ export default function ResumeBuilder() {
           <ImageIcon size={20} />
           <span className="text-[10px] font-medium">Photo</span>
         </button>
+        <button
+          onClick={() =>
+            setActiveSidebarTab(
+              activeSidebarTab === "ai" ? null : "ai",
+            )
+          }
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-3 rounded-xl md:mb-2 transition-all hover:bg-gray-100",
+            activeSidebarTab === "ai" && "bg-gray-100 text-blue-600",
+          )}
+        >
+          <Sparkles size={20} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} />
+          <span className="text-[10px] font-medium">AI Writer</span>
+        </button>
 
         <div className="md:mt-auto flex flex-row md:flex-col items-center gap-2">
           <button
@@ -2841,17 +2978,48 @@ export default function ResumeBuilder() {
                 </button>
               </div>
               {user ? (
-                <div className="flex flex-col h-full">
-                  <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
-                    <div className="text-xs text-gray-500 mb-1">
-                      Signed in as
+                <div className="flex flex-col h-full overflow-y-auto pr-1 pb-4 space-y-4">
+                  {/* Comprehensive Profile Info Card */}
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200/60 space-y-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center shrink-0">
+                        <img
+                          src={user.user_metadata?.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex"}
+                          alt="User avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-gray-900 truncate">
+                          {user.user_metadata?.first_name || 'Member'} {user.user_metadata?.last_name || ''}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {user.email}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm font-bold text-gray-900 truncate">
-                      {user.email}
+
+                    <div className="pt-2 border-t border-gray-200/60 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <div className="text-gray-400 font-medium uppercase tracking-wider text-[10px]">US State</div>
+                        <div className="text-gray-800 font-semibold mt-0.5 truncate">{user.user_metadata?.state || 'Not set'}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 font-medium uppercase tracking-wider text-[10px]">Date of Birth</div>
+                        <div className="text-gray-800 font-semibold mt-0.5 truncate">
+                          {user.user_metadata?.dob 
+                            ? new Date(user.user_metadata.dob).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                            : 'Not set'}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mb-4">
+                  <div>
                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                       Choose Profile Avatar
                     </h3>
@@ -2885,7 +3053,64 @@ export default function ResumeBuilder() {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col min-h-0">
+                  {/* Change Password Form */}
+                  <form onSubmit={handleUpdatePassword} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3 shadow-sm">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Change Password
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-white text-gray-900 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Min 6 characters"
+                          className="w-full bg-white text-gray-900 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-white text-gray-900 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isUpdatingPassword}
+                      className="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-none rounded-lg py-2 text-xs font-bold hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                      {isUpdatingPassword ? "Updating..." : "Update Password"}
+                    </button>
+                  </form>
+
+                  <div className="flex-1 flex flex-col min-h-[200px]">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-xs font-bold text-gray-900">
                         Your Resumes
@@ -2957,6 +3182,204 @@ export default function ResumeBuilder() {
                   >
                     Log In / Sign Up
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* AI Writer Panel */}
+          {activeSidebarTab === "ai" && (
+            <div className="flex-1 p-5 flex flex-col h-full overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-1.5 text-amber-500">
+                  <Sparkles size={18} className="animate-pulse" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-800">
+                    AI Copilot
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setActiveSidebarTab(null)}
+                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {!user ? (
+                /* Premium Lock Screen if not logged in */
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                  <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center text-amber-500 mb-4 animate-bounce">
+                    <Lock size={28} />
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-2 text-base">
+                    Premium AI Features Locked
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                    Unlock professional, Groq-powered AI writing helpers. Refine your summary, optimize experience bullet points using STAR methodology, and draft custom sections with Llama 3.3.
+                  </p>
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
+                    className="w-full p-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    Log In / Sign Up to Unlock
+                  </button>
+                </div>
+              ) : (
+                /* Full AI Assistant Panel */
+                <div className="flex-1 flex flex-col min-h-0 space-y-4">
+                  {/* Category select buttons */}
+                  <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiPresetType("summary");
+                        setAiOutput("");
+                      }}
+                      className={cn(
+                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                        aiPresetType === "summary"
+                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                          : "text-gray-500 hover:text-gray-800"
+                      )}
+                    >
+                      Summary
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiPresetType("bullets");
+                        setAiOutput("");
+                      }}
+                      className={cn(
+                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                        aiPresetType === "bullets"
+                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                          : "text-gray-500 hover:text-gray-800"
+                      )}
+                    >
+                      Bullet Points
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiPresetType("custom");
+                        setAiOutput("");
+                      }}
+                      className={cn(
+                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                        aiPresetType === "custom"
+                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                          : "text-gray-500 hover:text-gray-800"
+                      )}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleGenerateAI} className="flex-1 flex flex-col min-h-0 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                        {aiPresetType === "summary" && "Polish Professional Summary"}
+                        {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
+                        {aiPresetType === "custom" && "Custom AI Prompt / Query"}
+                      </label>
+
+                      {aiPresetType === "summary" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAiInput(summary);
+                            toast.success("Current summary imported! 📥");
+                          }}
+                          className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                        >
+                          📥 Load current
+                        </button>
+                      )}
+                    </div>
+
+                    <textarea
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      required
+                      placeholder={
+                        aiPresetType === "summary"
+                          ? "Enter your current summary draft, background, or goals. (e.g. 'Highly motivated developer with 2 years React experience...')"
+                          : aiPresetType === "bullets"
+                          ? "Paste some raw bullets, achievements, or job descriptions. (e.g. 'I was in charge of the database and speeded up page loading times.')"
+                          : "How can Llama 3.3-70b assist you today with your resume? (e.g. 'Suggest some high-demand technical keywords for a Kubernetes expert')"
+                      }
+                      rows={5}
+                      className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none placeholder-gray-400"
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={aiIsGenerating || !aiInput.trim()}
+                      className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl py-2.5 text-xs font-bold hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      {aiIsGenerating ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Generating suggestions...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={14} />
+                          <span>Generate suggestions (Llama 3.3)</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* AI Output Result Box */}
+                  <div className="flex-1 flex flex-col min-h-0 bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
+                    <div className="flex items-center justify-between mb-2 shrink-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                        AI Output Suggestions
+                      </span>
+                      {aiOutput && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(aiOutput);
+                              toast.success("Copied to clipboard! 📋");
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                            title="Copy to Clipboard"
+                          >
+                            <Copy size={12} />
+                            <span>Copy</span>
+                          </button>
+                          {aiPresetType === "summary" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSummary(aiOutput);
+                                toast.success("Successfully applied to Summary! 🚀");
+                              }}
+                              className="p-1 hover:bg-green-100 bg-green-50 rounded text-green-700 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                              title="Apply as Summary"
+                            >
+                              <Check size={12} />
+                              <span>Apply</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 overflow-y-auto text-xs text-gray-800 leading-relaxed font-sans whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2">
+                      {aiOutput ? (
+                        aiOutput
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-4">
+                          <Sparkles size={24} className="opacity-30 mb-2 text-amber-500" />
+                          <p className="text-[10px]">Your professional suggestions will appear here.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
