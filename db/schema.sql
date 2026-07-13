@@ -1,9 +1,8 @@
 -- Core schema for Resume Builder
-
 -- 1. Resumes Table
 CREATE TABLE IF NOT EXISTS resumes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID, -- For future auth
+    user_id UUID REFERENCES auth.users(id), -- For future auth
     content JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -32,12 +31,14 @@ ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 -- Public can select their own resume by ID (assuming UUID is unguessable enough for sharing)
 CREATE POLICY "Public read by ID" ON resumes
     FOR SELECT USING (true);
+    
+CREATE POLICY "Users can see their own resumes" ON resumes
+    FOR SELECT USING (auth.uid() = user_id);
 
 -- No direct client inserts/updates. All mutations must go through the RPC.
 CREATE POLICY "No direct insert" ON resumes FOR INSERT WITH CHECK (false);
 CREATE POLICY "No direct update" ON resumes FOR UPDATE USING (false);
 CREATE POLICY "No direct delete" ON resumes FOR DELETE USING (false);
-
 
 -- RPC: Save Resume (ACID compliant with Leaky Bucket Rate Limiting)
 CREATE OR REPLACE FUNCTION save_resume(p_id UUID, p_content JSONB, p_client_id TEXT)
@@ -49,6 +50,7 @@ DECLARE
     v_elapsed_minutes FLOAT;
     v_refill_amount INT;
     v_final_id UUID;
+    v_user_id UUID := auth.uid();
 BEGIN
     -- 1. Rate Limiting (Leaky Bucket)
     -- STRICT LOCKING: SELECT ... FOR UPDATE to prevent race conditions on tokens
@@ -64,7 +66,6 @@ BEGIN
         -- Refill 10 tokens per minute
         v_elapsed_minutes := EXTRACT(EPOCH FROM (v_now - v_last_refill)) / 60.0;
         v_refill_amount := FLOOR(v_elapsed_minutes * 10);
-
         IF v_refill_amount > 0 THEN
             v_tokens := LEAST(10, v_tokens + v_refill_amount);
             v_last_refill := v_now;
@@ -82,14 +83,14 @@ BEGIN
     -- 2. Save Data
     v_final_id := COALESCE(p_id, gen_random_uuid());
     
-    INSERT INTO resumes (id, content, updated_at)
-    VALUES (v_final_id, p_content, v_now)
+    INSERT INTO resumes (id, user_id, content, updated_at)
+    VALUES (v_final_id, v_user_id, p_content, v_now)
     ON CONFLICT (id) DO UPDATE
-    SET content = EXCLUDED.content, updated_at = v_now;
+    SET content = EXCLUDED.content, user_id = COALESCE(resumes.user_id, v_user_id), updated_at = v_now;
 
     -- 3. Audit Log
     INSERT INTO audit_logs (action, details)
-    VALUES ('SAVE_RESUME', json_build_object('id', v_final_id, 'client_id', p_client_id));
+    VALUES ('SAVE_RESUME', json_build_object('id', v_final_id, 'client_id', p_client_id, 'user_id', v_user_id));
 
     RETURN json_build_object('success', true, 'code', 'OK', 'id', v_final_id);
 END;

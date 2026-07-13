@@ -3,8 +3,8 @@ import './globals.css'; // Global styles
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'My Google AI Studio App',
-  description: 'My Google AI Studio App',
+  title: 'MYresume',
+  description: 'A customizable resume builder',
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

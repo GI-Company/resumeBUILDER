@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "MYresume",
+  "description": "A customizable resume builder",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
