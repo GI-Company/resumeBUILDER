@@ -3215,7 +3215,7 @@ export default function ResumeBuilder() {
                     Premium AI Features Locked
                   </h3>
                   <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                    Unlock professional, Groq-powered AI writing helpers. Refine your summary, optimize experience bullet points using STAR methodology, and draft custom sections with Llama 3.3.
+                    Unlock professional, Groq-powered AI writing helpers. Refine your summary, optimize experience bullet points using STAR methodology, and draft custom sections.
                   </p>
                   <button
                     onClick={() => setAuthModalOpen(true)}
@@ -3307,7 +3307,7 @@ export default function ResumeBuilder() {
                           ? "Enter your current summary draft, background, or goals. (e.g. 'Highly motivated developer with 2 years React experience...')"
                           : aiPresetType === "bullets"
                           ? "Paste some raw bullets, achievements, or job descriptions. (e.g. 'I was in charge of the database and speeded up page loading times.')"
-                          : "How can Llama 3.3-70b assist you today with your resume? (e.g. 'Suggest some high-demand technical keywords for a Kubernetes expert')"
+                          : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords for a Kubernetes expert')"
                       }
                       rows={5}
                       className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none placeholder-gray-400"
@@ -3326,7 +3326,7 @@ export default function ResumeBuilder() {
                       ) : (
                         <>
                           <Sparkles size={14} />
-                          <span>Generate suggestions (Llama 3.3)</span>
+                          <span>Generate AI suggestions</span>
                         </>
                       )}
                     </button>

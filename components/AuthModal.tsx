@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, ArrowLeft, Mail, ShieldAlert, CheckCircle } from 'lucide-react';
+import { X, ArrowLeft, Mail, ShieldAlert, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 
 const US_STATES = [
@@ -58,6 +59,7 @@ const US_STATES = [
 
 export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [signUpStep, setSignUpStep] = useState(1); // 1: Credentials, 2: Profile
   const [step, setStep] = useState<'auth' | 'verify'>('auth');
   
   // Form fields
@@ -72,8 +74,22 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
   // OTP field
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match. Please verify your confirmation password.');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Security Protocol: Password must be at least 6 characters.');
+      return;
+    }
+    setSignUpStep(2);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,21 +97,21 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
     
     try {
       if (isSignUp) {
-        // Validate passwords match
-        if (password !== confirmPassword) {
-          throw new Error('Passwords do not match');
+        // Final validation
+        if (!firstName.trim() || !lastName.trim() || !stateName || !dob) {
+          throw new Error('All profile fields are mandatory for security clearance.');
         }
         
-        // Validate Date of Birth (must be a valid past date)
-        if (new Date(dob) >= new Date()) {
-          throw new Error('Please select a valid Date of Birth in the past');
+        const birthDate = new Date(dob);
+        const today = new Date();
+        if (isNaN(birthDate.getTime()) || birthDate >= today) {
+          throw new Error('Valid Date of Birth required for identity verification.');
         }
 
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
             data: {
               first_name: firstName,
               last_name: lastName,
@@ -105,18 +121,21 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
           }
         });
         
-        if (error) throw error;
+        if (error) {
+          if (error.status === 429) throw new Error('Too many attempts. System on cooldown. Wait 60 seconds.');
+          throw error;
+        }
         
-        toast.success('Registration code sent to your email!');
+        toast.success('Identity challenge issued. Check your email for the 6-digit code.');
         setStep('verify');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success('Successfully logged in!');
+        toast.success('Neural link established. Welcome back.');
         onClose();
       }
     } catch (err: any) {
-      toast.error(err.message || 'An error occurred during authentication');
+      toast.error(err.message || 'Authentication sequence failed.');
     } finally {
       setLoading(false);
     }
@@ -125,24 +144,27 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp || otp.length !== 6) {
-      toast.error('Please enter a valid 6-digit code');
+      toast.error('6-digit authentication token required.');
       return;
     }
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
+      const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: 'signup'
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('expired')) throw new Error('Token expired. Request a new sequence.');
+        throw error;
+      }
       
-      toast.success('Email successfully verified! Welcome aboard.');
+      toast.success('Account synchronized. Verification complete.');
       onClose();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to verify verification code');
+      toast.error(err.message || 'Verification sequence failed.');
     } finally {
       setLoading(false);
     }
@@ -154,229 +176,291 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        }
       });
       if (error) throw error;
-      toast.success('A fresh 6-digit verification code has been dispatched.');
+      toast.success('New 6-digit token dispatched to your terminal.');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to resend verification code');
+      toast.error(err.message || 'Resend protocol failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div id="auth-modal-overlay" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 font-sans">
-      <div id="auth-modal-card" className="bg-[#0b090c]/90 border border-purple-900/40 rounded-2xl shadow-[0_0_50px_rgba(112,0,223,0.15)] w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div id="auth-modal-overlay" className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050505]/90 backdrop-blur-xl p-4 font-sans">
+      <div id="auth-modal-card" className="bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(112,0,223,0.15)] w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         
+        {/* Progress Indicator */}
+        {isSignUp && step === 'auth' && (
+          <div className="h-1 w-full bg-white/[0.02]">
+            <div 
+              className="h-full bg-gradient-to-r from-[#7000df] to-[#00f0ff] transition-all duration-700 ease-out"
+              style={{ width: `${(signUpStep / 2) * 100}%` }}
+            />
+          </div>
+        )}
+
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-purple-900/20 bg-gradient-to-r from-purple-950/20 to-transparent">
-          <div className="flex items-center gap-2">
-            {step === 'verify' && (
+        <div className="flex items-center justify-between px-8 pt-10 pb-6">
+          <div className="flex items-center gap-4">
+            {(step === 'verify' || (isSignUp && signUpStep === 2)) && (
               <button 
-                onClick={() => setStep('auth')} 
-                className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5 mr-1"
-                title="Back to Form"
+                onClick={() => step === 'verify' ? setStep('auth') : setSignUpStep(1)} 
+                className="text-gray-500 hover:text-white transition-colors p-2 -ml-2 rounded-xl hover:bg-white/5"
               >
                 <ArrowLeft size={18} />
               </button>
             )}
-            <h2 className="text-xl font-bold tracking-tight text-white">
-              {step === 'verify' ? 'Confirm Registration' : (isSignUp ? 'Create Premium Account' : 'Sign In')}
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-white">
+                {step === 'verify' ? 'Verify Email' : (isSignUp ? 'Create Account' : 'Sign In')}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                  {isSignUp ? `Phase 0${signUpStep} / Secure Registration` : 'Professional Access Protocol'}
+                </p>
+              </div>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5">
+          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
             <X size={20} />
           </button>
         </div>
 
-        {step === 'auth' ? (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-            {isSignUp && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">First Name</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-gray-600"
-                    placeholder="Jane"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Last Name</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-gray-600"
-                    placeholder="Doe"
-                  />
-                </div>
-              </div>
-            )}
+        <div className="px-8 pb-10 pt-2">
+          {step === 'auth' ? (
+            <div className="space-y-8">
+              {/* Credentials Phase */}
+              {(!isSignUp || signUpStep === 1) && (
+                <form onSubmit={isSignUp ? handleNextStep : handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-[#00f0ff] transition-colors" size={16} />
+                      <input 
+                        type="email" 
+                        required
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="w-full bg-white/[0.02] text-gray-100 border border-white/5 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium focus:outline-none focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/30 transition-all placeholder:text-gray-700"
+                        placeholder="name@example.com"
+                      />
+                    </div>
+                  </div>
 
-            {isSignUp && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">US State</label>
-                  <select 
-                    required
-                    value={stateName}
-                    onChange={e => setStateName(e.target.value)}
-                    className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-[#00f0ff] transition-colors" size={16} />
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        required
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full bg-white/[0.02] text-gray-100 border border-white/5 rounded-xl pl-12 pr-12 py-3.5 text-sm font-medium focus:outline-none focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/30 transition-all placeholder:text-gray-700"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white p-1 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isSignUp && (
+                    <div className="space-y-2 relative">
+                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Confirm Password</label>
+                      <div className="relative group">
+                        <ShieldAlert className={cn("absolute left-4 top-1/2 -translate-y-1/2 transition-colors", confirmPassword && password !== confirmPassword ? "text-red-500" : "text-gray-600 group-focus-within:text-[#00f0ff]")} size={16} />
+                        <input 
+                          type={showPassword ? "text" : "password"} 
+                          required
+                          value={confirmPassword}
+                          onChange={e => setConfirmPassword(e.target.value)}
+                          className={cn(
+                            "w-full bg-white/[0.02] text-gray-100 border rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium focus:outline-none transition-all placeholder:text-gray-700",
+                            confirmPassword && password !== confirmPassword 
+                              ? "border-red-500/20 focus:border-red-500/40" 
+                              : "border-white/5 focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/30"
+                          )}
+                          placeholder="••••••••"
+                        />
+                      </div>
+                      {confirmPassword && password !== confirmPassword && (
+                        <p className="absolute -bottom-5 left-1 text-[9px] font-bold text-red-500 uppercase tracking-widest">
+                          Passwords do not match
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full mt-8 bg-white text-black hover:bg-gray-200 rounded-xl py-4 text-sm font-black uppercase tracking-[0.15em] shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
                   >
-                    <option value="" disabled className="text-gray-500">Select state</option>
-                    {US_STATES.map(st => (
-                      <option key={st.code} value={st.name} className="bg-[#141116]">
-                        {st.name} ({st.code})
-                      </option>
-                    ))}
-                  </select>
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <div className="w-4 h-4 border-2 border-black/10 border-t-black rounded-full animate-spin" />
+                        Authenticating...
+                      </span>
+                    ) : (isSignUp ? 'Next: Profile Setup' : 'Sign In')}
+                  </button>
+                </form>
+              )}
+
+              {/* Profile Phase */}
+              {isSignUp && signUpStep === 2 && (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">First Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={firstName}
+                        onChange={e => setFirstName(e.target.value)}
+                        className="w-full bg-white/[0.02] text-gray-100 border border-white/5 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#00f0ff]/30 transition-all placeholder:text-gray-800"
+                        placeholder="First name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Last Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={lastName}
+                        onChange={e => setLastName(e.target.value)}
+                        className="w-full bg-white/[0.02] text-gray-100 border border-white/5 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#00f0ff]/30 transition-all placeholder:text-gray-800"
+                        placeholder="Last name"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">State</label>
+                      <select 
+                        required
+                        value={stateName}
+                        onChange={e => setStateName(e.target.value)}
+                        className="w-full bg-[#0a0a0a] text-gray-100 border border-white/5 rounded-xl px-3 py-3 text-sm font-medium focus:outline-none focus:border-[#00f0ff]/30 transition-all cursor-pointer"
+                      >
+                        <option value="" disabled>Select State</option>
+                        {US_STATES.map(st => (
+                          <option key={st.code} value={st.name} className="bg-[#0a0a0a]">
+                            {st.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Birth Date</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={dob}
+                        onChange={e => setDob(e.target.value)}
+                        className="w-full bg-white/[0.02] text-gray-100 border border-white/5 rounded-xl px-3 py-3 text-sm font-medium focus:outline-none focus:border-[#00f0ff]/30 transition-all cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full mt-4 bg-gradient-to-r from-[#7000df] to-[#5000a0] hover:from-[#8000ff] hover:to-[#7000df] text-white rounded-xl py-4 text-sm font-black uppercase tracking-[0.15em] shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        Finalizing...
+                      </span>
+                    ) : 'Complete Registration'}
+                  </button>
+                </form>
+              )}
+              
+              <div className="text-center pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setSignUpStep(1);
+                    setPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.2em] hover:text-white transition-colors"
+                >
+                  {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Create one'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* OTP Verification Step */
+            <form onSubmit={handleVerifyOtp} className="space-y-10">
+              <div className="flex flex-col items-center text-center space-y-5">
+                <div className="w-20 h-20 rounded-3xl bg-[#00f0ff]/5 border border-[#00f0ff]/20 flex items-center justify-center text-[#00f0ff] shadow-2xl animate-pulse">
+                  <ShieldAlert size={36} />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Date of Birth</label>
-                  <input 
-                    type="date" 
-                    required
-                    value={dob}
-                    onChange={e => setDob(e.target.value)}
-                    className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all cursor-pointer"
-                  />
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">
+                    Verification code sent to:
+                  </p>
+                  <p className="text-sm font-medium text-[#00f0ff] tracking-tight">
+                    {email}
+                  </p>
                 </div>
               </div>
-            )}
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Email Address</label>
-              <input 
-                type="email" 
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-gray-600"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div className={isSignUp ? "grid grid-cols-2 gap-4" : ""}>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Password</label>
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 text-center">
+                  6-Digit Security Token
+                </label>
                 <input 
-                  type="password" 
+                  type="text" 
                   required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-gray-600"
-                  placeholder="••••••••"
+                  maxLength={6}
+                  pattern="\d{6}"
+                  value={otp}
+                  onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-white/[0.02] text-[#00f0ff] border border-white/5 rounded-2xl px-4 py-5 text-center text-4xl font-mono tracking-[0.6em] focus:outline-none focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/30 transition-all placeholder:text-gray-900"
+                  placeholder="000000"
                 />
               </div>
 
-              {isSignUp && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Confirm Password</label>
-                  <input 
-                    type="password" 
-                    required
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    className="w-full bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-gray-600"
-                    placeholder="••••••••"
-                  />
+              <div className="space-y-5">
+                <button 
+                  type="submit" 
+                  disabled={loading || otp.length !== 6}
+                  className="w-full bg-white text-black hover:bg-gray-200 rounded-xl py-4.5 text-sm font-black uppercase tracking-[0.15em] shadow-xl active:scale-[0.98] transition-all disabled:opacity-20"
+                >
+                  {loading ? 'Verifying...' : 'Verify Email'}
+                </button>
+
+                <div className="flex items-center justify-between px-2">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors"
+                  >
+                    Resend Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep('auth')}
+                    className="text-[9px] font-black text-gray-600 hover:text-white uppercase tracking-widest transition-colors"
+                  >
+                    Change Email
+                  </button>
                 </div>
-              )}
-            </div>
-
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full mt-6 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white border-none rounded-lg px-4 py-2.5 font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(112,0,223,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Processing...' : (isSignUp ? 'Generate Verification Code' : 'Sign In')}
-            </button>
-            
-            <div className="mt-4 text-center">
-              <button 
-                type="button" 
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  // Clear fields on switch
-                  setPassword('');
-                  setConfirmPassword('');
-                }}
-                className="text-gray-400 text-sm hover:text-white transition-colors"
-              >
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-              </button>
-            </div>
-          </form>
-        ) : (
-          /* OTP Verification Step */
-          <form onSubmit={handleVerifyOtp} className="p-6 space-y-6">
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-purple-950/40 border border-purple-500/30 flex items-center justify-center text-cyan-400">
-                <Mail size={24} />
               </div>
-              <div>
-                <p className="text-sm text-gray-300">
-                  We've sent a 6-digit confirmation code to:
-                </p>
-                <p className="text-sm font-semibold text-white mt-0.5">
-                  {email}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 text-center mb-2.5">
-                6-Digit Verification Code
-              </label>
-              <input 
-                type="text" 
-                required
-                maxLength={6}
-                pattern="\d{6}"
-                value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-                className="w-full max-w-xs mx-auto block bg-[#141116] text-[#f2ecef] border border-purple-900/30 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-[0.75em] focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-gray-700"
-                placeholder="000000"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <button 
-                type="submit" 
-                disabled={loading || otp.length !== 6}
-                className="w-full bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white border-none rounded-lg px-4 py-2.5 font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(112,0,223,0.3)] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Verifying...' : 'Verify & Login'}
-              </button>
-
-              <div className="flex items-center justify-between px-2 text-xs text-gray-400">
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={loading}
-                  className="hover:text-white transition-colors underline"
-                >
-                  Resend Code
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep('auth')}
-                  className="hover:text-white transition-colors"
-                >
-                  Change Email
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
