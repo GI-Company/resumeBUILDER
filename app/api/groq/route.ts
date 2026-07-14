@@ -1,35 +1,116 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-// Initialize server-side Supabase client to verify JWTs
+// Load or initialize Supabase server-side client
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
 const supabaseServer = createClient(supabaseUrl, supabaseAnonKey);
+
+const LIMIT_FILE = '/tmp/ai_rate_limits.json';
+let inMemoryCache: Record<string, { count: number; firstRequestTime: number }> = {};
+
+// Helper to load rate limits from filesystem with in-memory fallback
+function loadRateLimits() {
+  try {
+    if (fs.existsSync(LIMIT_FILE)) {
+      const data = fs.readFileSync(LIMIT_FILE, 'utf-8');
+      inMemoryCache = JSON.parse(data);
+    }
+  } catch (e) {
+    console.error('Failed to load rate limits file, using in-memory cache:', e);
+  }
+}
+
+// Helper to save rate limits to filesystem
+function saveRateLimits() {
+  try {
+    fs.writeFileSync(LIMIT_FILE, JSON.stringify(inMemoryCache, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Failed to write rate limits file:', e);
+  }
+}
+
+// Perform rate limiting: 5 requests per IP address every 24 hours from first request
+function checkAndIncrementRateLimit(ip: string): { allowed: boolean; count: number; remaining: number; resetTime: Date } {
+  loadRateLimits();
+  const now = Date.now();
+  const limitWindow = 24 * 60 * 60 * 1000; // 24 hours
+  
+  let record = inMemoryCache[ip];
+  
+  if (!record) {
+    record = { count: 1, firstRequestTime: now };
+    inMemoryCache[ip] = record;
+    saveRateLimits();
+    return { allowed: true, count: 1, remaining: 4, resetTime: new Date(now + limitWindow) };
+  }
+  
+  const elapsed = now - record.firstRequestTime;
+  
+  if (elapsed >= limitWindow) {
+    // 24 hour window expired - reset limit
+    record.count = 1;
+    record.firstRequestTime = now;
+    saveRateLimits();
+    return { allowed: true, count: 1, remaining: 4, resetTime: new Date(now + limitWindow) };
+  }
+  
+  if (record.count >= 5) {
+    return { 
+      allowed: false, 
+      count: record.count, 
+      remaining: 0, 
+      resetTime: new Date(record.firstRequestTime + limitWindow) 
+    };
+  }
+  
+  record.count += 1;
+  saveRateLimits();
+  return { 
+    allowed: true, 
+    count: record.count, 
+    remaining: 5 - record.count, 
+    resetTime: new Date(record.firstRequestTime + limitWindow) 
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Extract and verify the Supabase JWT from Authorization header
+    // 1. Get client IP address for robust rate limiting
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || (req as any).ip || '127.0.0.1';
+    
+    // 2. Enforce 5 AI requests per IP address every 24 hours from first request
+    const rateLimit = checkAndIncrementRateLimit(ip);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `AI Rate limit exceeded. You are allowed 5 requests per 24 hours. Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
+        },
+        { status: 429 }
+      );
+    }
+
+    // 3. Optional JWT auth: Logged-in users can be identified, but guests are allowed up to the rate limit
+    let userObj = null;
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required. Please sign up or sign in.' },
-        { status: 401 }
-      );
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
+        if (!authError && user) {
+          userObj = user;
+        }
+      } catch (err) {
+        console.warn('Optional auth verification failed:', err);
+      }
     }
 
-    const token = authHeader.split(' ')[1];
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized. Invalid or expired session.' },
-        { status: 401 }
-      );
-    }
-
-    // 2. Validate Groq API Key
+    // 4. Validate Groq API Key
     const apiKey = process.env.GROQ;
     if (!apiKey) {
       return NextResponse.json(
@@ -38,7 +119,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Parse and validate the request body
+    // 5. Parse and validate the request body
     const body = await req.json();
     const { prompt, systemPrompt, temperature } = body;
 
@@ -49,7 +130,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Define the fallback list of models
+    // 6. Define the fallback list of models to optimize response times and availability
     const models = [
       'groq/compound',
       'groq/compound-mini',
@@ -62,10 +143,10 @@ export async function POST(req: NextRequest) {
     let selectedModel = '';
     let text = '';
 
-    // 5. Try each model sequentially to auto-select the most available one
+    // 7. Try each model sequentially to auto-select the most available one
     for (const model of models) {
       try {
-        console.log(`Attempting Groq API generation with model: ${model}`);
+        console.log(`Attempting Groq API generation with model: ${model} (IP: ${ip})`);
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -87,37 +168,37 @@ export async function POST(req: NextRequest) {
             temperature: typeof temperature === 'number' ? temperature : 0.4,
             tools: [
               {
-                type: "function",
+                type: 'function',
                 function: {
-                  name: "improve_resume_summary",
-                  description: "Refine a resume summary for impact and clarity.",
+                  name: 'improve_resume_summary',
+                  description: 'Refine a resume summary for impact and clarity.',
                   parameters: {
-                    type: "object",
+                    type: 'object',
                     properties: {
-                      originalSummary: { type: "string" },
-                      targetRole: { type: "string" }
+                      originalSummary: { type: 'string' },
+                      targetRole: { type: 'string' }
                     },
-                    required: ["originalSummary"]
+                    required: ['originalSummary']
                   }
                 }
               },
               {
-                type: "function",
+                type: 'function',
                 function: {
-                  name: "rewrite_bullet_points",
-                  description: "Rewrite experience bullet points using STAR method and action verbs.",
+                  name: 'rewrite_bullet_points',
+                  description: 'Rewrite experience bullet points using STAR method and action verbs.',
                   parameters: {
-                    type: "object",
+                    type: 'object',
                     properties: {
-                      rawBullets: { type: "string" },
-                      metricFocus: { type: "boolean" }
+                      rawBullets: { type: 'string' },
+                      metricFocus: { type: 'boolean' }
                     },
-                    required: ["rawBullets"]
+                    required: ['rawBullets']
                   }
                 }
               }
             ],
-            tool_choice: "auto"
+            tool_choice: 'auto'
           }),
         });
 
@@ -147,7 +228,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, text, model: selectedModel });
+    return NextResponse.json({ 
+      success: true, 
+      text, 
+      model: selectedModel,
+      remaining: rateLimit.remaining,
+      resetTime: rateLimit.resetTime.toISOString()
+    });
   } catch (err: any) {
     console.error('Error in Groq API proxy:', err);
     return NextResponse.json(

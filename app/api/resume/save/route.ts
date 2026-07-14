@@ -4,7 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabaseServer = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +13,17 @@ export async function POST(req: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
+    
+    // Create Supabase client in user security context so auth.uid() evaluates correctly in the DB
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+
+    const { data: { user }, error: authError } = await client.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -22,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const { id, content, status, clientId } = await req.json();
 
-    const { data, error } = await supabaseServer.rpc("save_resume", {
+    const { data, error } = await client.rpc("save_resume", {
       p_id: id,
       p_content: content,
       p_client_id: clientId,

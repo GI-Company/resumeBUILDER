@@ -119,6 +119,29 @@ const PageBreakGap = ({ id, pageBreakElementIds, gapHeights, pageMargin }: PageB
 
 const TEMPLATES = [
   {
+    id: "blank",
+    name: "Blank Custom",
+    desc: "A completely blank template for full customization.",
+    layout: "classic",
+    heading: "sans-serif",
+    body: "sans-serif",
+    accent: "#000000",
+    panel: "#ffffff",
+    radius: 0,
+    headingStyle: "plain",
+    italic: false,
+    headerAlign: "left",
+    listStyle: "disc",
+    pageMargin: 32,
+    itemSpacing: 16,
+    jobLayout: "stacked",
+    paper: "#ffffff",
+    boxOpacity: 100,
+    boxShadow: "none",
+    borderStyle: "none",
+    backdropBlur: 0,
+  },
+  {
     id: "classic",
     name: "Classic Script",
     desc: "Warm handwritten headings over a soft neutral panel. A safe, personable all-rounder.",
@@ -693,14 +716,15 @@ export default function ResumeBuilder() {
   };
 
   // --- Content State ---
-  const [name, setName] = useState(() => localDraft?.name ?? "YOUR NAME");
+  const [name, setName] = useState(() => localDraft?.name ?? "ALEX MORGAN");
   const [contactLine, setContactLine] = useState(() => localDraft?.contactLine ??
-    'City, State ZIP <span class="text-[var(--hairline)] mx-2">|</span> (555) 123-4567 <span class="text-[var(--hairline)] mx-2">|</span> your.email@example.com'
+    "San Francisco, CA <span class=\"text-[var(--hairline)] mx-2\">|</span> (415) 555-0199 <span class=\"text-[var(--hairline)] mx-2\">|</span> alex.morgan@email.com <span class=\"text-[var(--hairline)] mx-2\">|</span> linkedin.com/in/alexmorgan"
   );
   const [summary, setSummary] = useState(() => localDraft?.summary ??
-    "A two-to-three sentence pitch: your title/field, years of experience, and the kind of impact you make. Write it last — it's easiest once the rest of the resume is filled in."
+    "Innovative Full-Stack Software Engineer with over 5 years of experience designing, building, and deploying highly scalable web applications. Proven track record of optimizing application performance, leading cross-functional teams, and implementing cloud-native solutions to drive business outcomes."
   );
-  const [footer, setFooter] = useState(() => localDraft?.footer ?? "Your Name");
+  const [footer, setFooter] = useState(() => localDraft?.footer ?? "Alex Morgan");
+  const [aiRemaining, setAiRemaining] = useState<number | null>(5);
 
   // --- History & Undo/Redo State ---
   const [history, setHistory] = useState<any[]>([]);
@@ -727,69 +751,69 @@ export default function ResumeBuilder() {
   const [licenses, setLicenses] = useState<any[]>(() => localDraft?.licenses ?? [
     {
       id: "lic-1",
-      text: "<b>Credential Name</b> — Issuing Organization (Expires: Month Year)",
+      text: "<b>AWS Certified Solutions Architect</b> — Amazon Web Services (ID: AWS-ASA-99321)",
     },
     {
       id: "lic-2",
-      text: "<b>Second Credential</b> — Issuing Organization (Expires: Month Year)",
+      text: "<b>Professional Scrum Master I (PSM I)</b> — Scrum.org",
     },
   ]);
 
   const [skills, setSkills] = useState<any[]>(() => localDraft?.skills ?? [
     {
       id: "sk-1",
-      title: "Core Skills",
-      items: "List 4–6 of your strongest, most relevant skills here.",
+      title: "Core Languages",
+      items: "TypeScript, JavaScript (ES6+), Python, Go, Java, SQL, HTML5, CSS3",
     },
     {
       id: "sk-2",
-      title: "Tools & Software",
-      items: "List the platforms, tools, or systems you're proficient in.",
+      title: "Frameworks & Tools",
+      items: "React, Next.js, Node.js, Express, Tailwind CSS, Redux, PostgreSQL, Docker, AWS",
     },
   ]);
 
   const [experiences, setExperiences] = useState<any[]>(() => localDraft?.experiences ?? [
     {
       id: "exp-1",
-      title: "Job Title | Company Name – City, State",
-      date: "Month Year – Present",
+      title: "Senior Full-Stack Engineer | TechFlow Solutions – San Francisco, CA",
+      date: "Aug 2023 – Present",
       bullets: [
         {
           id: "b-1",
-          text: "Describe a key responsibility or achievement, ideally with a measurable result.",
+          text: "Architected and deployed a highly available React/Next.js dashboard, improving client-side page load times by 42% and increasing user engagement by 18%.",
         },
         {
           id: "b-2",
-          text: "Add a second bullet focused on impact rather than just duties.",
+          text: "Led a team of 4 engineers in redesigning the core API orchestration layer using Node.js and GraphQL, reducing query latency by 150ms.",
         },
       ],
-      meta: "Optional details: team size, tools used, scope, or scale — delete this line if you don't need it.",
+      meta: "Stack: Next.js, TypeScript, GraphQL, Tailwind CSS, PostgreSQL, AWS",
     },
     {
       id: "exp-2",
-      title: "Previous Job Title | Previous Company – City, State",
-      date: "Month Year – Month Year",
+      title: "Software Engineer II | DevCore Technologies – Austin, TX",
+      date: "Jun 2021 – Jul 2023",
       bullets: [
         {
           id: "b-3",
-          text: "Describe a key responsibility or achievement, ideally with a measurable result.",
+          text: "Designed and maintained responsive enterprise web portals using React and Redux Toolkit, handling over 100k daily active users.",
         },
         {
           id: "b-4",
-          text: "Add a second bullet focused on impact rather than just duties.",
+          text: "Optimized database queries and added Redis caching, resulting in a 30% reduction in database CPU utilization during peak load times.",
         },
       ],
-      meta: "",
+      meta: "Stack: React, Redux, Node.js, Express, Redis, PostgreSQL",
     },
   ]);
 
   const [educations, setEducations] = useState<any[]>(() => localDraft?.educations ?? [
     {
       id: "edu-1",
-      degree: "Degree | School Name – City, State",
+      degree: "B.S. in Computer Science | University of California, Berkeley",
       bullets: [
-        { id: "eb-1", text: "Graduation: Month Year" },
-        { id: "eb-2", text: "Optional: honors, GPA, or relevant coursework" },
+        { id: "eb-1", text: "Graduated with Honors, GPA: 3.82/4.00" },
+        { id: "eb-2", text: "Relevant Coursework: Data Structures, Database Management Systems, Cloud Computing" },
       ],
     },
   ]);
@@ -876,19 +900,72 @@ export default function ResumeBuilder() {
   const handleApplyAI = () => {
     if (aiPresetType === "summary") {
       setSummary(aiOutput);
-      toast.success("Applied to summary! ✨");
+      toast.success("Applied to Professional Summary! ✨");
     } else {
-      toast.error("Apply functionality for this type is coming soon. Please copy and paste.");
+      toast("Please use the 'Apply to...' options below to choose which part of your resume to update.");
+    }
+  };
+
+  const handleApplyToTarget = (targetType: string, targetId?: string) => {
+    if (!aiOutput) return;
+    
+    isHistoryActionRef.current = true;
+    
+    if (targetType === "summary") {
+      setSummary(aiOutput);
+      toast.success("Applied to Professional Summary! ✨");
+    } else if (targetType === "experience-bullets" && targetId) {
+      setExperiences((prev: any[]) => prev.map(exp => {
+        if (exp.id === targetId) {
+          // Parse lines starting with •, -, *, or normal lines
+          const lines = aiOutput.split(/[\n•\-*]/).map(l => l.trim()).filter(Boolean);
+          const newBullets = lines.map((text, idx) => ({
+            id: `b-ai-${Date.now()}-${idx}`,
+            text
+          }));
+          return {
+            ...exp,
+            bullets: [...exp.bullets, ...newBullets]
+          };
+        }
+        return exp;
+      }));
+      toast.success("Appended bullet points to job entry! ✨");
+    } else if (targetType === "experience-title" && targetId) {
+      setExperiences((prev: any[]) => prev.map(exp => {
+        if (exp.id === targetId) {
+          return { ...exp, title: aiOutput };
+        }
+        return exp;
+      }));
+      toast.success("Updated Job Title & Company! ✨");
+    } else if (targetType === "skills-add") {
+      setSkills((prev: any[]) => [
+        ...prev,
+        { id: `sk-ai-${Date.now()}`, title: "AI Recommended Skills", items: aiOutput }
+      ]);
+      toast.success("Added new Skill Category Group! ✨");
+    } else if (targetType === "licenses-add") {
+      setLicenses((prev: any[]) => [
+        ...prev,
+        { id: `lic-ai-${Date.now()}`, text: aiOutput }
+      ]);
+      toast.success("Added new Certification/License! ✨");
+    } else if (targetType === "education-add") {
+      setEducations((prev: any[]) => [
+        ...prev,
+        {
+          id: `edu-ai-${Date.now()}`,
+          degree: aiOutput,
+          bullets: []
+        }
+      ]);
+      toast.success("Added new Education entry! ✨");
     }
   };
 
   const handleGenerateAI = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      toast.error("Please log in to use AI assistant features.");
-      setAuthModalOpen(true);
-      return;
-    }
 
     if (!aiInput.trim()) {
       toast.error("Please enter some text or context for the AI.");
@@ -899,13 +976,9 @@ export default function ResumeBuilder() {
     setAiOutput("");
 
     try {
-      // 1. Get current supabase session to obtain JWT
+      // 1. Get optional supabase session to obtain JWT
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-
-      if (!token) {
-        throw new Error("Unable to retrieve authentication session. Please sign in again.");
-      }
 
       // 2. Formulate prompts based on active preset
       let systemPrompt = "You are a professional resume writer.";
@@ -918,12 +991,16 @@ export default function ResumeBuilder() {
       }
 
       // 3. Make fetch request to our server proxy
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch("/api/groq", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({
           prompt: aiInput,
           systemPrompt,
@@ -932,6 +1009,11 @@ export default function ResumeBuilder() {
       });
 
       const resData = await response.json();
+      
+      if (resData.remaining !== undefined) {
+        setAiRemaining(resData.remaining);
+      }
+
       if (!response.ok || !resData.success) {
         throw new Error(resData.error || "Failed to generate text from Groq API.");
       }
@@ -1102,6 +1184,33 @@ export default function ResumeBuilder() {
     }
   }, []);
 
+  const handleResetToBlank = () => {
+    if (window.confirm("Are you sure you want to clear all resume content and start from scratch? This will reset your resume content to a blank template.")) {
+      isHistoryActionRef.current = true;
+      setName("");
+      setContactLine("");
+      setSummary("");
+      setExperiences([]);
+      setEducations([]);
+      setSkills([]);
+      setLicenses([]);
+      setFooter("");
+      setManualBreaks({});
+      setDesign((prev: any) => ({
+        ...prev,
+        template: "blank",
+        accent: "#111827",
+        panel: "#ffffff",
+        paper: "#ffffff",
+        layout: "classic",
+        headingStyle: "plain",
+        boxShadow: "none",
+        borderStyle: "none",
+      }));
+      toast.success("Resume cleared! Start building your customized template from scratch. 📝");
+    }
+  };
+
   // Keyboard shortcut listener for Ctrl+Z / Ctrl+Y
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1167,26 +1276,31 @@ export default function ResumeBuilder() {
     
     // Backend autosave if logged in
     if (user) {
-        const saveToBackend = async () => {
+        const saveToBackend = async (payload: any) => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) return;
             
-            await fetch("/api/resume/save", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    id: resumeId, // Need to track this ID
-                    content: trimmedPayload,
-                    status: 'active',
-                    clientId: 'web'
-                })
-            });
+            try {
+                const response = await fetch("/api/resume/save", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        id: resumeId,
+                        content: payload,
+                        status: 'active',
+                        clientId: 'web'
+                    })
+                });
+                if (!response.ok) throw new Error('Save failed');
+            } catch (err) {
+                console.error("Autosave failed:", err);
+            }
         };
-        // Debounce this!
-        const timer = setTimeout(saveToBackend, 2000);
+        
+        const timer = setTimeout(() => saveToBackend(trimmedPayload), 2000);
         return () => clearTimeout(timer);
     }
 
@@ -1255,7 +1369,6 @@ export default function ResumeBuilder() {
   };
 
   const handleSaveToCloud = async () => {
-    if (!clientId) return;
     setIsSaving(true);
 
     const payload = {
@@ -1274,22 +1387,40 @@ export default function ResumeBuilder() {
     };
 
     try {
-      const { data, error } = await supabase.rpc("save_resume", {
-        p_id: resumeId || null,
-        p_content: payload,
-        p_client_id: clientId,
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please log in to save to the cloud.");
+        setAuthModalOpen(true);
+        setIsSaving(false);
+        return;
+      }
+
+      const response = await fetch("/api/resume/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          id: resumeId,
+          content: payload,
+          clientId: clientId || "web",
+          status: 'active',
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
-      // Zod validation of RPC response based on Strict distributed systems constraints
-      const parsed = SaveResponseSchema.parse(data);
+      const parsedData = await response.json();
+      const parsed = SaveResponseSchema.parse(parsedData);
 
       if (!parsed.success) {
         if (parsed.code === "RATE_LIMIT") {
           toast.error("⚠️ " + (parsed.message || "Rate limit exceeded"));
         } else {
-          toast.error("⚠️ Error: " + parsed.code);
+          toast.error("⚠️ Error: " + (parsed.message || parsed.code || "Failed to save"));
         }
         return;
       }
@@ -1302,6 +1433,9 @@ export default function ResumeBuilder() {
         const url = new URL(window.location.href);
         url.searchParams.set("id", parsed.id);
         window.history.pushState({}, "", url);
+        
+        // Refresh resumes list
+        fetchMyResumes();
       }
     } catch (err: any) {
       console.error("Save failed", err);
@@ -2113,7 +2247,7 @@ export default function ResumeBuilder() {
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -2149,7 +2283,7 @@ export default function ResumeBuilder() {
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -2221,8 +2355,48 @@ export default function ResumeBuilder() {
 
                 <div className="space-y-3">
                   <h3 className="text-xs font-semibold text-gray-900">
-                    Colors
+                    Colors & Palette Presets
                   </h3>
+
+                  {/* Preset Color Badges */}
+                  <div className="space-y-1.5 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                      Click to apply preset:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { name: "Navy Corporate", accent: "#1e3a8a", panel: "#f1f5f9", paper: "#ffffff" },
+                        { name: "Emerald Creative", accent: "#059669", panel: "#f0fdf4", paper: "#ffffff" },
+                        { name: "Warm Editorial", accent: "#7c2d12", panel: "#fffbeb", paper: "#fafaf9" },
+                        { name: "Charcoal Tech", accent: "#111827", panel: "#f3f4f6", paper: "#ffffff" },
+                        { name: "Plum Royal", accent: "#701a75", panel: "#fae8ff", paper: "#ffffff" },
+                        { name: "Ocean Breeze", accent: "#0284c7", panel: "#ecfeff", paper: "#ffffff" },
+                      ].map((pal) => (
+                        <button
+                          key={pal.name}
+                          type="button"
+                          onClick={() => {
+                            setDesign((p: any) => ({
+                              ...p,
+                              accent: pal.accent,
+                              panel: pal.panel,
+                              paper: pal.paper,
+                            }));
+                            toast.success(`Applied ${pal.name} palette! 🎨`);
+                          }}
+                          className="flex items-center gap-1.5 p-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-[10px] font-medium text-gray-700 transition-all text-left cursor-pointer"
+                        >
+                          <div className="flex gap-0.5 shrink-0 rounded overflow-hidden border border-gray-200/50">
+                            <span className="w-2.5 h-2.5 block" style={{ backgroundColor: pal.accent }} />
+                            <span className="w-2.5 h-2.5 block" style={{ backgroundColor: pal.panel }} />
+                            <span className="w-2.5 h-2.5 block" style={{ backgroundColor: pal.paper }} />
+                          </div>
+                          <span className="truncate">{pal.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
@@ -2491,7 +2665,7 @@ export default function ResumeBuilder() {
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -2579,7 +2753,7 @@ export default function ResumeBuilder() {
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -3060,7 +3234,7 @@ export default function ResumeBuilder() {
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -3287,222 +3461,244 @@ export default function ResumeBuilder() {
                 </div>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="md:hidden text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              {!user ? (
-                /* Premium Lock Screen if not logged in */
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-                  <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center text-amber-500 mb-4 animate-bounce">
-                    <Lock size={28} />
-                  </div>
-                  <h3 className="font-bold text-gray-900 mb-2 text-base">
-                    Premium AI Features Locked
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                    Unlock professional, Groq-powered AI writing helpers. Refine your summary, optimize experience bullet points using STAR methodology, and draft custom sections.
-                  </p>
+              {/* Rate Limit Status Banner */}
+              <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 text-left mb-3 shrink-0">
+                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-[10px] uppercase tracking-wider">
+                  <Sparkles size={12} className="animate-pulse" />
+                  <span>Rate Limit Status</span>
+                </div>
+                <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
+                  Guest Tier: <b>{aiRemaining !== null ? aiRemaining : 5} / 5</b> AI requests remaining for today.
+                </p>
+                {!user && (
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="w-full p-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer"
+                    className="text-[10px] font-semibold text-blue-600 hover:underline mt-1.5 flex items-center gap-0.5"
                   >
-                    Log In / Sign Up to Unlock
+                    Log In / Sign Up for unlimited cloud saving 🔑
+                  </button>
+                )}
+              </div>
+
+              {/* Full AI Assistant Panel */}
+              <div className="flex-1 flex flex-col min-h-0 space-y-3">
+                {/* Category select buttons */}
+                <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiPresetType("summary");
+                      setAiOutput("");
+                    }}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      aiPresetType === "summary"
+                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                        : "text-gray-500 hover:text-gray-800"
+                    )}
+                  >
+                    Summary
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiPresetType("bullets");
+                      setAiOutput("");
+                    }}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      aiPresetType === "bullets"
+                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                        : "text-gray-500 hover:text-gray-800"
+                    )}
+                  >
+                    Bullet Points
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiPresetType("parser");
+                      setAiOutput("");
+                    }}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      aiPresetType === "parser"
+                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                        : "text-gray-500 hover:text-gray-800"
+                    )}
+                  >
+                    Parser
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiPresetType("custom");
+                      setAiOutput("");
+                    }}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      aiPresetType === "custom"
+                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                        : "text-gray-500 hover:text-gray-800"
+                    )}
+                  >
+                    Custom
                   </button>
                 </div>
-              ) : (
-                /* Full AI Assistant Panel */
-                <div className="flex-1 flex flex-col min-h-0 space-y-4">
-                  {/* Category select buttons */}
-                  <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAiPresetType("summary");
-                        setAiOutput("");
-                      }}
-                      className={cn(
-                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
-                        aiPresetType === "summary"
-                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                          : "text-gray-500 hover:text-gray-800"
-                      )}
-                    >
-                      Summary
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAiPresetType("bullets");
-                        setAiOutput("");
-                      }}
-                      className={cn(
-                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
-                        aiPresetType === "bullets"
-                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                          : "text-gray-500 hover:text-gray-800"
-                      )}
-                    >
-                      Bullet Points
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAiPresetType("parser");
-                        setAiOutput("");
-                      }}
-                      className={cn(
-                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
-                        aiPresetType === "parser"
-                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                          : "text-gray-500 hover:text-gray-800"
-                      )}
-                    >
-                      Parser
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAiPresetType("custom");
-                        setAiOutput("");
-                      }}
-                      className={cn(
-                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
-                        aiPresetType === "custom"
-                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                          : "text-gray-500 hover:text-gray-800"
-                      )}
-                    >
-                      Custom
-                    </button>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (aiPresetType === "parser") handleParseResume(aiInput);
+                    else handleGenerateAI(e);
+                  }}
+                  className="shrink-0 flex flex-col space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                      {aiPresetType === "summary" && "Polish Professional Summary"}
+                      {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
+                      {aiPresetType === "parser" && "Parse Old Resume"}
+                      {aiPresetType === "custom" && "Custom AI Prompt / Query"}
+                    </label>
+                    {aiPresetType === "summary" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiInput(summary);
+                          toast.success("Current summary imported! 📥");
+                        }}
+                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                      >
+                        📥 Load current
+                      </button>
+                    )}
                   </div>
 
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (aiPresetType === "parser") handleParseResume(aiInput);
-                      else handleGenerateAI(e);
-                    }}
-                    className="flex-1 flex flex-col min-h-0 space-y-3"
+                  <textarea
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    required
+                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 resize-none"
+                    placeholder={
+                      aiPresetType === "summary"
+                        ? "Enter your current summary draft, background, or goals."
+                        : aiPresetType === "bullets"
+                        ? "Paste experience bullet points to rewrite... (using STAR methodology)"
+                        : aiPresetType === "parser"
+                        ? "Paste your old resume text here..."
+                        : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords')"
+                    }
+                    rows={3}
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={aiIsGenerating || !aiInput.trim()}
+                    className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl py-2 text-xs font-bold hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <div className="flex items-center justify-between">
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                        {aiPresetType === "summary" && "Polish Professional Summary"}
-                        {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
-                        {aiPresetType === "parser" && "Parse Old Resume"}
-                        {aiPresetType === "custom" && "Custom AI Prompt / Query"}
-                      </label>
-                      {aiPresetType === "summary" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAiInput(summary);
-                            toast.success("Current summary imported! 📥");
-                          }}
-                          className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
-                        >
-                          📥 Load current
-                        </button>
-                      )}
-                    </div>
+                    {aiIsGenerating ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>{aiPresetType === "parser" ? "Parsing..." : "Generating suggestions..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} />
+                        <span>{aiPresetType === "parser" ? "Parse Resume" : "Generate AI suggestions"}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
 
-                    <textarea
-                      value={aiInput}
-                      onChange={(e) => setAiInput(e.target.value)}
-                      required
-                      className="flex-1 w-full p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
-                      placeholder={
-                        aiPresetType === "summary"
-                          ? "Enter your current summary draft, background, or goals. (e.g. 'Highly motivated developer with 2 years React experience...')"
-                          : aiPresetType === "bullets"
-                          ? "Paste experience bullet points to rewrite... (e.g. 'I was in charge of the database and speeded up page loading times.')"
-                          : aiPresetType === "parser"
-                          ? "Paste your old resume text here..."
-                          : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords for a Kubernetes expert')"
-                      }
-                      rows={5}
-                    />
-
-                    <button
-                      type="submit"
-                      disabled={aiIsGenerating || !aiInput.trim()}
-                      className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl py-2.5 text-xs font-bold hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      {aiIsGenerating ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>{aiPresetType === "parser" ? "Parsing..." : "Generating suggestions..."}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={14} />
-                          <span>{aiPresetType === "parser" ? "Parse Resume" : "Generate AI suggestions"}</span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-
-                  {/* AI Output Result Box */}
-                  <div className="flex-1 flex flex-col min-h-0 bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
-                    <div className="flex items-center justify-between mb-2 shrink-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                        AI Output Suggestions
-                      </span>
-                      {aiOutput && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(aiOutput);
-                              toast.success("Copied to clipboard! 📋");
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
-                            title="Copy to Clipboard"
-                          >
-                            <Copy size={12} />
-                            <span>Copy</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleApplyAI}
-                            className="p-1 hover:bg-blue-100 rounded text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
-                            title="Apply to Resume"
-                          >
-                            <Check size={12} />
-                            <span>Apply</span>
-                          </button>
-                          {aiPresetType === "summary" && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSummary(aiOutput);
-                                toast.success("Successfully applied to Summary! 🚀");
-                              }}
-                              className="p-1 hover:bg-green-100 bg-green-50 rounded text-green-700 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
-                              title="Apply as Summary"
-                            >
-                              <Check size={12} />
-                              <span>Apply</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 overflow-y-auto text-xs text-gray-800 leading-relaxed font-sans whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2">
-                      {aiOutput ? (
-                        aiOutput
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-4">
-                          <Sparkles size={24} className="opacity-30 mb-2 text-amber-500" />
-                          <p className="text-[10px]">Your professional suggestions will appear here.</p>
-                        </div>
-                      )}
-                    </div>
+                {/* AI Output Result Box with targets list */}
+                <div className="flex-1 flex flex-col min-h-0 bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
+                  <div className="flex items-center justify-between mb-2 shrink-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                      AI Output Suggestions
+                    </span>
+                    {aiOutput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(aiOutput);
+                          toast.success("Copied to clipboard! 📋");
+                        }}
+                        className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                        title="Copy to Clipboard"
+                      >
+                        <Copy size={12} />
+                        <span>Copy</span>
+                      </button>
+                    )}
                   </div>
+                  <div className="flex-1 overflow-y-auto text-xs text-gray-800 leading-relaxed font-sans whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2.5 mb-2.5">
+                    {aiOutput ? (
+                      aiOutput
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-4">
+                        <Sparkles size={24} className="opacity-30 mb-2 text-amber-500" />
+                        <p className="text-[10px]">Your professional suggestions will appear here.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {aiOutput && (
+                    <div className="shrink-0 border-t border-gray-200 pt-2.5 space-y-2">
+                      <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                        ⚡ Quick Apply to Resume Sections:
+                      </span>
+                      <div className="grid grid-cols-1 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                        <button
+                          onClick={() => handleApplyToTarget("summary")}
+                          className="w-full text-left p-1.5 text-[10px] bg-blue-50 border border-blue-200 hover:border-blue-300 hover:bg-blue-100 text-blue-900 font-bold rounded transition-all"
+                        >
+                          ✨ Apply to Professional Summary
+                        </button>
+                        
+                        {experiences.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="block text-[8px] font-bold uppercase tracking-widest text-gray-400 pl-1 mt-1">
+                              Append Bullets to Professional Job:
+                            </span>
+                            {experiences.map((exp) => (
+                              <button
+                                key={exp.id}
+                                onClick={() => handleApplyToTarget("experience-bullets", exp.id)}
+                                className="w-full text-left p-1.5 text-[10px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate block"
+                                title={`Append as bullet points to ${exp.title}`}
+                              >
+                                + Append to: {exp.title.split("|")[0].trim()}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-gray-100">
+                          <button
+                            onClick={() => handleApplyToTarget("skills-add")}
+                            className="text-left p-1.5 text-[9px] bg-gray-100 border border-gray-200 hover:border-gray-300 hover:bg-gray-200 text-gray-700 font-semibold rounded transition-all truncate"
+                          >
+                            + Add as Skills Group
+                          </button>
+                          <button
+                            onClick={() => handleApplyToTarget("licenses-add")}
+                            className="text-left p-1.5 text-[9px] bg-gray-100 border border-gray-200 hover:border-gray-300 hover:bg-gray-200 text-gray-700 font-semibold rounded transition-all truncate"
+                          >
+                            + Add to Certifications
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -3537,6 +3733,14 @@ export default function ResumeBuilder() {
                 title="Redo (Ctrl+Y)"
               >
                 <Redo size={15} />
+              </button>
+              <div className="w-px h-4 bg-gray-200 mx-0.5 md:mx-1"></div>
+              <button
+                onClick={handleResetToBlank}
+                className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors flex items-center justify-center cursor-pointer"
+                title="Reset/Clear to Blank Custom Template"
+              >
+                <Eraser size={15} />
               </button>
             </div>
           </div>
