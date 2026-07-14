@@ -873,6 +873,15 @@ export default function ResumeBuilder() {
   const [aiIsGenerating, setAiIsGenerating] = useState(false);
   const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom" | "parser">("summary");
 
+  const handleApplyAI = () => {
+    if (aiPresetType === "summary") {
+      setSummary(aiOutput);
+      toast.success("Applied to summary! ✨");
+    } else {
+      toast.error("Apply functionality for this type is coming soon. Please copy and paste.");
+    }
+  };
+
   const handleGenerateAI = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -1212,6 +1221,10 @@ export default function ResumeBuilder() {
     educations,
     design,
     profilePhoto,
+    user,
+    resumeId,
+    historyIndex,
+    history.length
   ]);
 
   useEffect(() => {
@@ -3450,6 +3463,15 @@ export default function ResumeBuilder() {
                           >
                             <Copy size={12} />
                             <span>Copy</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleApplyAI}
+                            className="p-1 hover:bg-blue-100 rounded text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                            title="Apply to Resume"
+                          >
+                            <Check size={12} />
+                            <span>Apply</span>
                           </button>
                           {aiPresetType === "summary" && (
                             <button
