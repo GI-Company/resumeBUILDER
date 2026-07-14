@@ -85,6 +85,39 @@ export async function POST(req: NextRequest) {
               }
             ],
             temperature: typeof temperature === 'number' ? temperature : 0.4,
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "improve_resume_summary",
+                  description: "Refine a resume summary for impact and clarity.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      originalSummary: { type: "string" },
+                      targetRole: { type: "string" }
+                    },
+                    required: ["originalSummary"]
+                  }
+                }
+              },
+              {
+                type: "function",
+                function: {
+                  name: "rewrite_bullet_points",
+                  description: "Rewrite experience bullet points using STAR method and action verbs.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      rawBullets: { type: "string" },
+                      metricFocus: { type: "boolean" }
+                    },
+                    required: ["rawBullets"]
+                  }
+                }
+              }
+            ],
+            tool_choice: "auto"
           }),
         });
 

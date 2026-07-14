@@ -142,3 +142,38 @@ BEGIN
     RETURN json_build_object('success', true, 'code', 'OK', 'id', v_final_id);
 END;
 $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC: Set Resume Status (Trash/Archive)
+CREATE OR REPLACE FUNCTION set_resume_status(p_id UUID, p_status TEXT)
+RETURNS JSON AS $BODY$
+DECLARE
+    v_user_id UUID := auth.uid();
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM resumes WHERE id = p_id AND user_id = v_user_id) THEN
+        RETURN json_build_object('success', false, 'code', 'UNAUTHORIZED', 'message', 'Unauthorized');
+    END IF;
+
+    UPDATE resumes SET status = p_status, updated_at = NOW() WHERE id = p_id;
+    RETURN json_build_object('success', true, 'code', 'OK');
+END;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC: Duplicate Resume
+CREATE OR REPLACE FUNCTION duplicate_resume(p_id UUID)
+RETURNS JSON AS $BODY$
+DECLARE
+    v_user_id UUID := auth.uid();
+    v_new_id UUID := gen_random_uuid();
+    v_content JSONB;
+BEGIN
+    SELECT content INTO v_content FROM resumes WHERE id = p_id AND user_id = v_user_id;
+    IF v_content IS NULL THEN
+        RETURN json_build_object('success', false, 'code', 'UNAUTHORIZED', 'message', 'Resume not found or unauthorized');
+    END IF;
+
+    INSERT INTO resumes (id, user_id, content, status, updated_at)
+    VALUES (v_new_id, v_user_id, v_content, 'active', NOW());
+    
+    RETURN json_build_object('success', true, 'code', 'OK', 'id', v_new_id);
+END;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;

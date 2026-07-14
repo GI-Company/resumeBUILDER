@@ -3031,6 +3031,10 @@ export default function ResumeBuilder() {
                   </div>
                 </>
               )}
+              
+              <div className="mt-4 pt-4 border-t border-gray-100 text-[10px] text-gray-400 text-center">
+                Agent Rez AI is provided "as-is". Please verify all AI-generated content before use.
+              </div>
             </div>
           )}
 
