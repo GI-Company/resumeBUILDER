@@ -82,20 +82,7 @@ export async function POST(req: NextRequest) {
     // 1. Get client IP address for robust rate limiting
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || (req as any).ip || '127.0.0.1';
     
-    // 2. Enforce 5 AI requests per IP address every 24 hours from first request
-    const rateLimit = checkAndIncrementRateLimit(ip);
-    
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `AI Rate limit exceeded. You are allowed 5 requests per 24 hours. Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
-        },
-        { status: 429 }
-      );
-    }
-
-    // 3. Optional JWT auth: Logged-in users can be identified, but guests are allowed up to the rate limit
+    // 2. Extract JWT auth: Logged-in users can be identified, and get unlimited requests
     let userObj = null;
     const authHeader = req.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -107,6 +94,21 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         console.warn('Optional auth verification failed:', err);
+      }
+    }
+
+    // 3. Enforce 5 AI requests per IP address every 24 hours ONLY for guests
+    let rateLimit = { allowed: true, count: 0, remaining: 9999, resetTime: new Date() };
+    if (!userObj) {
+      rateLimit = checkAndIncrementRateLimit(ip);
+      if (!rateLimit.allowed) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `AI Rate limit exceeded. Guest tier is limited to 5 requests per 24 hours. Please Log In or Sign Up for 100% FREE unlimited AI requests! Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
+          },
+          { status: 429 }
+        );
       }
     }
 

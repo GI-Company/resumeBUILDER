@@ -13,7 +13,7 @@ const ResumeBuilder = dynamic(() => import('@/components/ResumeBuilder'), {
 export default function Page() {
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showBuilder, setShowBuilder] = useState(true);
+  const [showBuilder, setShowBuilder] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

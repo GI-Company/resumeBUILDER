@@ -33,6 +33,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowDownToLine,
+  MessageSquare,
+  Send,
+  Bot,
+  RefreshCw,
+  Play,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -139,7 +145,7 @@ const TEMPLATES = [
     itemSpacing: 16,
     jobLayout: "stacked",
     paper: "#ffffff",
-    boxOpacity: 100,
+    boxOpacity: 0,
     boxShadow: "none",
     borderStyle: "none",
     backdropBlur: 0,
@@ -152,7 +158,7 @@ const TEMPLATES = [
     heading: "'Kalam',cursive",
     body: "'Lora',serif",
     accent: "#3a353a",
-    panel: "#f4f3f3",
+    panel: "#ffffff",
     radius: 10,
     headingStyle: "bar",
     italic: true,
@@ -162,9 +168,9 @@ const TEMPLATES = [
     itemSpacing: 16,
     jobLayout: "stacked",
     paper: "#ffffff",
-    boxOpacity: 100,
-    boxShadow: "soft",
-    borderStyle: "hairline",
+    boxOpacity: 0,
+    boxShadow: "none",
+    borderStyle: "none",
     backdropBlur: 0,
   },
   {
@@ -175,7 +181,7 @@ const TEMPLATES = [
     heading: "'Poppins',sans-serif",
     body: "'Inter',sans-serif",
     accent: "#2f5d62",
-    panel: "#eef3f2",
+    panel: "#ffffff",
     radius: 6,
     headingStyle: "underline",
     italic: false,
@@ -186,8 +192,8 @@ const TEMPLATES = [
     jobLayout: "split",
     paper: "#ffffff",
     boxOpacity: 90,
-    boxShadow: "glass",
-    borderStyle: "accent",
+    boxShadow: "none",
+    borderStyle: "none",
     backdropBlur: 8,
   },
   {
@@ -198,7 +204,7 @@ const TEMPLATES = [
     heading: "'Playfair Display',serif",
     body: "'Source Serif 4',serif",
     accent: "#4a3324",
-    panel: "#f6f1ea",
+    panel: "#ffffff",
     radius: 2,
     headingStyle: "plain",
     italic: true,
@@ -231,7 +237,7 @@ const TEMPLATES = [
     itemSpacing: 16,
     jobLayout: "split",
     paper: "#ffffff",
-    boxOpacity: 100,
+    boxOpacity: 0,
     boxShadow: "none",
     borderStyle: "none",
     backdropBlur: 0,
@@ -256,7 +262,7 @@ const TEMPLATES = [
     paper: "#ffffff",
     boxOpacity: 95,
     boxShadow: "medium",
-    borderStyle: "hairline",
+    borderStyle: "none",
     backdropBlur: 4,
   },
   {
@@ -410,7 +416,7 @@ export default function ResumeBuilder() {
     fontHeading: "'Kalam',cursive",
     fontBody: "'Lora',serif",
     accent: "#3a353a",
-    panel: "#f4f3f3",
+    panel: "#ffffff",
     paper: "#ffffff",
     layout: "classic",
     scale: 100,
@@ -426,8 +432,8 @@ export default function ResumeBuilder() {
     itemSpacing: 16,
     jobLayout: "stacked",
     boxOpacity: 95,
-    boxShadow: "soft",
-    borderStyle: "hairline",
+    boxShadow: "none",
+    borderStyle: "none",
     backdropBlur: 4,
   });
 
@@ -900,6 +906,326 @@ export default function ResumeBuilder() {
   const [aiIsGenerating, setAiIsGenerating] = useState(false);
   const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom" | "parser">("summary");
 
+  // Agentic Interactive Chat & Interview state
+  const [aiAgentTab, setAiAgentTab] = useState<"presets" | "agent">("agent");
+  const [interviewStep, setInterviewStep] = useState<number>(-1); // -1 means inactive, 0 to 4 means active step
+  const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
+  const [agentChatInput, setAgentChatInput] = useState("");
+  const [isAgentResponding, setIsAgentResponding] = useState(false);
+  const [agentMessages, setAgentMessages] = useState<Array<{ role: "user" | "assistant" | "system", content: string, actionExecuted?: string }>>([
+    {
+      role: "assistant",
+      content: "👋 Hello! I am **Agent Rez**, your personal AI Career Agent. I can build or refine your entire resume in real-time.\n\nChoose an option below to get started:",
+    }
+  ]);
+
+  const applyParsedResumeToState = (data: any) => {
+    isHistoryActionRef.current = true;
+    
+    if (data.name) setName(data.name);
+    if (data.contactLine) setContactLine(data.contactLine);
+    if (data.summary) setSummary(data.summary);
+    
+    if (data.experiences && Array.isArray(data.experiences)) {
+      const sanitizedExps = data.experiences.map((exp: any, i: number) => ({
+        id: exp.id || `exp-ai-${i}-${Date.now()}`,
+        title: exp.title || "",
+        date: exp.date || "",
+        bullets: Array.isArray(exp.bullets)
+          ? exp.bullets.map((b: any, j: number) => ({
+              id: b.id || `b-ai-${i}-${j}-${Date.now()}`,
+              text: typeof b === "string" ? b : (b.text || ""),
+            }))
+          : [],
+        meta: exp.meta || "",
+      }));
+      setExperiences(sanitizedExps);
+    }
+    
+    if (data.educations && Array.isArray(data.educations)) {
+      const sanitizedEdus = data.educations.map((edu: any, i: number) => ({
+        id: edu.id || `edu-ai-${i}-${Date.now()}`,
+        degree: edu.degree || "",
+        bullets: Array.isArray(edu.bullets)
+          ? edu.bullets.map((b: any, j: number) => ({
+              id: b.id || `eb-ai-${i}-${j}-${Date.now()}`,
+              text: typeof b === "string" ? b : (b.text || ""),
+            }))
+          : [],
+      }));
+      setEducations(sanitizedEdus);
+    }
+    
+    if (data.skills) {
+      const skillArray = Array.isArray(data.skills) ? data.skills : [data.skills];
+      const sanitizedSkills = skillArray.map((sk: any, i: number) => ({
+        id: sk.id || `sk-ai-${i}-${Date.now()}`,
+        title: sk.title || "Skills",
+        items: sk.items || "",
+      }));
+      setSkills(sanitizedSkills);
+    }
+  };
+
+  const handleStartInterview = () => {
+    setInterviewStep(0);
+    setInterviewAnswers({});
+    setAgentMessages([
+      {
+        role: "assistant",
+        content: "🚀 **Let's start your Guided Career Interview!** I'll ask you a series of 5 quick questions to capture everything we need to build your perfect resume.\n\n**Step 1/5:** What is your **Full Name** and **Target Job Title**? (e.g., 'Jane Doe, Senior Product Manager')",
+      }
+    ]);
+    toast.success("Guided Interview started! 🎙️");
+  };
+
+  const handleSendAgentMessage = async (textToSend?: string) => {
+    const rawInput = textToSend !== undefined ? textToSend : agentChatInput;
+    if (!rawInput.trim()) return;
+
+    const userMsg = { role: "user" as const, content: rawInput };
+    const updatedMessages = [...agentMessages, userMsg];
+    setAgentMessages(updatedMessages);
+    setAgentChatInput("");
+    setIsAgentResponding(true);
+
+    try {
+      // 1. If in Interview Mode
+      if (interviewStep >= 0) {
+        const currentAnswers = { ...interviewAnswers };
+        currentAnswers[`step${interviewStep}`] = rawInput;
+        setInterviewAnswers(currentAnswers);
+        
+        const nextStepNum = interviewStep + 1;
+        setInterviewStep(nextStepNum);
+
+        if (nextStepNum === 1) {
+          const assistantMsg = {
+            role: "assistant" as const,
+            content: "Great! 📬 **Step 2/5:** What are your preferred **contact details**? (e.g., city/state, phone, email, LinkedIn link)"
+          };
+          setAgentMessages([...updatedMessages, assistantMsg]);
+          setIsAgentResponding(false);
+          return;
+        } else if (nextStepNum === 2) {
+          const assistantMsg = {
+            role: "assistant" as const,
+            content: "Excellent. 💼 **Step 3/5:** Tell me about your **Work Experience**. Mention your recent job titles, company names, dates, and what you achieved or did there. (Feel free to write informal notes or paste bullet points!)"
+          };
+          setAgentMessages([...updatedMessages, assistantMsg]);
+          setIsAgentResponding(false);
+          return;
+        } else if (nextStepNum === 3) {
+          const assistantMsg = {
+            role: "assistant" as const,
+            content: "Got it. 🎓 **Step 4/5:** What about your **Education & Certifications**? (e.g., B.S. in CS from UC Berkeley, Certifications from AWS/Scrum)"
+          };
+          setAgentMessages([...updatedMessages, assistantMsg]);
+          setIsAgentResponding(false);
+          return;
+        } else if (nextStepNum === 4) {
+          const assistantMsg = {
+            role: "assistant" as const,
+            content: "Wonderful! 🛠️ **Step 5/5:** What are your **Core Skills & Technologies**? (e.g., React, Node.js, Python, Project Management, Agile)"
+          };
+          setAgentMessages([...updatedMessages, assistantMsg]);
+          setIsAgentResponding(false);
+          return;
+        } else {
+          // Interview completed!
+          setInterviewStep(-1);
+          
+          const generatingMsg = {
+            role: "assistant" as const,
+            content: "⚙️ **All answers collected!** I am compiling your details and drafting a complete, professional, impact-driven resume in the editor using our high-speed Groq AI model. This will take a few seconds..."
+          };
+          setAgentMessages([...updatedMessages, generatingMsg]);
+
+          const compilePrompt = `Please compile a complete, highly professional, impact-driven resume based on these career interview answers:
+          - Name & Target Role: ${currentAnswers.step0}
+          - Contact Details: ${currentAnswers.step1}
+          - Work Experience: ${currentAnswers.step2}
+          - Education & Certifications: ${currentAnswers.step3}
+          - Skills & Competencies: ${rawInput}
+          
+          Generate the professional experience with high-impact STAR method bullet points. Return the full resume in our specialized JSON format.`;
+
+          const systemPrompt = `You are an elite, world-class resume-writing expert. Based on the user's answers, write an exceptional resume.
+          
+          You MUST wrap the complete resume JSON inside <UPDATE_RESUME> and </UPDATE_RESUME> XML tags.
+          
+          The structure MUST EXACTLY be:
+          <UPDATE_RESUME>
+          {
+            "name": "Jane Doe",
+            "contactLine": "City, ST | (123) 456-7890 | email@domain.com | linkedin.com/in/username",
+            "summary": "Professional summary...",
+            "experiences": [
+              {
+                "title": "Senior Frontend Engineer | Tech Company",
+                "date": "Jan 2022 - Present",
+                "bullets": [
+                  { "text": "Designed and deployed..." },
+                  { "text": "Collaborated with..." }
+                ],
+                "meta": "Stack: React, TypeScript, Tailwind"
+              }
+            ],
+            "educations": [
+              {
+                "degree": "B.S. in Computer Science | University Name",
+                "bullets": [
+                  { "text": "GPA 3.8, Honors" }
+                ]
+              }
+            ],
+            "skills": [
+              {
+                "title": "Programming Languages",
+                "items": "TypeScript, JavaScript, Python"
+              },
+              {
+                "title": "Frameworks & Databases",
+                "items": "React, Next.js, PostgreSQL"
+              }
+            ]
+          }
+          </UPDATE_RESUME>
+          
+          Provide a friendly, conversational message before the XML block congratulating the user on finishing their career interview and explaining how their resume was crafted.`;
+
+          const response = await fetch("/api/groq", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: compilePrompt,
+              systemPrompt,
+              temperature: 0.3
+            })
+          });
+
+          const resData = await response.json();
+          if (!response.ok || !resData.success) {
+            throw new Error(resData.error || "Failed to compile resume.");
+          }
+
+          const textResponse = resData.text;
+          const updatedHistory = [...updatedMessages, generatingMsg];
+          const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
+          let actionExecuted = undefined;
+
+          if (updateMatch) {
+            try {
+              const parsed = JSON.parse(updateMatch[1].trim());
+              applyParsedResumeToState(parsed);
+              actionExecuted = "updated_resume";
+              toast.success("Resume compiled and loaded! ✨");
+            } catch (err) {
+              console.error("Failed to parse compile JSON:", err);
+            }
+          }
+
+          setAgentMessages([
+            ...updatedHistory,
+            {
+              role: "assistant" as const,
+              content: textResponse,
+              actionExecuted
+            }
+          ]);
+          setIsAgentResponding(false);
+          return;
+        }
+      }
+
+      // 2. Chat / Refinement Mode (Not in Interview)
+      const systemPrompt = `You are Agent Rez, an elite AI Career Agent who has direct access to update the user's active resume draft in real-time.
+      
+      The user's current resume state is:
+      ${JSON.stringify({ name, contactLine, summary, experiences, educations, skills })}
+      
+      The user is talking to you or instructing you to make changes.
+      You must respond to the user in a friendly, professional, and encouraging tone.
+      
+      CRITICAL DIRECTIVE: If the user asks you to edit, change, rewrite, add, or delete anything in their resume, you MUST embed a complete, updated resume JSON block within <UPDATE_RESUME> and </UPDATE_RESUME> XML tags in your response. 
+      
+      Example:
+      "I have updated your skills section to include Kubernetes. Here is the updated draft in the editor:
+      <UPDATE_RESUME>
+      {
+        "name": "Alex Morgan",
+        "contactLine": "...",
+        "summary": "...",
+        "experiences": [...],
+        "educations": [...],
+        "skills": [...]
+      }
+      </UPDATE_RESUME>"
+      
+      Make sure the JSON matches the schema exactly:
+      - name: string
+      - contactLine: string
+      - summary: string
+      - experiences: [{ id, title, date, bullets: [{ id, text }], meta }]
+      - educations: [{ id, degree, bullets: [{ id, text }] }]
+      - skills: [{ id, title, items }]
+      
+      Ensure each object in experiences, educations, and skills has a unique 'id' string (e.g., 'exp-X', 'edu-X', 'sk-X').
+      If the user is just asking a question and no resume changes are needed, do not include the <UPDATE_RESUME> tags. Just reply conversationally.`;
+
+      const response = await fetch("/api/groq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: rawInput,
+          systemPrompt,
+          temperature: 0.4
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.error || "Failed to generate response.");
+      }
+
+      const textResponse = resData.text;
+      const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
+      let actionExecuted = undefined;
+
+      if (updateMatch) {
+        try {
+          const parsed = JSON.parse(updateMatch[1].trim());
+          applyParsedResumeToState(parsed);
+          actionExecuted = "updated_resume";
+          toast.success("Resume updated live! ✨");
+        } catch (err) {
+          console.error("Failed to parse update JSON:", err);
+          toast.error("Failed to apply active edits automatically.");
+        }
+      }
+
+      setAgentMessages([
+        ...updatedMessages,
+        {
+          role: "assistant" as const,
+          content: textResponse,
+          actionExecuted
+        }
+      ]);
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+      setAgentMessages([
+        ...updatedMessages,
+        {
+          role: "assistant" as const,
+          content: `❌ **Error:** ${err.message || "An error occurred while communicating with Groq."}`
+        }
+      ]);
+    } finally {
+      setIsAgentResponding(false);
+    }
+  };
+
   const handleApplyAI = () => {
     if (aiPresetType === "summary") {
       setSummary(aiOutput);
@@ -1061,9 +1387,9 @@ export default function ResumeBuilder() {
       if (data.summary) setSummary(data.summary);
       if (data.experiences) setExperiences(data.experiences);
       if (data.educations) setEducations(data.educations);
-      if (data.skills) setSkills([data.skills]);
+      if (data.skills) setSkills(Array.isArray(data.skills) ? data.skills : [data.skills]);
       
-      toast.success("Resume parsed and applied! ✨");
+      toast.success("Resume built and applied! ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
     } finally {
@@ -2119,7 +2445,7 @@ export default function ResumeBuilder() {
             </button>
             {id === "licenses" && (
               <button
-                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
+                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setLicenses([
                     ...licenses,
@@ -2135,7 +2461,7 @@ export default function ResumeBuilder() {
             )}
             {id === "skills" && (
               <button
-                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
+                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setSkills([
                     ...skills,
@@ -2152,7 +2478,7 @@ export default function ResumeBuilder() {
             )}
             {id === "experience" && (
               <button
-                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
+                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setExperiences([
                     ...experiences,
@@ -2173,7 +2499,7 @@ export default function ResumeBuilder() {
             )}
             {id === "education" && (
               <button
-                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
+                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setEducations([
                     ...educations,
@@ -2365,120 +2691,7 @@ export default function ResumeBuilder() {
         </div>
       )}
 
-      {/* Left Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 md:h-screen md:relative w-full md:w-20 bg-white border-t md:border-t-0 md:border-r border-gray-200 flex flex-row md:flex-col items-center justify-around md:justify-start py-1 md:py-4 z-40 no-print shrink-0 shadow-sm">
-        <div className="hidden md:flex font-[family:'Kalam',cursive] font-bold text-lg mb-8 text-gray-800 w-10 h-10 items-center justify-center bg-gray-100 rounded-xl">
-          M
-        </div>
 
-        <button
-          onClick={() =>
-            setActiveSidebarTab(
-              activeSidebarTab === "templates" ? null : "templates",
-            )
-          }
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-3 rounded-xl md:mb-2 transition-all hover:bg-gray-100",
-            activeSidebarTab === "templates" && "bg-gray-100 text-blue-600",
-          )}
-        >
-          <FileText size={20} />
-          <span className="text-[11px] font-medium">Templates</span>
-        </button>
-        <button
-          onClick={() =>
-            setActiveSidebarTab(activeSidebarTab === "design" ? null : "design")
-          }
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-3 rounded-xl md:mb-2 transition-all hover:bg-gray-100",
-            activeSidebarTab === "design" && "bg-gray-100 text-blue-600",
-          )}
-        >
-          <Palette size={20} />
-          <span className="text-[11px] font-medium">Design</span>
-        </button>
-        <button
-          onClick={() =>
-            setActiveSidebarTab(
-              activeSidebarTab === "content" ? null : "content",
-            )
-          }
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-3 rounded-xl md:mb-2 transition-all hover:bg-gray-100",
-            activeSidebarTab === "content" && "bg-gray-100 text-blue-600",
-          )}
-        >
-          <Plus size={20} />
-          <span className="text-[11px] font-medium">Add</span>
-        </button>
-        <button
-          onClick={() =>
-            setActiveSidebarTab(
-              activeSidebarTab === "photo" ? null : "photo",
-            )
-          }
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-3 rounded-xl md:mb-2 transition-all hover:bg-gray-100",
-            activeSidebarTab === "photo" && "bg-gray-100 text-blue-600",
-          )}
-        >
-          <ImageIcon size={20} />
-          <span className="text-[11px] font-medium">Photo</span>
-        </button>
-        <button
-          onClick={() =>
-            setActiveSidebarTab(
-              activeSidebarTab === "ai" ? null : "ai",
-            )
-          }
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-3 rounded-xl md:mb-2 transition-all hover:bg-gray-100",
-            activeSidebarTab === "ai" && "bg-gray-100 text-blue-600",
-          )}
-        >
-          <Sparkles size={20} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} />
-          <span className="text-[11px] font-medium">AI Tools</span>
-        </button>
-
-        <div className="md:mt-auto flex flex-row md:flex-col items-center gap-2">
-          <button
-            onClick={() => setTutorialOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-2 rounded-xl transition-all hover:bg-gray-100 text-gray-600 hover:text-gray-900"
-          >
-            <HelpCircle size={18} />
-          </button>
-
-          <div className="relative">
-            <button
-              onClick={() =>
-                setActiveSidebarTab(
-                  activeSidebarTab === "account" ? null : "account",
-                )
-              }
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-2 rounded-xl transition-all hover:bg-gray-100",
-                activeSidebarTab === "account"
-                  ? "bg-gray-100 text-blue-600"
-                  : "text-gray-600 hover:text-gray-900",
-              )}
-            >
-              {user ? (
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center">
-                  <img
-                    src={user.user_metadata?.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex"}
-                    alt="User avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center">
-                  <UserIcon size={18} />
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Secondary Sidebar */}
       {activeSidebarTab && (
@@ -3755,8 +3968,8 @@ export default function ResumeBuilder() {
 
           {/* AI Tools Panel */}
           {activeSidebarTab === "ai" && (
-            <div className="flex-1 p-5 flex flex-col h-full overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
+            <div className="flex-1 p-4 flex flex-col h-full overflow-hidden">
+              <div className="flex items-center justify-between mb-3 shrink-0">
                 <div className="flex items-center gap-1.5 text-amber-500">
                   <Sparkles size={18} className="animate-pulse" />
                   <h2 className="text-sm font-bold uppercase tracking-wider text-gray-800">
@@ -3765,7 +3978,7 @@ export default function ResumeBuilder() {
                 </div>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -3773,235 +3986,450 @@ export default function ResumeBuilder() {
 
               {/* Rate Limit Status Banner */}
               <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 text-left mb-3 shrink-0">
-                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-[11px] uppercase tracking-wider">
-                  <Sparkles size={12} className="animate-pulse" />
+                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-[10px] uppercase tracking-wider">
+                  <Sparkles size={11} className="animate-pulse" />
                   <span>Rate Limit Status</span>
                 </div>
                 <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
-                  Guest Tier: <b>{aiRemaining !== null ? aiRemaining : 5} / 5</b> AI requests remaining for today.
+                  Daily Limit: <b>{user ? "Unlimited (Signed-up Tier)" : `${aiRemaining !== null ? aiRemaining : 5} / 5`}</b> requests remaining today.
                 </p>
                 {!user && (
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="text-[11px] font-semibold text-blue-600 hover:underline mt-1.5 flex items-center gap-0.5"
+                    className="text-[10px] font-semibold text-blue-600 hover:underline mt-1.5 flex items-center gap-0.5"
                   >
                     Log In / Sign Up for unlimited cloud saving 🔑
                   </button>
                 )}
               </div>
 
-              {/* Full AI Assistant Panel */}
-              <div className="flex-1 flex flex-col min-h-0 space-y-3">
-                {/* Category select buttons */}
-                <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAiPresetType("summary");
-                      setAiOutput("");
-                    }}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
-                      aiPresetType === "summary"
-                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-600 hover:text-gray-800"
-                    )}
-                  >
-                    Summary
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAiPresetType("bullets");
-                      setAiOutput("");
-                    }}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
-                      aiPresetType === "bullets"
-                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-600 hover:text-gray-800"
-                    )}
-                  >
-                    Bullet Points
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAiPresetType("parser");
-                      setAiOutput("");
-                    }}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
-                      aiPresetType === "parser"
-                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-600 hover:text-gray-800"
-                    )}
-                  >
-                    Parser
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAiPresetType("custom");
-                      setAiOutput("");
-                    }}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
-                      aiPresetType === "custom"
-                        ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-600 hover:text-gray-800"
-                    )}
-                  >
-                    Custom
-                  </button>
-                </div>
-
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (aiPresetType === "parser") handleParseResume(aiInput);
-                    else handleGenerateAI(e);
-                  }}
-                  className="shrink-0 flex flex-col space-y-2"
+              {/* Agent Mode Selector Tabs */}
+              <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setAiAgentTab("agent")}
+                  className={cn(
+                    "flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
+                    aiAgentTab === "agent"
+                      ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                      : "text-gray-600 hover:text-gray-800"
+                  )}
                 >
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
-                      {aiPresetType === "summary" && "Polish Professional Summary"}
-                      {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
-                      {aiPresetType === "parser" && "Parse Old Resume"}
-                      {aiPresetType === "custom" && "Custom AI Prompt / Query"}
-                    </label>
-                    {aiPresetType === "summary" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAiInput(summary);
-                          toast.success("Current summary imported! 📥");
-                        }}
-                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
-                      >
-                        📥 Load current
-                      </button>
-                    )}
-                  </div>
+                  <Bot size={14} />
+                  <span>AI Agent</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiAgentTab("presets")}
+                  className={cn(
+                    "flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
+                    aiAgentTab === "presets"
+                      ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                      : "text-gray-600 hover:text-gray-800"
+                  )}
+                >
+                  <Sparkles size={14} />
+                  <span>Quick Tools</span>
+                </button>
+              </div>
 
-                  <textarea
-                    value={aiInput}
-                    onChange={(e) => setAiInput(e.target.value)}
-                    required
-                    className="w-full p-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 resize-none"
-                    placeholder={
-                      aiPresetType === "summary"
-                        ? "Enter your current summary draft, background, or goals."
-                        : aiPresetType === "bullets"
-                        ? "Paste experience bullet points to rewrite... (using STAR methodology)"
-                        : aiPresetType === "parser"
-                        ? "Paste your old resume text here..."
-                        : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords')"
-                    }
-                    rows={3}
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={aiIsGenerating || !aiInput.trim()}
-                    className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl py-2 text-xs font-bold hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    {aiIsGenerating ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>{aiPresetType === "parser" ? "Parsing..." : "Generating suggestions..."}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={14} />
-                        <span>{aiPresetType === "parser" ? "Parse Resume" : "Generate AI suggestions"}</span>
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                {/* AI Output Result Box with targets list */}
-                <div className="flex-1 flex flex-col min-h-0 bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
-                  <div className="flex items-center justify-between mb-2 shrink-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
-                      AI Output Suggestions
-                    </span>
-                    {aiOutput && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(aiOutput);
-                          toast.success("Copied to clipboard! 📋");
-                        }}
-                        className="p-1 hover:bg-gray-200 rounded text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
-                        title="Copy to Clipboard"
-                      >
-                        <Copy size={12} />
-                        <span>Copy</span>
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex-1 overflow-y-auto text-xs text-gray-800 leading-relaxed font-sans whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2.5 mb-2.5">
-                    {aiOutput ? (
-                      aiOutput
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center text-gray-600 p-4">
-                        <Sparkles size={24} className="opacity-30 mb-2 text-amber-500" />
-                        <p className="text-[11px]">Your professional suggestions will appear here.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {aiOutput && (
-                    <div className="shrink-0 border-t border-gray-200 pt-2.5 space-y-2">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-600">
-                        ⚡ Quick Apply to Resume Sections:
-                      </span>
-                      <div className="grid grid-cols-1 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                        <button
-                          onClick={() => handleApplyToTarget("summary")}
-                          className="w-full text-left p-1.5 text-[11px] bg-blue-50 border border-blue-200 hover:border-blue-300 hover:bg-blue-100 text-blue-900 font-bold rounded transition-all"
+              {/* Full AI Assistant Panel content */}
+              <div className="flex-1 flex flex-col min-h-0">
+                {aiAgentTab === "agent" ? (
+                  <div className="flex-1 flex flex-col min-h-0 h-full">
+                    {/* Chat Messages */}
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-3 mb-3 bg-gray-50/50 rounded-xl p-3 border border-gray-200/60 max-h-[calc(100vh-290px)] min-h-[150px] flex flex-col">
+                      {agentMessages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "flex flex-col max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed shadow-sm",
+                            msg.role === "user"
+                              ? "bg-blue-600 text-white rounded-tr-none self-end text-left"
+                              : "bg-white text-gray-800 border border-gray-200 rounded-tl-none self-start text-left"
+                          )}
                         >
-                          ✨ Apply to Professional Summary
-                        </button>
-                        
-                        {experiences.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="block text-[8px] font-bold uppercase tracking-widest text-gray-600 pl-1 mt-1">
-                              Append Bullets to Professional Job:
-                            </span>
-                            {experiences.map((exp) => (
-                              <button
-                                key={exp.id}
-                                onClick={() => handleApplyToTarget("experience-bullets", exp.id)}
-                                className="w-full text-left p-1.5 text-[11px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate block"
-                                title={`Append as bullet points to ${exp.title}`}
-                              >
-                                + Append to: {exp.title.split("|")[0].trim()}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                          <div className="whitespace-pre-wrap font-sans">
+                            {msg.content.split("\n").map((line, lIdx) => {
+                              let rendered = line;
+                              
+                              if (rendered.includes("<UPDATE_RESUME>")) {
+                                rendered = rendered.split("<UPDATE_RESUME>")[0] + "\n*(Resume loaded in editor!)*";
+                              }
+                              if (rendered.includes("</UPDATE_RESUME>")) {
+                                return null;
+                              }
+                              
+                              const isBullet = rendered.startsWith("•") || rendered.startsWith("- ") || rendered.startsWith("* ");
+                              
+                              const parts = rendered.split(/\*\*(.*?)\*\*/g);
+                              const element = parts.map((part, pIdx) => {
+                                if (pIdx % 2 === 1) {
+                                  return <strong key={pIdx} className="font-bold">{part}</strong>;
+                                }
+                                return part;
+                              });
 
-                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-gray-100">
+                              return (
+                                <div key={lIdx} className={cn(isBullet ? "pl-2 py-0.5" : "py-0.5")}>
+                                  {element}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {msg.actionExecuted === "updated_resume" && (
+                            <div className="mt-2 pt-1.5 border-t border-gray-100 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                              <CheckSquare size={11} />
+                              <span>Applied changes to resume editor live!</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {isAgentResponding && (
+                        <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-none p-3 max-w-[85%] self-start flex items-center gap-1.5 text-xs text-gray-500 shadow-sm">
+                          <div className="flex gap-1">
+                            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                          <span>Agent Rez is thinking...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Interactive Interview HUD */}
+                    {interviewStep >= 0 ? (
+                      <div className="bg-indigo-50 border border-indigo-200/60 rounded-xl p-3 mb-3 shrink-0">
+                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-indigo-700">
+                          <span>🎙️ Guided Interview</span>
+                          <span>Step {interviewStep + 1} of 5</span>
+                        </div>
+                        <div className="w-full bg-indigo-200/55 h-1.5 rounded-full mt-2 overflow-hidden">
+                          <div
+                            className="bg-indigo-600 h-full transition-all duration-300"
+                            style={{ width: `${((interviewStep + 1) / 5) * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-gray-600 mt-2 leading-relaxed">
+                          Provide your details below to feed the AI resume engine.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInterviewStep(-1);
+                            setAgentMessages(prev => [
+                              ...prev,
+                              { role: "assistant", content: "Interview cancelled. You are now in conversational chat mode! Ask me to edit any parts of your resume or paste career details directly." }
+                            ]);
+                            toast("Interview cancelled.");
+                          }}
+                          className="text-[10px] font-bold text-red-600 hover:underline mt-1.5 cursor-pointer block"
+                        >
+                          Cancel & Switch to General Chat
+                        </button>
+                      </div>
+                    ) : (
+                      agentMessages.length <= 1 && (
+                        <div className="grid grid-cols-1 gap-2 mb-3 shrink-0">
                           <button
-                            onClick={() => handleApplyToTarget("skills-add")}
-                            className="text-left p-1.5 text-[9px] bg-gray-100 border border-gray-200 hover:border-gray-300 hover:bg-gray-200 text-gray-700 font-semibold rounded transition-all truncate"
+                            type="button"
+                            onClick={handleStartInterview}
+                            className="p-3 text-left bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl transition-all cursor-pointer shadow-sm group"
                           >
-                            + Add as Skills Group
+                            <div className="flex items-center gap-2 text-xs font-bold text-blue-700">
+                              <Bot size={15} className="animate-pulse text-indigo-600" />
+                              <span>🎙️ Start Guided Career Interview</span>
+                            </div>
+                            <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
+                              We'll ask you 5 quick questions step-by-step and draft a high-impact professional resume automatically.
+                            </p>
                           </button>
+                          
                           <button
-                            onClick={() => handleApplyToTarget("licenses-add")}
-                            className="text-left p-1.5 text-[9px] bg-gray-100 border border-gray-200 hover:border-gray-300 hover:bg-gray-200 text-gray-700 font-semibold rounded transition-all truncate"
+                            type="button"
+                            onClick={() => {
+                              setAgentMessages(prev => [
+                                ...prev,
+                                { role: "user", content: "Paste my old resume to rebuild" },
+                                { role: "assistant", content: "Go ahead and paste your old resume text or unstructured prompt right here in the chat, and I'll analyze it, optimize it using modern ATS keywords, and rebuild it in the editor for you!" }
+                              ]);
+                            }}
+                            className="p-3 text-left bg-white border border-gray-200 hover:border-blue-300 rounded-xl transition-all cursor-pointer shadow-sm group"
                           >
-                            + Add to Certifications
+                            <div className="flex items-center gap-2 text-xs font-bold text-gray-700 group-hover:text-blue-700">
+                              <FileText size={15} className="text-gray-500 group-hover:text-blue-500" />
+                              <span>📝 Paste Old Resume to Rebuild</span>
+                            </div>
+                            <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
+                              Analyze, rewrite, and format your outdated resume in seconds using Groq.
+                            </p>
                           </button>
                         </div>
-                      </div>
+                      )
+                    )}
+
+                    {/* Chat Input Bar */}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSendAgentMessage();
+                      }}
+                      className="flex items-center gap-2 mt-auto shrink-0 pt-2 border-t border-gray-100"
+                    >
+                      <input
+                        type="text"
+                        value={agentChatInput}
+                        onChange={(e) => setAgentChatInput(e.target.value)}
+                        disabled={isAgentResponding}
+                        placeholder={
+                          interviewStep >= 0
+                            ? `Step ${interviewStep + 1} answer...`
+                            : "Ask Agent Rez to update your resume..."
+                        }
+                        className="flex-1 p-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isAgentResponding || !agentChatInput.trim()}
+                        className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-40"
+                      >
+                        <Send size={14} />
+                      </button>
+                      {agentMessages.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAgentMessages([
+                              {
+                                role: "assistant",
+                                content: "👋 Hello! I am **Agent Rez**, your personal AI Career Agent. I can build or refine your entire resume in real-time.\n\nChoose an option below to get started:",
+                              }
+                            ]);
+                            setInterviewStep(-1);
+                            toast.success("Conversation cleared.");
+                          }}
+                          title="Reset Conversation"
+                          className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                      )}
+                    </form>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col min-h-0 space-y-3">
+                    {/* Category select buttons */}
+                    <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiPresetType("summary");
+                          setAiOutput("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer",
+                          aiPresetType === "summary"
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-600 hover:text-gray-800"
+                        )}
+                      >
+                        Summary
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiPresetType("bullets");
+                          setAiOutput("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer",
+                          aiPresetType === "bullets"
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-600 hover:text-gray-800"
+                        )}
+                      >
+                        Bullet Points
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiPresetType("parser");
+                          setAiOutput("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer",
+                          aiPresetType === "parser"
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-600 hover:text-gray-800"
+                        )}
+                      >
+                        Builder
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiPresetType("custom");
+                          setAiOutput("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer",
+                          aiPresetType === "custom"
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-600 hover:text-gray-800"
+                        )}
+                      >
+                        Custom
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (aiPresetType === "parser") handleParseResume(aiInput);
+                        else handleGenerateAI(e);
+                      }}
+                      className="shrink-0 flex flex-col space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                          {aiPresetType === "summary" && "Polish Professional Summary"}
+                          {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
+                          {aiPresetType === "parser" && "Build Resume from Prompt / Text"}
+                          {aiPresetType === "custom" && "Custom AI Prompt / Query"}
+                        </label>
+                        {aiPresetType === "summary" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAiInput(summary);
+                              toast.success("Current summary imported! 📥");
+                            }}
+                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                          >
+                            📥 Load current
+                          </button>
+                        )}
+                      </div>
+
+                      <textarea
+                        value={aiInput}
+                        onChange={(e) => setAiInput(e.target.value)}
+                        required
+                        className="w-full p-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 resize-none"
+                        placeholder={
+                          aiPresetType === "summary"
+                            ? "Enter your current summary draft, background, or goals."
+                            : aiPresetType === "bullets"
+                            ? "Paste experience bullet points to rewrite... (using STAR methodology)"
+                            : aiPresetType === "parser"
+                            ? "Describe your experience, paste an old resume, or provide unstructured notes..."
+                            : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords')"
+                        }
+                        rows={3}
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={aiIsGenerating || !aiInput.trim()}
+                        className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl py-2 text-xs font-bold hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        {aiIsGenerating ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>{aiPresetType === "parser" ? "Building Resume..." : "Generating suggestions..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={14} />
+                            <span>{aiPresetType === "parser" ? "Build Resume" : "Generate AI suggestions"}</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* AI Output Result Box with targets list */}
+                    <div className="flex-1 flex flex-col min-h-0 bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
+                      <div className="flex items-center justify-between mb-2 shrink-0">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                          AI Output Suggestions
+                        </span>
+                        {aiOutput && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(aiOutput);
+                              toast.success("Copied to clipboard! 📋");
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                            title="Copy to Clipboard"
+                          >
+                            <Copy size={12} />
+                            <span>Copy</span>
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex-1 overflow-y-auto text-xs text-gray-800 leading-relaxed font-sans whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2.5 mb-2.5">
+                        {aiOutput ? (
+                          aiOutput
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-center text-gray-600 p-4">
+                            <Sparkles size={24} className="opacity-30 mb-2 text-amber-500" />
+                            <p className="text-[11px]">Your professional suggestions will appear here.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {aiOutput && (
+                        <div className="shrink-0 border-t border-gray-200 pt-2.5 space-y-2">
+                          <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-600">
+                            ⚡ Quick Apply to Resume Sections:
+                          </span>
+                          <div className="grid grid-cols-1 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                            <button
+                              onClick={() => handleApplyToTarget("summary")}
+                              className="w-full text-left p-1.5 text-[11px] bg-blue-50 border border-blue-200 hover:border-blue-300 hover:bg-blue-100 text-blue-900 font-bold rounded transition-all cursor-pointer"
+                            >
+                              ✨ Apply to Professional Summary
+                            </button>
+                            
+                            {experiences.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="block text-[8px] font-bold uppercase tracking-widest text-gray-600 pl-1 mt-1">
+                                  Append Bullets to Professional Job:
+                                </span>
+                                {experiences.map((exp) => (
+                                  <button
+                                    key={exp.id}
+                                    onClick={() => handleApplyToTarget("experience-bullets", exp.id)}
+                                    className="w-full text-left p-1.5 text-[11px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate block cursor-pointer"
+                                    title={`Append as bullet points to ${exp.title}`}
+                                  >
+                                    + Append to: {exp.title.split("|")[0].trim()}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-gray-100">
+                              <button
+                                onClick={() => handleApplyToTarget("skills-add")}
+                                className="text-left p-1.5 text-[9px] bg-gray-100 border border-gray-200 hover:border-gray-300 hover:bg-gray-200 text-gray-700 font-semibold rounded transition-all truncate cursor-pointer"
+                              >
+                                + Add as Skills Group
+                              </button>
+                              <button
+                                onClick={() => handleApplyToTarget("licenses-add")}
+                                className="text-left p-1.5 text-[9px] bg-gray-100 border border-gray-200 hover:border-gray-300 hover:bg-gray-200 text-gray-700 font-semibold rounded transition-all truncate cursor-pointer"
+                              >
+                                + Add to Certifications
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -4011,7 +4439,7 @@ export default function ResumeBuilder() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f3f4f6] pb-16 md:pb-0">
         {/* Top Header */}
-        <div className="h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-20 no-print shrink-0 shadow-sm">
+        <div className="h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-20 no-print shrink-0 shadow-sm relative">
           <div className="flex items-center gap-2 md:gap-3">
             <span className="font-[family:'Kalam',cursive] font-bold text-base md:text-lg text-gray-800">
               MYresume
@@ -4048,66 +4476,181 @@ export default function ResumeBuilder() {
               </button>
             </div>
           </div>
+          
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm">
+            <button
+              onClick={() => setActiveSidebarTab(activeSidebarTab === "templates" ? null : "templates")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                activeSidebarTab === "templates" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              <FileText size={16} /> Templates
+            </button>
+            <button
+              onClick={() => setActiveSidebarTab(activeSidebarTab === "design" ? null : "design")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                activeSidebarTab === "design" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              <Palette size={16} /> Design
+            </button>
+            <button
+              onClick={() => setActiveSidebarTab(activeSidebarTab === "content" ? null : "content")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                activeSidebarTab === "content" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              <Plus size={16} /> Add
+            </button>
+            <button
+              onClick={() => setActiveSidebarTab(activeSidebarTab === "ai" ? null : "ai")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                activeSidebarTab === "ai" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              <Sparkles size={16} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} /> AI Tools
+            </button>
+          </div>
+
           <div className="flex items-center gap-1.5 md:gap-2">
+            <button
+              onClick={() => setTutorialOpen(true)}
+              className="p-1.5 md:px-3 md:py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-gray-100 text-gray-600 hover:text-gray-900 hidden md:flex items-center gap-1.5"
+            >
+              <HelpCircle size={16} /> Help
+            </button>
             <button
               onClick={handleSaveToCloud}
               disabled={isSaving}
-              className="bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-gray-200 inline-flex items-center gap-1 md:gap-1.5 transition-all disabled:opacity-50"
+              className="bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold hover:bg-gray-200 inline-flex items-center gap-1 md:gap-1.5 transition-all disabled:opacity-50"
             >
               <CloudUpload size={14} className="md:w-4 md:h-4" /> <span>{isSaving ? "Saving..." : "Save"}</span>
             </button>
             <button
               onClick={() => window.print()}
-              className="bg-blue-600 text-white border border-blue-600 px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold inline-flex items-center gap-1 md:gap-1.5 transition-all hover:bg-blue-700 active:scale-95 shadow-sm"
+              className="bg-blue-600 text-white border border-blue-600 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold inline-flex items-center gap-1 md:gap-1.5 transition-all hover:bg-blue-700 active:scale-95 shadow-sm"
             >
               <Printer size={14} className="md:w-4 md:h-4" /> <span>PDF</span>
+            </button>
+            <div className="w-px h-5 bg-gray-200 mx-1 hidden md:block"></div>
+            <button
+              onClick={() => setActiveSidebarTab(activeSidebarTab === "account" ? null : "account")}
+              className="relative hidden md:block rounded-full hover:ring-2 hover:ring-blue-100 transition-all"
+            >
+              {user ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center">
+                  <img
+                    src={user.user_metadata?.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex"}
+                    alt="User avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center">
+                  <UserIcon size={18} />
+                </div>
+              )}
             </button>
           </div>
         </div>
 
-        {/* Onboarding Wizard Banner */}
+        {/* Onboarding Wizard Modal */}
         {showOnboarding && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-4 px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10 no-print transition-all duration-300">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Fast Start</span>
-                <h4 className="text-sm font-bold text-gray-900">Kickstart your Resume in Seconds 🚀</h4>
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col md:flex-row border border-gray-100">
+              {/* Left visual area */}
+              <div className="bg-blue-600 p-8 flex-col justify-between hidden md:flex w-2/5 relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-6">
+                    <Sparkles className="text-white" size={24} />
+                  </div>
+                  <h3 className="text-white font-bold text-2xl leading-tight mb-3">Build a resume that stands out</h3>
+                  <p className="text-blue-100 text-sm mb-6">Join 10,000+ professionals who landed their dream jobs using our AI-powered builder.</p>
+                </div>
+                
+                <div className="space-y-3 relative z-10">
+                  <div className="flex items-center gap-2 text-white/90 text-sm font-medium">
+                    <Check size={16} className="text-blue-300" /> Free export to PDF
+                  </div>
+                  <div className="flex items-center gap-2 text-white/90 text-sm font-medium">
+                    <Check size={16} className="text-blue-300" /> ATS-friendly templates
+                  </div>
+                  <div className="flex items-center gap-2 text-white/90 text-sm font-medium">
+                    <Check size={16} className="text-blue-300" /> AI writing assistance
+                  </div>
+                </div>
+                
+                {/* Decorative background shapes */}
+                <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
+                <div className="absolute -top-16 -left-16 w-32 h-32 bg-blue-400/20 rounded-full blur-xl"></div>
               </div>
-              <p className="text-xs text-gray-600 mt-1 mb-2">
-                Don't start from scratch! Click one of our professionally-vetted personas to seed beautiful, realistic sample data that you can instantly edit.
-              </p>
-              <div className="flex items-center gap-3 text-[11px] font-semibold text-indigo-700/80">
-                 <span className="flex items-center gap-1"><Sparkles size={12}/> Average 22% salary increase reported</span>
-                 <span className="flex items-center gap-1"><Check size={12}/> Used by 10,000+ professionals</span>
+              
+              {/* Right content area */}
+              <div className="p-6 md:p-8 flex-1 flex flex-col relative">
+                <button
+                  onClick={() => setShowOnboarding(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Let's get started</h2>
+                <p className="text-gray-500 text-sm mb-6">How would you like to build your resume today?</p>
+                
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      handleLoadPersona("software");
+                      setShowOnboarding(false);
+                    }}
+                    className="w-full group relative flex items-center p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md hover:bg-blue-50/50 transition-all text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mr-4 group-hover:scale-110 transition-transform">
+                      <FileText size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Start with a Template Example</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">Seed with professional Software Engineer data</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowOnboarding(false);
+                      // Already blank by default
+                    }}
+                    className="w-full group relative flex items-center p-4 border border-gray-200 rounded-xl hover:border-gray-400 hover:shadow-md transition-all text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center shrink-0 mr-4 group-hover:scale-110 transition-transform">
+                      <Plus size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Start from Scratch</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">Build a blank resume customized to you</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      handleLoadPersona("design");
+                      setShowOnboarding(false);
+                    }}
+                    className="w-full group relative flex items-center p-4 border border-gray-200 rounded-xl hover:border-purple-500 hover:shadow-md hover:bg-purple-50/50 transition-all text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 mr-4 group-hover:scale-110 transition-transform">
+                      <Palette size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Load Creative Example</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">Seed with UX Designer data</p>
+                    </div>
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                onClick={() => handleLoadPersona("software")}
-                className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-blue-300 hover:text-blue-600 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-              >
-                💻 Software Engineer
-              </button>
-              <button
-                onClick={() => handleLoadPersona("product")}
-                className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-blue-300 hover:text-blue-600 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-              >
-                📈 Product Manager
-              </button>
-              <button
-                onClick={() => handleLoadPersona("design")}
-                className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-blue-300 hover:text-blue-600 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-              >
-                🎨 UX Designer
-              </button>
-              <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block"></div>
-              <button
-                onClick={() => setShowOnboarding(false)}
-                className="text-gray-600 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100/50 transition-all cursor-pointer flex items-center justify-center"
-                title="Dismiss Onboarding"
-              >
-                <X size={15} />
-              </button>
             </div>
           </div>
         )}
