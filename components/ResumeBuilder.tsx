@@ -30,6 +30,8 @@ import {
   Lock,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -839,6 +841,8 @@ export default function ResumeBuilder() {
   const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(
     "templates",
   );
+  const [sidebarWidth, setSidebarWidth] = useState<number>(320);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
 
   // Password update states
   const [currentPassword, setCurrentPassword] = useState("");
@@ -1209,6 +1213,230 @@ export default function ResumeBuilder() {
       }));
       toast.success("Resume cleared! Start building your customized template from scratch. 📝");
     }
+  };
+
+  const handleLoadPersona = (personaType: "software" | "product" | "design") => {
+    isHistoryActionRef.current = true;
+    if (personaType === "software") {
+      setName("ALEX MORGAN");
+      setContactLine("San Francisco, CA <span class=\"text-[var(--hairline)] mx-2\">|</span> (415) 555-0199 <span class=\"text-[var(--hairline)] mx-2\">|</span> alex.morgan@email.com <span class=\"text-[var(--hairline)] mx-2\">|</span> linkedin.com/in/alexmorgan");
+      setSummary("Innovative Full-Stack Software Engineer with over 5 years of experience designing, building, and deploying highly scalable web applications. Proven track record of optimizing application performance, leading cross-functional teams, and implementing cloud-native solutions to drive business outcomes.");
+      setSkills([
+        {
+          id: "sk-1",
+          title: "Core Languages",
+          items: "TypeScript, JavaScript (ES6+), Python, Go, Java, SQL, HTML5, CSS3",
+        },
+        {
+          id: "sk-2",
+          title: "Frameworks & Tools",
+          items: "React, Next.js, Node.js, Express, Tailwind CSS, Redux, PostgreSQL, Docker, AWS",
+        },
+      ]);
+      setExperiences([
+        {
+          id: "exp-1",
+          title: "Senior Full-Stack Engineer | TechFlow Solutions – San Francisco, CA",
+          date: "Aug 2023 – Present",
+          bullets: [
+            {
+              id: "b-1",
+              text: "Architected and deployed a highly available React/Next.js dashboard, improving client-side page load times by 42% and increasing user engagement by 18%.",
+            },
+            {
+              id: "b-2",
+              text: "Led a team of 4 engineers in redesigning the core API orchestration layer using Node.js and GraphQL, reducing query latency by 150ms.",
+            },
+          ],
+          meta: "Stack: Next.js, TypeScript, GraphQL, Tailwind CSS, PostgreSQL, AWS",
+        },
+        {
+          id: "exp-2",
+          title: "Software Engineer II | DevCore Technologies – Austin, TX",
+          date: "Jun 2021 – Jul 2023",
+          bullets: [
+            {
+              id: "b-3",
+              text: "Designed and maintained responsive enterprise web portals using React and Redux Toolkit, handling over 100k daily active users.",
+            },
+            {
+              id: "b-4",
+              text: "Optimized database queries and added Redis caching, resulting in a 30% reduction in database CPU utilization during peak load times.",
+            },
+          ],
+          meta: "Stack: React, Redux, Node.js, Express, Redis, PostgreSQL",
+        },
+      ]);
+      setEducations([
+        {
+          id: "edu-1",
+          degree: "B.S. in Computer Science | University of California, Berkeley",
+          bullets: [
+            { id: "eb-1", text: "Graduated with Honors, GPA: 3.82/4.00" },
+            { id: "eb-2", text: "Relevant Coursework: Data Structures, Database Management Systems, Cloud Computing" },
+          ],
+        },
+      ]);
+      setLicenses([
+        {
+          id: "lic-1",
+          text: "<b>AWS Certified Solutions Architect</b> — Amazon Web Services (ID: AWS-ASA-99321)",
+        },
+        {
+          id: "lic-2",
+          text: "<b>Professional Scrum Master I (PSM I)</b> — Scrum.org",
+        },
+      ]);
+      setFooter("Alex Morgan");
+    } else if (personaType === "product") {
+      setName("SARAH JENKINS");
+      setContactLine("New York, NY <span class=\"text-[var(--hairline)] mx-2\">|</span> (212) 555-0142 <span class=\"text-[var(--hairline)] mx-2\">|</span> sarah.j@email.com <span class=\"text-[var(--hairline)] mx-2\">|</span> linkedin.com/in/sarahjenkins");
+      setSummary("Results-driven Senior Product Manager with 6+ years of experience leading cross-functional squads to define, build, and scale SaaS products. Expert in translating customer insights into impactful product roadmaps, leading to 35% growth in annual recurring revenue.");
+      setSkills([
+        {
+          id: "sk-1",
+          title: "Product Strategy",
+          items: "Roadmapping, Product Discovery, Market Analysis, User Research, SQL Analytics",
+        },
+        {
+          id: "sk-2",
+          title: "Methodologies & Agile",
+          items: "Scrum/Agile, Jira, Confluence, A/B Testing, User Story Mapping, OKRs",
+        },
+      ]);
+      setExperiences([
+        {
+          id: "exp-1",
+          title: "Senior Product Manager | GrowthCraft SaaS – New York, NY",
+          date: "Jan 2023 – Present",
+          bullets: [
+            {
+              id: "b-1",
+              text: "Successfully launched a new enterprise collaboration module from ideation to release, securing $2.4M in pipeline revenue within the first 6 months.",
+            },
+            {
+              id: "b-2",
+              text: "Defined and ran continuous user discovery sessions, increasing active user retention rate by 24% through feature optimizations.",
+            },
+          ],
+          meta: "Frameworks: Scrum, OKRs, Mixpanel, SQL, Productboard",
+        },
+        {
+          id: "exp-2",
+          title: "Product Manager | AnalyticsHQ – Boston, MA",
+          date: "Mar 2020 – Dec 2022",
+          bullets: [
+            {
+              id: "b-3",
+              text: "Spearheaded the integration of self-serve analytics tools, reducing customer onboarding friction and lowering churn by 12%.",
+            },
+            {
+              id: "b-4",
+              text: "Collaborated with design and engineering teams to establish a modern UI system, accelerating product development velocity by 30%.",
+            },
+          ],
+          meta: "Stack: Jira, Figma, Amplitude, Hotjar",
+        },
+      ]);
+      setEducations([
+        {
+          id: "edu-1",
+          degree: "M.B.A. in Technology Management | NYU Stern School of Business",
+          bullets: [
+            { id: "eb-1", text: "Focus on Digital Product Management & Tech Entrepreneurship" },
+          ],
+        },
+        {
+          id: "edu-2",
+          degree: "B.S. in Business Administration | Boston University",
+          bullets: [
+            { id: "eb-2", text: "Summa Cum Laude, GPA: 3.90/4.00" },
+          ],
+        },
+      ]);
+      setLicenses([
+        {
+          id: "lic-1",
+          text: "<b>Certified Product Manager (CPM)</b> — Association of International Product Marketing",
+        },
+        {
+          id: "lic-2",
+          text: "<b>Certified Scrum Product Owner (CSPO)</b> — Scrum Alliance",
+        },
+      ]);
+      setFooter("Sarah Jenkins");
+    } else if (personaType === "design") {
+      setName("LIAM CHEN");
+      setContactLine("Seattle, WA <span class=\"text-[var(--hairline)] mx-2\">|</span> (206) 555-0188 <span class=\"text-[var(--hairline)] mx-2\">|</span> liam.chen.design@email.com <span class=\"text-[var(--hairline)] mx-2\">|</span> liamchendesign.com");
+      setSummary("Creative and empathetic UI/UX Designer with over 4 years of experience crafting accessible, visually arresting digital experiences for web and mobile platforms. Passionate about user-centered design, prototyping, and aligning user needs with business goals.");
+      setSkills([
+        {
+          id: "sk-1",
+          title: "Design & Prototyping",
+          items: "Figma, Adobe XD, High-fidelity Prototyping, Wireframing, Responsive Layouts",
+        },
+        {
+          id: "sk-2",
+          title: "Research & Testing",
+          items: "User Testing, Personas, Journey Mapping, Heuristic Evaluation, Accessibility (WCAG)",
+        },
+      ]);
+      setExperiences([
+        {
+          id: "exp-1",
+          title: "Lead UI/UX Designer | PixelForge Studio – Seattle, WA",
+          date: "Feb 2022 – Present",
+          bullets: [
+            {
+              id: "b-1",
+              text: "Redesigned the primary checkout flow for an e-commerce platform, leading to a 15% increase in conversion rate and a 20% drop in cart abandonment.",
+            },
+            {
+              id: "b-2",
+              text: "Developed and maintained a comprehensive Figma Design System, reducing design-to-development handoff time by 35%.",
+            },
+          ],
+          meta: "Tools: Figma, Adobe Creative Cloud, Storybook, ZeroHeight",
+        },
+        {
+          id: "exp-2",
+          title: "UX Designer | WebVibe Agency – Seattle, WA",
+          date: "May 2020 – Jan 2022",
+          bullets: [
+            {
+              id: "b-3",
+              text: "Conducted 40+ user interviews to inform the redesign of a national healthcare portal, elevating WCAG accessibility conformance to AAA standards.",
+            },
+            {
+              id: "b-4",
+              text: "Created interactive micro-animations and smooth transition flows, boosting user satisfaction scores by 18%.",
+            },
+          ],
+          meta: "Stack: HTML/CSS, Webflow, Hotjar, Optimal Workshop",
+        },
+      ]);
+      setEducations([
+        {
+          id: "edu-1",
+          degree: "B.F.A. in Interaction Design | University of Washington",
+          bullets: [
+            { id: "eb-1", text: "Relevant Coursework: Human-Computer Interaction, Information Architecture, Visual Communication" },
+          ],
+        },
+      ]);
+      setLicenses([
+        {
+          id: "lic-1",
+          text: "<b>Google UX Design Professional Certificate</b> — Coursera",
+        },
+        {
+          id: "lic-2",
+          text: "<b>NN/g UX Certified (ID: #88391)</b> — Nielsen Norman Group",
+        },
+      ]);
+      setFooter("Liam Chen");
+    }
+    toast.success(`Seeded resume with professional ${personaType === "software" ? "Software Engineer" : personaType === "product" ? "Product Manager" : "UX Designer"} data! ✨`);
   };
 
   // Keyboard shortcut listener for Ctrl+Z / Ctrl+Y
@@ -1881,7 +2109,7 @@ export default function ResumeBuilder() {
             </button>
             {id === "licenses" && (
               <button
-                className="font-sans text-[10px] font-bold bg-[var(--accent)] text-white border-none rounded-md px-2 py-1 cursor-pointer no-print"
+                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setLicenses([
                     ...licenses,
@@ -1892,12 +2120,12 @@ export default function ResumeBuilder() {
                   ])
                 }
               >
-                + add
+                <span>+ Add Credential</span>
               </button>
             )}
             {id === "skills" && (
               <button
-                className="font-sans text-[10px] font-bold bg-[var(--accent)] text-white border-none rounded-md px-2 py-1 cursor-pointer no-print"
+                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setSkills([
                     ...skills,
@@ -1909,12 +2137,12 @@ export default function ResumeBuilder() {
                   ])
                 }
               >
-                + category
+                <span>+ Add Category</span>
               </button>
             )}
             {id === "experience" && (
               <button
-                className="font-sans text-[10px] font-bold bg-[var(--accent)] text-white border-none rounded-md px-2 py-1 cursor-pointer no-print"
+                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setExperiences([
                     ...experiences,
@@ -1930,12 +2158,12 @@ export default function ResumeBuilder() {
                   ])
                 }
               >
-                + position
+                <span>+ Add Position</span>
               </button>
             )}
             {id === "education" && (
               <button
-                className="font-sans text-[10px] font-bold bg-[var(--accent)] text-white border-none rounded-md px-2 py-1 cursor-pointer no-print"
+                className="font-sans text-xs font-bold bg-[var(--accent)] hover:brightness-110 active:scale-95 text-white border-none rounded-lg px-3 py-1.5 shadow-xs transition-all cursor-pointer no-print flex items-center gap-1"
                 onClick={() =>
                   setEducations([
                     ...educations,
@@ -1949,7 +2177,7 @@ export default function ResumeBuilder() {
                   ])
                 }
               >
-                + entry
+                <span>+ Add Education</span>
               </button>
             )}
           </div>
@@ -2237,7 +2465,41 @@ export default function ResumeBuilder() {
 
       {/* Secondary Sidebar */}
       {activeSidebarTab && (
-        <div className="fixed inset-x-0 bottom-16 top-14 md:relative md:inset-auto md:top-0 md:h-full md:w-80 bg-white border-t md:border-t-0 md:border-r border-gray-200 z-30 flex flex-col overflow-hidden no-print shrink-0 shadow-sm transition-all duration-300">
+        <div
+          style={{ width: typeof window !== "undefined" && window.innerWidth >= 768 ? `${sidebarWidth}px` : undefined }}
+          className="fixed inset-x-0 bottom-16 top-14 md:relative md:inset-auto md:top-0 md:h-full bg-white border-t md:border-t-0 md:border-r border-gray-200 z-30 flex flex-col overflow-hidden no-print shrink-0 shadow-sm transition-all duration-300"
+        >
+          {/* Physical Resize Handle on right edge */}
+          <div
+            className="hidden md:block absolute top-0 right-0 bottom-0 w-1.5 hover:w-2 bg-transparent hover:bg-blue-400/30 active:bg-blue-500/50 cursor-col-resize z-50 transition-all duration-150"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startX = e.clientX;
+              const startWidth = sidebarWidth;
+              const handleMouseMove = (moveEvent: MouseEvent) => {
+                const currentWidth = startWidth + (moveEvent.clientX - startX);
+                if (currentWidth >= 260 && currentWidth <= 480) {
+                  setSidebarWidth(currentWidth);
+                }
+              };
+              const handleMouseUp = () => {
+                document.removeEventListener("mousemove", handleMouseMove);
+                document.removeEventListener("mouseup", handleMouseUp);
+              };
+              document.addEventListener("mousemove", handleMouseMove);
+              document.addEventListener("mouseup", handleMouseUp);
+            }}
+          />
+
+          {/* Floating Collapse Button positioned on border */}
+          <button
+            type="button"
+            onClick={() => setActiveSidebarTab(null)}
+            className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-12 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center z-50 hover:bg-gray-50 text-gray-400 hover:text-blue-600 hover:scale-105 active:scale-95 hover:shadow-lg transition-all cursor-pointer group"
+            title="Collapse Sidebar"
+          >
+            <ChevronLeft size={14} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+          </button>
           {/* Templates Panel */}
           {activeSidebarTab === "templates" && (
             <div className="flex-1 overflow-y-auto p-5">
@@ -2270,6 +2532,31 @@ export default function ResumeBuilder() {
                     </div>
                   </button>
                 ))}
+              </div>
+
+              {/* Trust Showcase Card */}
+              <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trust Metrics & Reviews</span>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-xs text-gray-600 space-y-3">
+                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-[11px]">
+                    <Sparkles size={12} className="text-blue-500 animate-pulse" />
+                    <span>Average 22% salary increase</span>
+                  </div>
+                  <p className="leading-relaxed italic text-gray-500 text-[11px]">
+                    "This tool completely transformed my job search. The formatting engine is flawless, and the real-time layout guidelines saved me hours."
+                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[10px]">— Dan K., Lead Engineer at Meta</span>
+                  </p>
+                  <p className="leading-relaxed italic text-gray-500 text-[11px] border-t border-gray-200/50 pt-2">
+                    "The single-click PDF export layout is gorgeous. Hiring managers immediately commented on the clean typography."
+                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[10px]">— Priya S., Senior PM</span>
+                  </p>
+                  <div className="border-t border-gray-200/50 pt-2 flex items-center justify-between text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                    <span>⭐⭐⭐⭐⭐ Rated 4.9/5</span>
+                    <span>10,000+ happy devs</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -3760,6 +4047,49 @@ export default function ResumeBuilder() {
             </button>
           </div>
         </div>
+
+        {/* Onboarding Wizard Banner */}
+        {showOnboarding && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-4 px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10 no-print transition-all duration-300">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Onboarding Wizard</span>
+                <h4 className="text-sm font-bold text-gray-900">Kickstart your Resume in Seconds 🚀</h4>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Don't start from scratch! Click one of our professionally-vetted personas to seed beautiful, realistic sample data that you can instantly edit.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                onClick={() => handleLoadPersona("software")}
+                className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-blue-300 hover:text-blue-600 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+              >
+                💻 Software Engineer
+              </button>
+              <button
+                onClick={() => handleLoadPersona("product")}
+                className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-blue-300 hover:text-blue-600 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+              >
+                📈 Product Manager
+              </button>
+              <button
+                onClick={() => handleLoadPersona("design")}
+                className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-blue-300 hover:text-blue-600 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+              >
+                🎨 UX Designer
+              </button>
+              <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block"></div>
+              <button
+                onClick={() => setShowOnboarding(false)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100/50 transition-all cursor-pointer flex items-center justify-center"
+                title="Dismiss Onboarding"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Canvas */}
         <div
