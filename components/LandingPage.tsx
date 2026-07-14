@@ -97,6 +97,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
   const [sandboxOutput, setSandboxOutput] = useState("");
   const [sandboxLoading, setSandboxLoading] = useState(false);
   const [activeTemplateIdx, setActiveTemplateIdx] = useState(0);
+  const [selectedProofTemplate, setSelectedProofTemplate] = useState<"harvard" | "sidebar" | "minimal">("harvard");
 
   // Set default sample when sandbox tab changes
   useEffect(() => {
@@ -149,25 +150,19 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-600 selection:text-white">
-      {/* Top Banner: Transparency & Guarantee */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white text-center py-2.5 px-4 text-xs font-semibold tracking-wide flex items-center justify-center gap-2 shadow-inner">
-        <Zap size={14} className="animate-bounce" />
-        <span><b>100% Free Guarantee</b>: No paywalls, no watermark extortion, and absolutely no credit card required.</span>
-      </div>
-
       {/* Main Header / Navigation */}
       <header className="border-b border-gray-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2 rounded-xl text-white shadow-sm">
               <Bot size={20} className="text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-gray-900">
-              Agent Rez <span className="text-blue-600 font-semibold text-xs bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">AI</span>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-gray-900">
+              Agent Rez <span className="text-blue-600 font-semibold text-[10px] sm:text-xs bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">AI</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             <button 
               onClick={() => {
                 setActiveSandboxTab("bullets");
@@ -189,13 +184,13 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
             </button>
             <button 
               onClick={() => setAuthModalOpen(true)}
-              className="text-xs font-bold text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+              className="text-xs font-bold text-gray-700 hover:text-gray-900 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
             >
               Sign In
             </button>
             <button 
               onClick={() => setAuthModalOpen(true)}
-              className="bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
+              className="hidden sm:inline-flex bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
             >
               Create Free Account
             </button>
@@ -262,6 +257,21 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
             </button>
           </motion.div>
 
+          {/* Transparency Guarantee under CTAs */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200/60 py-2.5 px-4 rounded-xl max-w-xl mx-auto shadow-xs"
+          >
+            <span className="flex items-center gap-1.5 text-blue-600 font-extrabold text-[11px] uppercase tracking-wider">
+              <Zap size={13} className="text-blue-500 animate-pulse shrink-0" />
+              100% Free Guarantee
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:block" />
+            <span className="text-gray-500">No watermarks, no paywalls, and absolutely no cards.</span>
+          </motion.div>
+
           {/* Social Proof badges */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -291,6 +301,327 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
         {/* Ambient decorative blobs */}
         <div className="absolute top-1/4 -left-36 w-72 h-72 bg-blue-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
         <div className="absolute bottom-1/4 -right-36 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
+      </section>
+
+      {/* NEW SECTION: Pristine PDF Export & ATS Proof Showcase (Aesthetic and Functional trust proof) */}
+      <section className="py-16 bg-white border-b border-gray-200/80 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            {/* Left text control column */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold tracking-widest text-blue-600 uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                  Pristine Export Proof
+                </span>
+                <h2 className="text-3xl font-black tracking-tight text-gray-900 leading-tight">
+                  Mathematical Alignment. <br />
+                  ATS-Approved Grids.
+                </h2>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Avoid the common alignment traps of low-quality resume software. Agent Rez utilizes built-in margin controllers, relative flex systems, and page-avoid breaks to ensure your printed PDF exports are flawlessly structured for real hiring boards.
+                </p>
+              </div>
+
+              {/* Selector buttons to change mock preview */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
+                  Click to inspect live layouts:
+                </span>
+                
+                <button 
+                  onClick={() => setSelectedProofTemplate("harvard")}
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                    selectedProofTemplate === "harvard" 
+                      ? "bg-slate-50 border-blue-300 shadow-xs text-blue-900 font-bold" 
+                      : "bg-white border-gray-200/80 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-900" />
+                    <div className="text-xs">
+                      <p className="font-bold">Harvard Classic Presets</p>
+                      <p className="text-[10px] text-gray-500 font-normal">Centered headers, standard conservative margins</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} className={selectedProofTemplate === "harvard" ? "text-blue-600" : "text-gray-400"} />
+                </button>
+
+                <button 
+                  onClick={() => setSelectedProofTemplate("sidebar")}
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                    selectedProofTemplate === "sidebar" 
+                      ? "bg-slate-50 border-blue-300 shadow-xs text-blue-900 font-bold" 
+                      : "bg-white border-gray-200/80 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                    <div className="text-xs">
+                      <p className="font-bold">Sidebar Executive Presets</p>
+                      <p className="text-[10px] text-gray-500 font-normal">Modern dual-column, prioritized career highlights</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} className={selectedProofTemplate === "sidebar" ? "text-blue-600" : "text-gray-400"} />
+                </button>
+
+                <button 
+                  onClick={() => setSelectedProofTemplate("minimal")}
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                    selectedProofTemplate === "minimal" 
+                      ? "bg-slate-50 border-blue-300 shadow-xs text-blue-900 font-bold" 
+                      : "bg-white border-gray-200/80 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <div className="text-xs">
+                      <p className="font-bold">Minimalist Slate Presets</p>
+                      <p className="text-[10px] text-gray-500 font-normal">High-density text structures, clean visual dividers</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} className={selectedProofTemplate === "minimal" ? "text-blue-600" : "text-gray-400"} />
+                </button>
+              </div>
+
+              {/* Highlight statistics & feedback */}
+              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <CheckCircle size={15} className="text-blue-600" />
+                  <span className="text-xs font-bold">100% Recruiter & ATS Readable</span>
+                </div>
+                <p className="text-[11px] text-blue-900/80 leading-relaxed">
+                  "The Harvard template bypassed the recruiter filters instantly and scaled perfectly onto one page. Got response back from top-tier tech firms within 48 hours." 
+                  <br /><b className="text-blue-950 font-bold block mt-1">— Alexander C., Senior Architect</b>
+                </p>
+              </div>
+            </div>
+
+            {/* Right Interactive Mock PDF Frame */}
+            <div className="lg:col-span-7 bg-gray-50 border border-gray-200/80 rounded-2xl p-4 md:p-6 shadow-inner relative flex flex-col items-center justify-center min-h-[580px]">
+              
+              {/* Perfect PDF Document Mock (Matches actual output formatting) */}
+              <div className="w-full bg-white border border-gray-200 rounded-xl shadow-lg p-6 md:p-8 flex flex-col justify-between text-left text-gray-900 font-sans relative overflow-hidden aspect-[1/1.41] max-w-md mx-auto">
+                
+                {/* Simulated A4/Letter margin grid borders */}
+                <div className="absolute inset-0 border-[1px] border-dashed border-blue-200/25 pointer-events-none" />
+                <div className="absolute top-3 left-4 text-[9px] font-mono text-blue-400 tracking-wider font-bold select-none flex items-center gap-1 bg-blue-50/75 border border-blue-100/50 px-1.5 py-0.5 rounded">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
+                  <span>ATS COMPLIANT RENDER GRID</span>
+                </div>
+
+                <div className="space-y-6 flex-1">
+                  {/* Selected Preset Rendering */}
+                  {selectedProofTemplate === "harvard" && (
+                    <div className="space-y-4">
+                      {/* Name & Contact (Centered) */}
+                      <div className="text-center space-y-1">
+                        <h4 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">ALEXANDER CHEN</h4>
+                        <p className="text-[10px] text-gray-500 font-mono">
+                          San Francisco, CA &bull; alex.chen@example.com &bull; (415) 555-0192 &bull; linkedin.com/in/alexchen
+                        </p>
+                      </div>
+                      
+                      <div className="h-px bg-slate-900" />
+
+                      {/* Professional Summary */}
+                      <div className="space-y-1">
+                        <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Professional Profile</h5>
+                        <p className="text-[10px] text-gray-600 leading-relaxed">
+                          Results-driven Software Engineer with 8+ years of enterprise experience specializing in real-time layout structures, cloud orchestration systems, and interactive UI paradigms. Proven record scaling backend throughput by 40% and deploying robust design libraries.
+                        </p>
+                      </div>
+
+                      {/* Work Experience */}
+                      <div className="space-y-3">
+                        <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
+                          <span>Professional Experience</span>
+                          <span className="h-px bg-gray-200 flex-1 ml-3" />
+                        </h5>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <div className="flex justify-between items-baseline text-[10px] font-bold text-slate-900">
+                              <span>Senior Software Architect — Stripe, Inc.</span>
+                              <span className="text-gray-500 font-normal">2023 &ndash; Present</span>
+                            </div>
+                            <ul className="list-disc pl-4 text-[9.5px] text-gray-600 space-y-1 mt-1">
+                              <li>Led front-end performance rewrite, achieving a <b className="text-blue-600 font-semibold">34% reduction in checkout latency</b> and retaining $4.2M in annual cart recovery.</li>
+                              <li>Architected high-performance relative canvas layout engine used daily across 6 core product squads.</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-baseline text-[10px] font-bold text-slate-900">
+                              <span>Frontend Engineer — Atlassian</span>
+                              <span className="text-gray-500 font-normal">2021 &ndash; 2023</span>
+                            </div>
+                            <ul className="list-disc pl-4 text-[9.5px] text-gray-600 space-y-1 mt-1">
+                              <li>Authored reusable design library components, slashing engineering integration cycles by <b className="text-indigo-600 font-semibold">45 days</b>.</li>
+                              <li>Overhauled data tables with custom virtualization, rendering 50,000 active nodes without UI lag.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Education */}
+                      <div className="space-y-1">
+                        <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
+                          <span>Education & Certifications</span>
+                          <span className="h-px bg-gray-200 flex-1 ml-3" />
+                        </h5>
+                        <div className="flex justify-between text-[10px] text-slate-900">
+                          <span><b>B.S. in Computer Science</b> &mdash; Stanford University</span>
+                          <span className="text-gray-500">GPA 3.85</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedProofTemplate === "sidebar" && (
+                    <div className="grid grid-cols-12 gap-4 h-full">
+                      {/* Left Sidebar Layout */}
+                      <div className="col-span-4 border-r border-gray-100 pr-3 space-y-4">
+                        <div className="space-y-1">
+                          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">SJ</div>
+                          <h4 className="text-xs font-bold text-slate-900 leading-tight">Sarah Jenkins</h4>
+                          <p className="text-[9px] text-gray-500">Technical PM</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h5 className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Expertise</h5>
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-[8px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Agile Scrums</span>
+                            <span className="text-[8px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Roadmaps</span>
+                            <span className="text-[8px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">SQL Database</span>
+                            <span className="text-[8px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Figma Wire</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <h5 className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Contact</h5>
+                          <p className="text-[8px] text-gray-500 truncate">s.jenkins@example.com</p>
+                          <p className="text-[8px] text-gray-500">Seattle, WA</p>
+                        </div>
+                      </div>
+
+                      {/* Right Main Canvas */}
+                      <div className="col-span-8 pl-1 space-y-4">
+                        <div className="space-y-1">
+                          <h5 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">Executive Summary</h5>
+                          <p className="text-[9.5px] text-gray-600 leading-relaxed">
+                            Certified PMP product leader with 7+ years directing high-concurrency cloud software features. Highly skilled at engineering alignments, metric-driven roadmaps, and stakeholder consensus.
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h5 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">Career History</h5>
+                          
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-[9.5px] font-bold text-slate-900 leading-none">Lead Product Manager &mdash; Airbnb</p>
+                              <p className="text-[8.5px] text-gray-500 mt-0.5">2022 &ndash; Present | Seattle, WA</p>
+                              <ul className="list-disc pl-3 text-[9px] text-gray-600 space-y-1 mt-1">
+                                <li>Optimized guest booking flow widgets, boosting overall <b className="text-blue-600 font-semibold">mobile checkout conversion by 4.2%</b>.</li>
+                                <li>Orchestrated cross-border currency payment platform API, processing $18M in ARR.</li>
+                              </ul>
+                            </div>
+
+                            <div>
+                              <p className="text-[9.5px] font-bold text-slate-900 leading-none">Product Manager &mdash; Microsoft</p>
+                              <p className="text-[8.5px] text-gray-500 mt-0.5">2019 &ndash; 2022 | Redmond, WA</p>
+                              <ul className="list-disc pl-3 text-[9px] text-gray-600 space-y-1 mt-1">
+                                <li>Shipped 3 cloud enterprise database integrations, generating $14M in verified enterprise sales pipelines.</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedProofTemplate === "minimal" && (
+                    <div className="space-y-4">
+                      {/* Name & Title Block */}
+                      <div className="flex justify-between items-baseline border-b border-gray-200 pb-2">
+                        <h4 className="text-base font-black text-slate-950 uppercase tracking-tight">Elena Rostova</h4>
+                        <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Director of Marketing</span>
+                      </div>
+
+                      <p className="text-[9.5px] text-gray-600 leading-relaxed italic border-l-2 border-amber-500 pl-2">
+                        "Data-driven strategist specializing in hyper-growth consumer SaaS acquisition models. Architected performance campaigns driving over 2.4M active subscriptions globally."
+                      </p>
+
+                      <div className="space-y-3.5">
+                        <h5 className="text-[10px] font-bold text-slate-950 uppercase tracking-wider">Key Expertise Fields</h5>
+                        <div className="grid grid-cols-2 gap-2 text-[9.5px] text-gray-700 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span>Paid Search & Social Acquisition</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span>Product-Led Funnel Optimization</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span>CAC & LTV Modeling Systems</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span>Multi-touch Campaign Attribution</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h5 className="text-[10px] font-bold text-slate-950 uppercase tracking-wider">Selected Highlights</h5>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <div className="flex justify-between items-baseline text-[9.5px] font-bold text-slate-950">
+                              <span>Director of Campaign Strategy — Figma</span>
+                              <span className="text-gray-500 font-normal">2023 &ndash; Present</span>
+                            </div>
+                            <p className="text-[9px] text-gray-600 mt-1">
+                              Managed $8.5M paid acquisition budget; halved organic customer acquisition costs (CAC) while successfully <b className="text-amber-600 font-semibold">doubling incoming B2B product demo volume</b>.
+                            </p>
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-baseline text-[9.5px] font-bold text-slate-950">
+                              <span>Senior Growth Specialist — Webflow</span>
+                              <span className="text-gray-500 font-normal">2020 &ndash; 2023</span>
+                            </div>
+                            <p className="text-[9px] text-gray-600 mt-1">
+                              Orchestrated targeted seo hub campaigns, scaling global domain organic visibility from 3.0M to 7.5M monthly visitors.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Live Export Badge Footer */}
+                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[9px] text-gray-400 font-semibold font-mono">
+                  <span>PAGE 1 OF 1</span>
+                  <span className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded">
+                    <Check size={10} />
+                    ATS VERIFIED PASSED
+                  </span>
+                </div>
+              </div>
+
+              {/* Document Floating Badge */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold tracking-wider uppercase px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5 border border-neutral-800 select-none">
+                <Printer size={12} className="text-blue-400" />
+                <span>Pixel-Perfect PDF Margins</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </section>
 
       {/* Interactive AI Sandbox Section (Utility & Intrigue) */}
