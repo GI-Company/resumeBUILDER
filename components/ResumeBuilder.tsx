@@ -32,6 +32,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ArrowDownToLine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -108,7 +109,7 @@ const PageBreakGap = ({ id, pageBreakElementIds, gapHeights, pageMargin }: PageB
       {/* 32px Physical Page Gap with Page Label */}
       <div className="h-[32px] w-full flex items-center justify-center relative">
         <div className="absolute left-0 right-0 h-[1px] bg-gray-300/40" />
-        <span className="relative z-10 bg-gray-500/85 text-white font-sans text-[10px] font-bold px-2.5 py-0.5 rounded shadow-sm tracking-wide backdrop-blur-xs">
+        <span className="relative z-10 bg-gray-500/85 text-white font-sans text-[11px] font-bold px-2.5 py-0.5 rounded shadow-sm tracking-wide backdrop-blur-xs">
           Page {pageIndex}
         </span>
       </div>
@@ -838,9 +839,7 @@ export default function ResumeBuilder() {
   const [resumesListOpen, setResumesListOpen] = useState(false);
   const [myResumes, setMyResumes] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(
-    "templates",
-  );
+  const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(320);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
 
@@ -1098,10 +1097,10 @@ export default function ResumeBuilder() {
         const c = data.content as any;
         isHistoryActionRef.current = true;
 
-        const loadedName = c.name !== undefined ? c.name : "YOUR NAME";
-        const loadedContactLine = c.contactLine !== undefined ? c.contactLine : 'City, State ZIP <span class="text-[var(--hairline)] mx-2">|</span> (555) 123-4567 <span class="text-[var(--hairline)] mx-2">|</span> your.email@example.com';
-        const loadedSummary = c.summary !== undefined ? c.summary : "A two-to-three sentence pitch: your title/field, years of experience, and the kind of impact you make. Write it last — it's easiest once the rest of the resume is filled in.";
-        const loadedFooter = c.footer !== undefined ? c.footer : "Your Name";
+        const loadedName = c.name !== undefined ? c.name : "ALEX MORGAN";
+        const loadedContactLine = c.contactLine !== undefined ? c.contactLine : 'San Francisco, CA <span class="text-[var(--hairline)] mx-2">|</span> (415) 555-0199 <span class="text-[var(--hairline)] mx-2">|</span> alex.morgan@email.com';
+        const loadedSummary = c.summary !== undefined ? c.summary : "Innovative Full-Stack Software Engineer with over 5 years of experience designing, building, and deploying highly scalable web applications. Proven track record of optimizing application performance, leading cross-functional teams, and implementing cloud-native solutions to drive business outcomes.";
+        const loadedFooter = c.footer !== undefined ? c.footer : "Alex Morgan";
 
         if (c.name !== undefined) setName(c.name);
         if (c.contactLine !== undefined) setContactLine(c.contactLine);
@@ -1438,6 +1437,16 @@ export default function ResumeBuilder() {
     }
     toast.success(`Seeded resume with professional ${personaType === "software" ? "Software Engineer" : personaType === "product" ? "Product Manager" : "UX Designer"} data! ✨`);
   };
+
+  useEffect(() => {
+    if (name === "YOUR NAME") setName("ALEX MORGAN");
+    if (contactLine.includes("your.email@example.com") || contactLine.includes("City, State ZIP")) {
+       setContactLine('San Francisco, CA <span class="text-[var(--hairline)] mx-2">|</span> (415) 555-0199 <span class="text-[var(--hairline)] mx-2">|</span> alex.morgan@email.com');
+    }
+    if (summary.includes("A two-to-three sentence pitch")) {
+       setSummary("Innovative Full-Stack Software Engineer with over 5 years of experience designing, building, and deploying highly scalable web applications. Proven track record of optimizing application performance, leading cross-functional teams, and implementing cloud-native solutions to drive business outcomes.");
+    }
+  }, [name, contactLine, summary]);
 
   // Keyboard shortcut listener for Ctrl+Z / Ctrl+Y
   useEffect(() => {
@@ -2098,14 +2107,15 @@ export default function ResumeBuilder() {
             <button
               onClick={() => setManualBreaks((p) => ({ ...p, [id]: !p[id] }))}
               className={cn(
-                "font-sans text-[10px] font-bold tracking-normal bg-transparent border border-[var(--hairline)] rounded-md px-2 py-1 cursor-pointer no-print",
+                "font-sans text-[11px] font-bold tracking-normal bg-transparent border border-[var(--hairline)] rounded-md px-2 py-1 cursor-pointer no-print flex items-center gap-1 transition-colors hover:bg-gray-100",
                 manualBreaks[id]
-                  ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                  ? "bg-[var(--accent)] text-white border-[var(--accent)] hover:bg-[var(--accent)] hover:brightness-110"
                   : "text-[var(--ink-soft)]",
               )}
               title="Force this section to start a new printed page"
             >
-              ⤓ break
+              <ArrowDownToLine size={12} />
+              <span>Page Break</span>
             </button>
             {id === "licenses" && (
               <button
@@ -2246,6 +2256,8 @@ export default function ResumeBuilder() {
               "p-1.5 rounded-md hover:bg-[#33303a]",
               formatBar.active.b && "bg-[#4a3c50] text-[#00f0ff]",
             )}
+            title="Bold (Ctrl+B)"
+            aria-label="Bold"
           >
             <Bold size={14} />
           </button>
@@ -2258,6 +2270,8 @@ export default function ResumeBuilder() {
               "p-1.5 rounded-md hover:bg-[#33303a]",
               formatBar.active.i && "bg-[#4a3c50] text-[#00f0ff]",
             )}
+            title="Italic (Ctrl+I)"
+            aria-label="Italic"
           >
             <Italic size={14} />
           </button>
@@ -2270,6 +2284,8 @@ export default function ResumeBuilder() {
               "p-1.5 rounded-md hover:bg-[#33303a]",
               formatBar.active.u && "bg-[#4a3c50] text-[#00f0ff]",
             )}
+            title="Underline (Ctrl+U)"
+            aria-label="Underline"
           >
             <Underline size={14} />
           </button>
@@ -2279,8 +2295,9 @@ export default function ResumeBuilder() {
               e.preventDefault();
               document.execCommand("removeFormat");
             }}
-            className="p-1.5 rounded-md hover:bg-[#33303a] text-gray-400"
+            className="p-1.5 rounded-md hover:bg-[#33303a] text-gray-300"
             title="Clear formatting"
+            aria-label="Clear formatting"
           >
             <Eraser size={14} />
           </button>
@@ -2291,7 +2308,7 @@ export default function ResumeBuilder() {
       {tutorialOpen && (
         <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 font-sans no-print backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-[440px] p-6 shadow-2xl">
-            <div className="text-[11px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+            <div className="text-[11px] font-bold tracking-widest text-gray-600 uppercase mb-1">
               {TUTORIAL_STEPS[tutorialStep].eyebrow}
             </div>
             <h3 className="font-bold text-xl text-gray-900 mb-2">
@@ -2315,7 +2332,7 @@ export default function ResumeBuilder() {
               ))}
             </div>
             <div className="flex items-center justify-between mt-6">
-              <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
                 <input type="checkbox" /> Don&apos;t show this again
               </label>
               <div className="flex gap-2">
@@ -2366,7 +2383,7 @@ export default function ResumeBuilder() {
           )}
         >
           <FileText size={20} />
-          <span className="text-[10px] font-medium">Templates</span>
+          <span className="text-[11px] font-medium">Templates</span>
         </button>
         <button
           onClick={() =>
@@ -2378,7 +2395,7 @@ export default function ResumeBuilder() {
           )}
         >
           <Palette size={20} />
-          <span className="text-[10px] font-medium">Design</span>
+          <span className="text-[11px] font-medium">Design</span>
         </button>
         <button
           onClick={() =>
@@ -2392,7 +2409,7 @@ export default function ResumeBuilder() {
           )}
         >
           <Plus size={20} />
-          <span className="text-[10px] font-medium">Add</span>
+          <span className="text-[11px] font-medium">Add</span>
         </button>
         <button
           onClick={() =>
@@ -2406,7 +2423,7 @@ export default function ResumeBuilder() {
           )}
         >
           <ImageIcon size={20} />
-          <span className="text-[10px] font-medium">Photo</span>
+          <span className="text-[11px] font-medium">Photo</span>
         </button>
         <button
           onClick={() =>
@@ -2420,13 +2437,13 @@ export default function ResumeBuilder() {
           )}
         >
           <Sparkles size={20} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} />
-          <span className="text-[10px] font-medium">AI Tools</span>
+          <span className="text-[11px] font-medium">AI Tools</span>
         </button>
 
         <div className="md:mt-auto flex flex-row md:flex-col items-center gap-2">
           <button
             onClick={() => setTutorialOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-2 rounded-xl transition-all hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+            className="flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-2 rounded-xl transition-all hover:bg-gray-100 text-gray-600 hover:text-gray-900"
           >
             <HelpCircle size={18} />
           </button>
@@ -2442,7 +2459,7 @@ export default function ResumeBuilder() {
                 "flex flex-col items-center justify-center gap-0.5 w-14 h-12 md:w-16 md:h-auto md:py-2 rounded-xl transition-all hover:bg-gray-100",
                 activeSidebarTab === "account"
                   ? "bg-gray-100 text-blue-600"
-                  : "text-gray-500 hover:text-gray-900",
+                  : "text-gray-600 hover:text-gray-900",
               )}
             >
               {user ? (
@@ -2454,7 +2471,7 @@ export default function ResumeBuilder() {
                   />
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 border border-gray-300 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center">
                   <UserIcon size={18} />
                 </div>
               )}
@@ -2495,21 +2512,21 @@ export default function ResumeBuilder() {
           <button
             type="button"
             onClick={() => setActiveSidebarTab(null)}
-            className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-12 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center z-50 hover:bg-gray-50 text-gray-400 hover:text-blue-600 hover:scale-105 active:scale-95 hover:shadow-lg transition-all cursor-pointer group"
+            className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-12 bg-white border border-gray-200 rounded-full shadow-md items-center justify-center z-50 hover:bg-gray-50 text-gray-600 hover:text-blue-600 hover:scale-105 active:scale-95 hover:shadow-lg transition-all cursor-pointer group"
             title="Collapse Sidebar"
           >
-            <ChevronLeft size={14} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+            <ChevronLeft size={14} className="text-gray-600 group-hover:text-blue-600 transition-colors" />
           </button>
           {/* Templates Panel */}
           {activeSidebarTab === "templates" && (
             <div className="flex-1 overflow-y-auto p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
                   Templates
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -2527,7 +2544,7 @@ export default function ResumeBuilder() {
                     )}
                   >
                     <div className="font-bold text-gray-900 mb-1">{t.name}</div>
-                    <div className="text-xs text-gray-500 leading-snug">
+                    <div className="text-xs text-gray-600 leading-snug">
                       {t.desc}
                     </div>
                   </button>
@@ -2537,22 +2554,22 @@ export default function ResumeBuilder() {
               {/* Trust Showcase Card */}
               <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trust Metrics & Reviews</span>
+                  <span className="text-[11px] font-bold text-gray-600 uppercase tracking-widest">Trust Metrics & Reviews</span>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-xs text-gray-600 space-y-3">
                   <div className="flex items-center gap-1.5 text-blue-600 font-bold text-[11px]">
                     <Sparkles size={12} className="text-blue-500 animate-pulse" />
                     <span>Average 22% salary increase</span>
                   </div>
-                  <p className="leading-relaxed italic text-gray-500 text-[11px]">
+                  <p className="leading-relaxed italic text-gray-600 text-[11px]">
                     "This tool completely transformed my job search. The formatting engine is flawless, and the real-time layout guidelines saved me hours."
-                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[10px]">— Dan K., Lead Engineer at Meta</span>
+                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[11px]">— Dan K., Lead Engineer at Meta</span>
                   </p>
-                  <p className="leading-relaxed italic text-gray-500 text-[11px] border-t border-gray-200/50 pt-2">
+                  <p className="leading-relaxed italic text-gray-600 text-[11px] border-t border-gray-200/50 pt-2">
                     "The single-click PDF export layout is gorgeous. Hiring managers immediately commented on the clean typography."
-                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[10px]">— Priya S., Senior PM</span>
+                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[11px]">— Priya S., Senior PM</span>
                   </p>
-                  <div className="border-t border-gray-200/50 pt-2 flex items-center justify-between text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                  <div className="border-t border-gray-200/50 pt-2 flex items-center justify-between text-[9px] text-gray-600 font-semibold uppercase tracking-wider">
                     <span>⭐⭐⭐⭐⭐ Rated 4.9/5</span>
                     <span>10,000+ happy devs</span>
                   </div>
@@ -2565,12 +2582,12 @@ export default function ResumeBuilder() {
           {activeSidebarTab === "design" && (
             <div className="flex-1 overflow-y-auto p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
                   Design Settings
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -2582,7 +2599,7 @@ export default function ResumeBuilder() {
                     Typography
                   </h3>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Heading Font
                     </label>
                     <select
@@ -2602,7 +2619,7 @@ export default function ResumeBuilder() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Body Font
                     </label>
                     <select
@@ -2621,7 +2638,7 @@ export default function ResumeBuilder() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Text Size
                     </label>
                     <input
@@ -2647,7 +2664,7 @@ export default function ResumeBuilder() {
 
                   {/* Preset Color Badges */}
                   <div className="space-y-1.5 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-600">
                       Click to apply preset:
                     </span>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -2671,7 +2688,7 @@ export default function ResumeBuilder() {
                             }));
                             toast.success(`Applied ${pal.name} palette! 🎨`);
                           }}
-                          className="flex items-center gap-1.5 p-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-[10px] font-medium text-gray-700 transition-all text-left cursor-pointer"
+                          className="flex items-center gap-1.5 p-1 hover:bg-white rounded border border-transparent hover:border-gray-200 text-[11px] font-medium text-gray-700 transition-all text-left cursor-pointer"
                         >
                           <div className="flex gap-0.5 shrink-0 rounded overflow-hidden border border-gray-200/50">
                             <span className="w-2.5 h-2.5 block" style={{ backgroundColor: pal.accent }} />
@@ -2686,7 +2703,7 @@ export default function ResumeBuilder() {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                         Accent
                       </label>
                       <input
@@ -2699,7 +2716,7 @@ export default function ResumeBuilder() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                         Panel
                       </label>
                       <input
@@ -2712,7 +2729,7 @@ export default function ResumeBuilder() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                         Paper
                       </label>
                       <input
@@ -2732,7 +2749,7 @@ export default function ResumeBuilder() {
                     Layout & Spacing
                   </h3>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Layout Style
                     </label>
                     <select
@@ -2747,7 +2764,7 @@ export default function ResumeBuilder() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Job Style
                     </label>
                     <select
@@ -2762,7 +2779,7 @@ export default function ResumeBuilder() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Heading Style
                     </label>
                     <select
@@ -2782,7 +2799,7 @@ export default function ResumeBuilder() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Corner Radius
                     </label>
                     <input
@@ -2800,7 +2817,7 @@ export default function ResumeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Section Gap
                     </label>
                     <input
@@ -2819,7 +2836,7 @@ export default function ResumeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Item Spacing
                     </label>
                     <input
@@ -2838,7 +2855,7 @@ export default function ResumeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Page Margin
                     </label>
                     <input
@@ -2863,7 +2880,7 @@ export default function ResumeBuilder() {
                   </h3>
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                         Box Opacity ({design.boxOpacity}%)
                       </label>
                     </div>
@@ -2882,7 +2899,7 @@ export default function ResumeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Box Shadow (Depth)
                     </label>
                     <select
@@ -2901,7 +2918,7 @@ export default function ResumeBuilder() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Border Style
                     </label>
                     <select
@@ -2920,7 +2937,7 @@ export default function ResumeBuilder() {
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                         Backdrop Blur ({design.backdropBlur}px)
                       </label>
                     </div>
@@ -2947,12 +2964,12 @@ export default function ResumeBuilder() {
           {activeSidebarTab === "content" && (
             <div className="flex-1 p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
                   Add Content
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -3020,7 +3037,7 @@ export default function ResumeBuilder() {
                 </button>
               </div>
               <div className="mt-8">
-                <h3 className="text-xs font-semibold text-gray-500 mb-2">
+                <h3 className="text-xs font-semibold text-gray-600 mb-2">
                   Instructions
                 </h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
@@ -3035,12 +3052,12 @@ export default function ResumeBuilder() {
           {activeSidebarTab === "photo" && (
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
                   Profile Photo Settings
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -3067,7 +3084,7 @@ export default function ResumeBuilder() {
                 <>
                   {/* Upload / Drag Area */}
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                       Upload Picture
                     </label>
                     <div
@@ -3092,9 +3109,9 @@ export default function ResumeBuilder() {
                         onChange={handlePhotoUpload}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <Camera className="mx-auto text-gray-400 group-hover:text-blue-500 mb-2 transition-colors" size={24} />
+                      <Camera className="mx-auto text-gray-600 group-hover:text-blue-500 mb-2 transition-colors" size={24} />
                       <div className="text-xs font-semibold text-gray-700">Drag & Drop or Click to upload</div>
-                      <div className="text-[10px] text-gray-400 mt-1">Supports JPG, PNG, GIF</div>
+                      <div className="text-[11px] text-gray-600 mt-1">Supports JPG, PNG, GIF</div>
                     </div>
                   </div>
 
@@ -3102,7 +3119,7 @@ export default function ResumeBuilder() {
 
                   {/* Background removal section */}
                   <div className="space-y-3 pt-4 border-t border-gray-100">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                       Remove Background
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -3122,7 +3139,7 @@ export default function ResumeBuilder() {
 
                     <div className="space-y-1.5 bg-gray-50 p-3 rounded-lg border border-gray-100">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Key Out Custom Color</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Key Out Custom Color</span>
                         <input
                           type="color"
                           value={bgRemoveColor}
@@ -3130,7 +3147,7 @@ export default function ResumeBuilder() {
                           className="w-6 h-6 rounded cursor-pointer border-0 p-0"
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-gray-400">
+                      <div className="flex justify-between items-center text-[11px] text-gray-600">
                         <span>Tolerance: {bgRemoveSensitivity}</span>
                         <input
                           type="range"
@@ -3143,7 +3160,7 @@ export default function ResumeBuilder() {
                       </div>
                       <button
                         onClick={() => handleRemoveBackground(bgRemoveColor, bgRemoveSensitivity)}
-                        className="w-full mt-1.5 py-1 px-2 bg-white hover:bg-gray-100 border border-gray-200 rounded text-[10px] font-bold text-gray-600 transition-colors"
+                        className="w-full mt-1.5 py-1 px-2 bg-white hover:bg-gray-100 border border-gray-200 rounded text-[11px] font-bold text-gray-600 transition-colors"
                       >
                         Key Out Target Color
                       </button>
@@ -3152,7 +3169,7 @@ export default function ResumeBuilder() {
 
                   {/* Photoshop Filters */}
                   <div className="space-y-2 pt-4 border-t border-gray-100">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                       Photoshop Filters
                     </label>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -3168,7 +3185,7 @@ export default function ResumeBuilder() {
                           key={f.id}
                           onClick={() => setProfilePhoto(p => ({ ...p, filter: f.id }))}
                           className={cn(
-                            "py-1.5 px-2 text-[10px] font-semibold border rounded-lg transition-all",
+                            "py-1.5 px-2 text-[11px] font-semibold border rounded-lg transition-all",
                             profilePhoto.filter === f.id
                               ? "bg-blue-600 border-blue-600 text-white"
                               : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
@@ -3182,7 +3199,7 @@ export default function ResumeBuilder() {
 
                   {/* Tones */}
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                       Tones (Duo / Tint)
                     </label>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -3198,7 +3215,7 @@ export default function ResumeBuilder() {
                           key={t.id}
                           onClick={() => setProfilePhoto(p => ({ ...p, tone: t.id }))}
                           className={cn(
-                            "py-1.5 px-2 text-[10px] font-semibold border rounded-lg transition-all",
+                            "py-1.5 px-2 text-[11px] font-semibold border rounded-lg transition-all",
                             profilePhoto.tone === t.id
                               ? "bg-blue-600 border-blue-600 text-white"
                               : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
@@ -3219,7 +3236,7 @@ export default function ResumeBuilder() {
                     {/* Scale & Aspect Ratio */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                           Aspect Ratio
                         </label>
                         <select
@@ -3234,25 +3251,25 @@ export default function ResumeBuilder() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                           Shape / Radius
                         </label>
                         <div className="flex gap-1">
                           <button
                             onClick={() => setProfilePhoto(p => ({ ...p, radius: 50 }))}
-                            className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[10px] font-bold", profilePhoto.radius === 50 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
+                            className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[11px] font-bold", profilePhoto.radius === 50 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
                           >
                             Circle
                           </button>
                           <button
                             onClick={() => setProfilePhoto(p => ({ ...p, radius: 12 }))}
-                            className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[10px] font-bold", profilePhoto.radius === 12 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
+                            className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[11px] font-bold", profilePhoto.radius === 12 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
                           >
                             Rounded
                           </button>
                           <button
                             onClick={() => setProfilePhoto(p => ({ ...p, radius: 0 }))}
-                            className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[10px] font-bold", profilePhoto.radius === 0 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
+                            className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[11px] font-bold", profilePhoto.radius === 0 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
                           >
                             Square
                           </button>
@@ -3263,7 +3280,7 @@ export default function ResumeBuilder() {
                     {/* Scale slider */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Image Scale ({profilePhoto.scale}%)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Image Scale ({profilePhoto.scale}%)</label>
                       </div>
                       <input
                         type="range"
@@ -3278,7 +3295,7 @@ export default function ResumeBuilder() {
                     {/* Opacity slider */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Opacity ({profilePhoto.opacity}%)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Opacity ({profilePhoto.opacity}%)</label>
                       </div>
                       <input
                         type="range"
@@ -3293,7 +3310,7 @@ export default function ResumeBuilder() {
                     {/* Offsets (X & Y Alignment) */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">X Offset ({profilePhoto.xOffset}px)</label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">X Offset ({profilePhoto.xOffset}px)</label>
                         <input
                           type="range"
                           min="-80"
@@ -3304,7 +3321,7 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Y Offset ({profilePhoto.yOffset}px)</label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">Y Offset ({profilePhoto.yOffset}px)</label>
                         <input
                           type="range"
                           min="-80"
@@ -3319,7 +3336,7 @@ export default function ResumeBuilder() {
                     {/* Borders */}
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Border Width ({profilePhoto.borderWidth}px)</label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">Border Width ({profilePhoto.borderWidth}px)</label>
                         <input
                           type="range"
                           min="0"
@@ -3330,7 +3347,7 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Border Color</label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">Border Color</label>
                         <input
                           type="color"
                           value={profilePhoto.borderColor}
@@ -3353,7 +3370,7 @@ export default function ResumeBuilder() {
                     {/* Brightness */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Brightness ({profilePhoto.brightness ?? 100}%)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Brightness ({profilePhoto.brightness ?? 100}%)</label>
                         <button onClick={() => setProfilePhoto(p => ({ ...p, brightness: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
@@ -3369,7 +3386,7 @@ export default function ResumeBuilder() {
                     {/* Contrast */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Contrast ({profilePhoto.contrast ?? 100}%)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Contrast ({profilePhoto.contrast ?? 100}%)</label>
                         <button onClick={() => setProfilePhoto(p => ({ ...p, contrast: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
@@ -3385,7 +3402,7 @@ export default function ResumeBuilder() {
                     {/* Saturation */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Saturation ({profilePhoto.saturation ?? 100}%)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Saturation ({profilePhoto.saturation ?? 100}%)</label>
                         <button onClick={() => setProfilePhoto(p => ({ ...p, saturation: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
@@ -3401,7 +3418,7 @@ export default function ResumeBuilder() {
                     {/* Blur */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Soft Focus / Blur ({profilePhoto.blur ?? 0}px)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Soft Focus / Blur ({profilePhoto.blur ?? 0}px)</label>
                         <button onClick={() => setProfilePhoto(p => ({ ...p, blur: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
@@ -3418,7 +3435,7 @@ export default function ResumeBuilder() {
                     {/* Hue Rotate */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Hue Shift ({profilePhoto.hueRotate ?? 0}°)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Hue Shift ({profilePhoto.hueRotate ?? 0}°)</label>
                         <button onClick={() => setProfilePhoto(p => ({ ...p, hueRotate: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
@@ -3434,7 +3451,7 @@ export default function ResumeBuilder() {
                     {/* Sepia */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Warmth / Sepia ({profilePhoto.sepia ?? 0}%)</label>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Warmth / Sepia ({profilePhoto.sepia ?? 0}%)</label>
                         <button onClick={() => setProfilePhoto(p => ({ ...p, sepia: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
@@ -3454,7 +3471,7 @@ export default function ResumeBuilder() {
                       <Sparkles size={14} /> Motion & Transition Effects
                     </h3>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                         Animation Preset
                       </label>
                       <select
@@ -3469,7 +3486,7 @@ export default function ResumeBuilder() {
                         <option value="fade">Elegant Fade In</option>
                         <option value="flicker">Futuristic Glow Flicker</option>
                       </select>
-                      <p className="text-[9px] text-gray-400 mt-1">
+                      <p className="text-[9px] text-gray-600 mt-1">
                         Adds a gorgeous interactive hover or entry motion effect.
                       </p>
                     </div>
@@ -3498,7 +3515,7 @@ export default function ResumeBuilder() {
                         sepia: 0,
                         animation: "none",
                       }))}
-                      className="w-full py-1.5 border border-dashed border-gray-200 rounded-lg text-xs text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-colors"
+                      className="w-full py-1.5 border border-dashed border-gray-200 rounded-lg text-xs text-gray-600 hover:text-gray-800 hover:border-gray-300 transition-colors"
                     >
                       Reset Photo Adjustments
                     </button>
@@ -3506,7 +3523,7 @@ export default function ResumeBuilder() {
                 </>
               )}
               
-              <div className="mt-4 pt-4 border-t border-gray-100 text-[10px] text-gray-400 text-center">
+              <div className="mt-4 pt-4 border-t border-gray-100 text-[11px] text-gray-600 text-center">
                 Agent Rez AI is provided "as-is". Please verify all AI-generated content before use.
               </div>
             </div>
@@ -3516,12 +3533,12 @@ export default function ResumeBuilder() {
           {activeSidebarTab === "account" && (
             <div className="flex-1 p-5 flex flex-col">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
                   Account
                 </h2>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -3542,7 +3559,7 @@ export default function ResumeBuilder() {
                         <div className="text-sm font-bold text-gray-900 truncate">
                           {user.user_metadata?.first_name || 'Member'} {user.user_metadata?.last_name || ''}
                         </div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs text-gray-600 truncate">
                           {user.email}
                         </div>
                       </div>
@@ -3550,11 +3567,11 @@ export default function ResumeBuilder() {
 
                     <div className="pt-2 border-t border-gray-200/60 grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <div className="text-gray-400 font-medium uppercase tracking-wider text-[10px]">US State</div>
+                        <div className="text-gray-600 font-medium uppercase tracking-wider text-[11px]">US State</div>
                         <div className="text-gray-800 font-semibold mt-0.5 truncate">{user.user_metadata?.state || 'Not set'}</div>
                       </div>
                       <div>
-                        <div className="text-gray-400 font-medium uppercase tracking-wider text-[10px]">Date of Birth</div>
+                        <div className="text-gray-600 font-medium uppercase tracking-wider text-[11px]">Date of Birth</div>
                         <div className="text-gray-800 font-semibold mt-0.5 truncate">
                           {user.user_metadata?.dob 
                             ? new Date(user.user_metadata.dob).toLocaleDateString(undefined, {
@@ -3569,7 +3586,7 @@ export default function ResumeBuilder() {
                   </div>
 
                   <div>
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
                       Choose Profile Avatar
                     </h3>
                     <div className="grid grid-cols-4 gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
@@ -3604,13 +3621,13 @@ export default function ResumeBuilder() {
 
                   {/* Change Password Form */}
                   <form onSubmit={handleUpdatePassword} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3 shadow-sm">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Change Password
                     </h3>
                     
                     <div className="space-y-2">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                           Current Password
                         </label>
                         <input
@@ -3623,7 +3640,7 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                           New Password
                         </label>
                         <input
@@ -3636,7 +3653,7 @@ export default function ResumeBuilder() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                           Confirm New Password
                         </label>
                         <input
@@ -3676,7 +3693,7 @@ export default function ResumeBuilder() {
                     </div>
                     <div className="flex-1 overflow-y-auto pr-2 space-y-2">
                       {myResumes.length === 0 ? (
-                        <div className="p-4 text-xs text-gray-500 text-center border border-dashed border-gray-200 rounded-lg">
+                        <div className="p-4 text-xs text-gray-600 text-center border border-dashed border-gray-200 rounded-lg">
                           No saved resumes found.
                         </div>
                       ) : (
@@ -3697,7 +3714,7 @@ export default function ResumeBuilder() {
                             <div className="font-semibold">
                               Resume {r.id.substring(0, 8)}
                             </div>
-                            <div className="text-[10px] text-gray-500 mt-1">
+                            <div className="text-[11px] text-gray-600 mt-1">
                               {new Date(r.updated_at).toLocaleDateString()}
                             </div>
                           </button>
@@ -3721,7 +3738,7 @@ export default function ResumeBuilder() {
                   <h3 className="font-bold text-gray-900 mb-2">
                     Save your progress
                   </h3>
-                  <p className="text-sm text-gray-500 mb-6">
+                  <p className="text-sm text-gray-600 mb-6">
                     Create an account to save your resumes to the cloud and
                     access them from anywhere.
                   </p>
@@ -3748,7 +3765,7 @@ export default function ResumeBuilder() {
                 </div>
                 <button
                   onClick={() => setActiveSidebarTab(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+                  className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -3756,7 +3773,7 @@ export default function ResumeBuilder() {
 
               {/* Rate Limit Status Banner */}
               <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 text-left mb-3 shrink-0">
-                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-[10px] uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-[11px] uppercase tracking-wider">
                   <Sparkles size={12} className="animate-pulse" />
                   <span>Rate Limit Status</span>
                 </div>
@@ -3766,7 +3783,7 @@ export default function ResumeBuilder() {
                 {!user && (
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="text-[10px] font-semibold text-blue-600 hover:underline mt-1.5 flex items-center gap-0.5"
+                    className="text-[11px] font-semibold text-blue-600 hover:underline mt-1.5 flex items-center gap-0.5"
                   >
                     Log In / Sign Up for unlimited cloud saving 🔑
                   </button>
@@ -3784,10 +3801,10 @@ export default function ResumeBuilder() {
                       setAiOutput("");
                     }}
                     className={cn(
-                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
                       aiPresetType === "summary"
                         ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-500 hover:text-gray-800"
+                        : "text-gray-600 hover:text-gray-800"
                     )}
                   >
                     Summary
@@ -3799,10 +3816,10 @@ export default function ResumeBuilder() {
                       setAiOutput("");
                     }}
                     className={cn(
-                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
                       aiPresetType === "bullets"
                         ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-500 hover:text-gray-800"
+                        : "text-gray-600 hover:text-gray-800"
                     )}
                   >
                     Bullet Points
@@ -3814,10 +3831,10 @@ export default function ResumeBuilder() {
                       setAiOutput("");
                     }}
                     className={cn(
-                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
                       aiPresetType === "parser"
                         ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-500 hover:text-gray-800"
+                        : "text-gray-600 hover:text-gray-800"
                     )}
                   >
                     Parser
@@ -3829,10 +3846,10 @@ export default function ResumeBuilder() {
                       setAiOutput("");
                     }}
                     className={cn(
-                      "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                      "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all",
                       aiPresetType === "custom"
                         ? "bg-white text-blue-600 shadow-sm border border-gray-100"
-                        : "text-gray-500 hover:text-gray-800"
+                        : "text-gray-600 hover:text-gray-800"
                     )}
                   >
                     Custom
@@ -3848,7 +3865,7 @@ export default function ResumeBuilder() {
                   className="shrink-0 flex flex-col space-y-2"
                 >
                   <div className="flex items-center justify-between">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                       {aiPresetType === "summary" && "Polish Professional Summary"}
                       {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
                       {aiPresetType === "parser" && "Parse Old Resume"}
@@ -3861,7 +3878,7 @@ export default function ResumeBuilder() {
                           setAiInput(summary);
                           toast.success("Current summary imported! 📥");
                         }}
-                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
                       >
                         📥 Load current
                       </button>
@@ -3907,7 +3924,7 @@ export default function ResumeBuilder() {
                 {/* AI Output Result Box with targets list */}
                 <div className="flex-1 flex flex-col min-h-0 bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
                   <div className="flex items-center justify-between mb-2 shrink-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
                       AI Output Suggestions
                     </span>
                     {aiOutput && (
@@ -3917,7 +3934,7 @@ export default function ResumeBuilder() {
                           navigator.clipboard.writeText(aiOutput);
                           toast.success("Copied to clipboard! 📋");
                         }}
-                        className="p-1 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                        className="p-1 hover:bg-gray-200 rounded text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
                         title="Copy to Clipboard"
                       >
                         <Copy size={12} />
@@ -3929,36 +3946,36 @@ export default function ResumeBuilder() {
                     {aiOutput ? (
                       aiOutput
                     ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-4">
+                      <div className="h-full flex flex-col items-center justify-center text-center text-gray-600 p-4">
                         <Sparkles size={24} className="opacity-30 mb-2 text-amber-500" />
-                        <p className="text-[10px]">Your professional suggestions will appear here.</p>
+                        <p className="text-[11px]">Your professional suggestions will appear here.</p>
                       </div>
                     )}
                   </div>
 
                   {aiOutput && (
                     <div className="shrink-0 border-t border-gray-200 pt-2.5 space-y-2">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                      <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-600">
                         ⚡ Quick Apply to Resume Sections:
                       </span>
                       <div className="grid grid-cols-1 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
                         <button
                           onClick={() => handleApplyToTarget("summary")}
-                          className="w-full text-left p-1.5 text-[10px] bg-blue-50 border border-blue-200 hover:border-blue-300 hover:bg-blue-100 text-blue-900 font-bold rounded transition-all"
+                          className="w-full text-left p-1.5 text-[11px] bg-blue-50 border border-blue-200 hover:border-blue-300 hover:bg-blue-100 text-blue-900 font-bold rounded transition-all"
                         >
                           ✨ Apply to Professional Summary
                         </button>
                         
                         {experiences.length > 0 && (
                           <div className="space-y-1">
-                            <span className="block text-[8px] font-bold uppercase tracking-widest text-gray-400 pl-1 mt-1">
+                            <span className="block text-[8px] font-bold uppercase tracking-widest text-gray-600 pl-1 mt-1">
                               Append Bullets to Professional Job:
                             </span>
                             {experiences.map((exp) => (
                               <button
                                 key={exp.id}
                                 onClick={() => handleApplyToTarget("experience-bullets", exp.id)}
-                                className="w-full text-left p-1.5 text-[10px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate block"
+                                className="w-full text-left p-1.5 text-[11px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate block"
                                 title={`Append as bullet points to ${exp.title}`}
                               >
                                 + Append to: {exp.title.split("|")[0].trim()}
@@ -4000,7 +4017,7 @@ export default function ResumeBuilder() {
               MYresume
             </span>
             {resumeId && (
-              <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-[10px] md:text-xs font-medium text-gray-500">
+              <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-[11px] md:text-xs font-medium text-gray-600">
                 Saved
               </span>
             )}
@@ -4008,7 +4025,7 @@ export default function ResumeBuilder() {
               <button
                 onClick={handleUndo}
                 disabled={historyIndex <= 0}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
                 title="Undo (Ctrl+Z)"
               >
                 <Undo size={15} />
@@ -4016,7 +4033,7 @@ export default function ResumeBuilder() {
               <button
                 onClick={handleRedo}
                 disabled={historyIndex >= history.length - 1}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
                 title="Redo (Ctrl+Y)"
               >
                 <Redo size={15} />
@@ -4053,12 +4070,16 @@ export default function ResumeBuilder() {
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-4 px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10 no-print transition-all duration-300">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Onboarding Wizard</span>
+                <span className="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Fast Start</span>
                 <h4 className="text-sm font-bold text-gray-900">Kickstart your Resume in Seconds 🚀</h4>
               </div>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 mt-1 mb-2">
                 Don't start from scratch! Click one of our professionally-vetted personas to seed beautiful, realistic sample data that you can instantly edit.
               </p>
+              <div className="flex items-center gap-3 text-[11px] font-semibold text-indigo-700/80">
+                 <span className="flex items-center gap-1"><Sparkles size={12}/> Average 22% salary increase reported</span>
+                 <span className="flex items-center gap-1"><Check size={12}/> Used by 10,000+ professionals</span>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
@@ -4082,7 +4103,7 @@ export default function ResumeBuilder() {
               <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block"></div>
               <button
                 onClick={() => setShowOnboarding(false)}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100/50 transition-all cursor-pointer flex items-center justify-center"
+                className="text-gray-600 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100/50 transition-all cursor-pointer flex items-center justify-center"
                 title="Dismiss Onboarding"
               >
                 <X size={15} />
@@ -4190,7 +4211,7 @@ export default function ResumeBuilder() {
                     {/* Hover Click overlay */}
                     <button
                       onClick={() => setActiveSidebarTab("photo")}
-                      className="absolute inset-0 bg-black/40 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold font-sans no-print"
+                      className="absolute inset-0 bg-black/40 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold font-sans no-print"
                       style={{ borderRadius: `${profilePhoto.radius}%` }}
                     >
                       Edit
@@ -4307,7 +4328,7 @@ export default function ResumeBuilder() {
                                 }}
                               />
                               <button
-                                className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
+                                className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
                                 onClick={() =>
                                   setLicenses((l) =>
                                     l.filter((x) => x.id !== lic.id),
@@ -4356,7 +4377,7 @@ export default function ResumeBuilder() {
                                 <DragHandle dragControls={dc} />
                               </div>
                               <button
-                                className="hidden group-hover:block absolute right-0 top-0 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
+                                className="hidden group-hover:block absolute right-0 top-0 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
                                 onClick={() =>
                                   setSkills((s) =>
                                     s.filter((x) => x.id !== sk.id),
@@ -4511,7 +4532,7 @@ export default function ResumeBuilder() {
                                       }}
                                     />
                                     <button
-                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
+                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
                                       onClick={() =>
                                         setExperiences((e) =>
                                           e.map((x) =>
@@ -4661,7 +4682,7 @@ export default function ResumeBuilder() {
                                       }}
                                     />
                                     <button
-                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[10px] font-bold cursor-pointer font-sans no-print"
+                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
                                       onClick={() =>
                                         setEducations((e) =>
                                           e.map((x) =>
@@ -4716,7 +4737,7 @@ export default function ResumeBuilder() {
             </Reorder.Group>
 
             <div
-              className="page-footer text-center font-sans text-[10px] text-[#a19b9d] mt-4 outline-none"
+              className="page-footer text-center font-sans text-[11px] text-[#a19b9d] mt-4 outline-none"
               contentEditable
               suppressContentEditableWarning
               dangerouslySetInnerHTML={{ __html: footer }}
