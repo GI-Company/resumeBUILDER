@@ -18,6 +18,13 @@ export default function Page() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      
+      // Automatically show the builder on page load if an ID query parameter exists in the URL
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('id')) {
+        setShowBuilder(true);
+      }
+      
       setLoading(false);
     });
 
@@ -28,16 +35,30 @@ export default function Page() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleOpenResume = (id?: string) => {
+    if (id && id !== 'new') {
+      window.history.pushState({}, '', `?id=${id}`);
+    } else {
+      window.history.pushState({}, '', window.location.pathname);
+    }
+    setShowBuilder(true);
+  };
+
+  const handleCloseBuilder = () => {
+    window.history.pushState({}, '', window.location.pathname);
+    setShowBuilder(false);
+  };
+
   if (loading) return null;
 
   if (showBuilder) {
       return (
         <div className="min-h-screen bg-gray-50">
             <button 
-                onClick={() => setShowBuilder(false)} 
-                className="fixed top-4 left-4 z-50 text-gray-900 bg-white border border-gray-200 p-2 rounded-lg text-xs font-bold hover:bg-gray-100"
+                onClick={handleCloseBuilder} 
+                className="fixed top-4 left-4 z-50 text-gray-900 bg-white border border-gray-200 p-2.5 rounded-xl text-xs font-bold hover:bg-gray-100 shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
             >
-                Dashboard
+                ← Back to Dashboard
             </button>
             <ResumeBuilder />
         </div>
@@ -45,8 +66,8 @@ export default function Page() {
   }
 
   if (session) {
-    return <Dashboard onOpenResume={() => setShowBuilder(true)} />;
+    return <Dashboard onOpenResume={handleOpenResume} />;
   }
 
-  return <LandingPage onOpenResume={() => setShowBuilder(true)} />;
+  return <LandingPage onOpenResume={() => handleOpenResume('new')} />;
 }
