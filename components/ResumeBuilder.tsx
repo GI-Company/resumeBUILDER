@@ -871,7 +871,7 @@ export default function ResumeBuilder() {
   const [aiInput, setAiInput] = useState("");
   const [aiOutput, setAiOutput] = useState("");
   const [aiIsGenerating, setAiIsGenerating] = useState(false);
-  const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom">("summary");
+  const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom" | "parser">("summary");
 
   const handleGenerateAI = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -931,6 +931,47 @@ export default function ResumeBuilder() {
       toast.success("AI suggestions generated successfully! ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred during AI generation");
+    } finally {
+      setAiIsGenerating(false);
+    }
+  };
+
+  const handleParseResume = async (rawText: string) => {
+    if (!user) {
+      toast.error("Please log in to use AI assistant features.");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    setAiIsGenerating(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Unauthorized");
+
+      const response = await fetch("/api/resume/parse", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rawText })
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success) throw new Error(resData.error || "Failed to parse");
+
+      const { data } = resData;
+      if (data.name) setName(data.name);
+      if (data.summary) setSummary(data.summary);
+      if (data.experiences) setExperiences(data.experiences);
+      if (data.educations) setEducations(data.educations);
+      if (data.skills) setSkills([data.skills]);
+      
+      toast.success("Resume parsed and applied! ✨");
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
     } finally {
       setAiIsGenerating(false);
     }
@@ -1091,7 +1132,8 @@ export default function ResumeBuilder() {
 
   // Unified auto-save and history tracking
   useEffect(() => {
-    const payload = {
+    // Create a trimmed payload
+    const { profilePhoto: _, ...trimmedPayload } = {
       name,
       contactLine,
       summary,
@@ -1107,7 +1149,36 @@ export default function ResumeBuilder() {
     };
 
     if (typeof window !== "undefined") {
-      localStorage.setItem("resume_autosave_content", JSON.stringify(payload));
+      try {
+        localStorage.setItem("resume_autosave_content", JSON.stringify(trimmedPayload));
+      } catch (e) {
+        console.error("Failed to save to localStorage, likely quota exceeded:", e);
+      }
+    }
+    
+    // Backend autosave if logged in
+    if (user) {
+        const saveToBackend = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) return;
+            
+            await fetch("/api/resume/save", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    id: resumeId, // Need to track this ID
+                    content: trimmedPayload,
+                    status: 'active',
+                    clientId: 'web'
+                })
+            });
+        };
+        // Debounce this!
+        const timer = setTimeout(saveToBackend, 2000);
+        return () => clearTimeout(timer);
     }
 
     if (isHistoryActionRef.current) {
@@ -1117,11 +1188,11 @@ export default function ResumeBuilder() {
 
     setHistory((prev) => {
       const current = prev[historyIndex];
-      if (current && JSON.stringify(current) === JSON.stringify(payload)) {
+      if (current && JSON.stringify(current) === JSON.stringify(trimmedPayload)) {
         return prev;
       }
       const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(payload);
+      newHistory.push(trimmedPayload);
       if (newHistory.length > 50) {
         newHistory.shift();
       }
@@ -1974,7 +2045,7 @@ export default function ResumeBuilder() {
           )}
         >
           <Sparkles size={20} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} />
-          <span className="text-[10px] font-medium">AI Writer</span>
+          <span className="text-[10px] font-medium">AI Tools</span>
         </button>
 
         <div className="md:mt-auto flex flex-row md:flex-col items-center gap-2">
@@ -3187,14 +3258,14 @@ export default function ResumeBuilder() {
             </div>
           )}
 
-          {/* AI Writer Panel */}
+          {/* AI Tools Panel */}
           {activeSidebarTab === "ai" && (
             <div className="flex-1 p-5 flex flex-col h-full overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-1.5 text-amber-500">
                   <Sparkles size={18} className="animate-pulse" />
                   <h2 className="text-sm font-bold uppercase tracking-wider text-gray-800">
-                    AI Copilot
+                    Agent Rez
                   </h2>
                 </div>
                 <button
@@ -3262,6 +3333,21 @@ export default function ResumeBuilder() {
                     <button
                       type="button"
                       onClick={() => {
+                        setAiPresetType("parser");
+                        setAiOutput("");
+                      }}
+                      className={cn(
+                        "flex-1 py-1.5 px-2 text-[10px] font-bold rounded-lg transition-all",
+                        aiPresetType === "parser"
+                          ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                          : "text-gray-500 hover:text-gray-800"
+                      )}
+                    >
+                      Parser
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         setAiPresetType("custom");
                         setAiOutput("");
                       }}
@@ -3276,14 +3362,21 @@ export default function ResumeBuilder() {
                     </button>
                   </div>
 
-                  <form onSubmit={handleGenerateAI} className="flex-1 flex flex-col min-h-0 space-y-3">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (aiPresetType === "parser") handleParseResume(aiInput);
+                      else handleGenerateAI(e);
+                    }}
+                    className="flex-1 flex flex-col min-h-0 space-y-3"
+                  >
                     <div className="flex items-center justify-between">
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
                         {aiPresetType === "summary" && "Polish Professional Summary"}
                         {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
+                        {aiPresetType === "parser" && "Parse Old Resume"}
                         {aiPresetType === "custom" && "Custom AI Prompt / Query"}
                       </label>
-
                       {aiPresetType === "summary" && (
                         <button
                           type="button"
@@ -3302,15 +3395,17 @@ export default function ResumeBuilder() {
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
                       required
+                      className="flex-1 w-full p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
                       placeholder={
                         aiPresetType === "summary"
                           ? "Enter your current summary draft, background, or goals. (e.g. 'Highly motivated developer with 2 years React experience...')"
                           : aiPresetType === "bullets"
-                          ? "Paste some raw bullets, achievements, or job descriptions. (e.g. 'I was in charge of the database and speeded up page loading times.')"
+                          ? "Paste experience bullet points to rewrite... (e.g. 'I was in charge of the database and speeded up page loading times.')"
+                          : aiPresetType === "parser"
+                          ? "Paste your old resume text here..."
                           : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords for a Kubernetes expert')"
                       }
                       rows={5}
-                      className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none placeholder-gray-400"
                     />
 
                     <button
@@ -3321,12 +3416,12 @@ export default function ResumeBuilder() {
                       {aiIsGenerating ? (
                         <>
                           <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Generating suggestions...</span>
+                          <span>{aiPresetType === "parser" ? "Parsing..." : "Generating suggestions..."}</span>
                         </>
                       ) : (
                         <>
                           <Sparkles size={14} />
-                          <span>Generate AI suggestions</span>
+                          <span>{aiPresetType === "parser" ? "Parse Resume" : "Generate AI suggestions"}</span>
                         </>
                       )}
                     </button>
