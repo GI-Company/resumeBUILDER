@@ -734,6 +734,7 @@ export default function ResumeBuilder() {
   );
   const [footer, setFooter] = useState(() => localDraft?.footer ?? "Alex Morgan");
   const [aiRemaining, setAiRemaining] = useState<number | null>(5);
+  const [showCapacityTip, setShowCapacityTip] = useState(false);
 
   // --- History & Undo/Redo State ---
   const [history, setHistory] = useState<any[]>([]);
@@ -1347,8 +1348,12 @@ export default function ResumeBuilder() {
         throw new Error(resData.error || "Failed to generate text from Groq API.");
       }
 
+      if (resData.text === undefined) {
+        throw new Error("API returned no text content.");
+      }
       setAiOutput(resData.text);
-      toast.success("AI suggestions generated successfully! ✨");
+      console.log("Setting aiOutput to:", resData.text);
+      toast.success("AI suggestions generated! Click 'Apply' below to update. ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred during AI generation");
     } finally {
@@ -3985,20 +3990,46 @@ export default function ResumeBuilder() {
               </div>
 
               {/* Rate Limit Status Banner */}
-              <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 text-left mb-3 shrink-0">
-                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-[10px] uppercase tracking-wider">
-                  <Sparkles size={11} className="animate-pulse" />
-                  <span>Rate Limit Status</span>
+              <div className="bg-blue-50/60 border border-blue-200/50 rounded-xl p-3.5 text-left mb-3 shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-blue-800 font-bold text-[10px] uppercase tracking-wider">
+                    <Sparkles size={11} className="text-blue-500 shrink-0 animate-pulse" />
+                    <span>{user ? "AI Included ⚡" : "Rate Limit Status"}</span>
+                  </div>
+                  {user && (
+                    <span className="text-[9px] bg-blue-100 text-blue-700 font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-blue-200/50">
+                      Active
+                    </span>
+                  )}
                 </div>
-                <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
-                  Daily Limit: <b>{user ? "Unlimited (Signed-up Tier)" : `${aiRemaining !== null ? aiRemaining : 5} / 5`}</b> requests remaining today.
+                
+                <p className="text-[11px] text-gray-600 mt-1.5 leading-relaxed">
+                  {user 
+                    ? "Request capacity adjusts with demand to keep the service fast for everyone." 
+                    : `Daily Limit: ${aiRemaining !== null ? aiRemaining : 5} / 5 requests remaining today.`
+                  }
                 </p>
-                {!user && (
+
+                {user ? (
+                  <div className="mt-2.5">
+                    <button
+                      onClick={() => setShowCapacityTip(!showCapacityTip)}
+                      className="text-[10px] font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-200/60 rounded-lg px-2.5 py-1.5 cursor-pointer flex items-center gap-1 transition-all"
+                    >
+                      <span>Get More AI Requests</span>
+                    </button>
+                    {showCapacityTip && (
+                      <div className="mt-2 p-2 bg-white border border-blue-200/60 text-[10px] text-gray-600 rounded-lg leading-relaxed shadow-xs">
+                        💡 <b>Maximum speed allocated!</b> Because Agent Rez AI is 100% free with no paywalls or credit cards, request capacity is balanced dynamically in real-time. Your account already receives premium high-speed queue priority!
+                      </div>
+                    )}
+                  </div>
+                ) : (
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="text-[10px] font-semibold text-blue-600 hover:underline mt-1.5 flex items-center gap-0.5"
+                    className="text-[10px] font-bold text-blue-600 hover:underline mt-2 flex items-center gap-0.5 cursor-pointer"
                   >
-                    Log In / Sign Up for unlimited cloud saving 🔑
+                    Log In / Sign Up to save drafts & unlock more features 🔑
                   </button>
                 )}
               </div>
@@ -4369,7 +4400,11 @@ export default function ResumeBuilder() {
                         )}
                       </div>
                       <div className="flex-1 overflow-y-auto text-xs text-gray-800 leading-relaxed font-sans whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2.5 mb-2.5">
-                        {aiOutput ? (
+                        {aiIsGenerating ? (
+                          <div className="h-full flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          </div>
+                        ) : aiOutput ? (
                           aiOutput
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-center text-gray-600 p-4">
@@ -5290,6 +5325,60 @@ export default function ResumeBuilder() {
               }}
             />
           </div>
+        </div>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-40 md:hidden flex items-center justify-around px-2 no-print shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
+          <button
+            type="button"
+            onClick={() => setActiveSidebarTab(activeSidebarTab === "templates" ? null : "templates")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all rounded-xl cursor-pointer",
+              activeSidebarTab === "templates" ? "text-blue-600 font-bold scale-105" : "text-gray-500 font-medium hover:text-gray-900"
+            )}
+          >
+            <FileText size={18} />
+            <span className="text-[10px]">Templates</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSidebarTab(activeSidebarTab === "design" ? null : "design")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all rounded-xl cursor-pointer",
+              activeSidebarTab === "design" ? "text-blue-600 font-bold scale-105" : "text-gray-500 font-medium hover:text-gray-900"
+            )}
+          >
+            <Palette size={18} />
+            <span className="text-[10px]">Design</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSidebarTab(activeSidebarTab === "content" ? null : "content")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all rounded-xl cursor-pointer",
+              activeSidebarTab === "content" ? "text-blue-600 font-bold scale-105" : "text-gray-500 font-medium hover:text-gray-900"
+            )}
+          >
+            <Plus size={18} />
+            <span className="text-[10px]">Add Sections</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSidebarTab(activeSidebarTab === "ai" ? null : "ai")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all rounded-xl cursor-pointer relative",
+              activeSidebarTab === "ai" ? "text-blue-600 font-bold scale-105" : "text-gray-500 font-medium hover:text-gray-900"
+            )}
+          >
+            <Sparkles size={18} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} />
+            <span className="text-[10px]">AI Tools</span>
+            {activeSidebarTab !== "ai" && (
+              <span className="absolute top-1.5 right-6 w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping" />
+            )}
+          </button>
         </div>
       </div>
 

@@ -194,14 +194,14 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <div className="inline-flex items-center gap-1.5 bg-blue-500/15 border border-blue-400/20 px-3 py-1 rounded-full text-blue-300 text-[10px] font-bold uppercase tracking-wider">
-                <Sparkles size={12} className="text-blue-400" />
-                <span>Unlimited Pro Activated</span>
+                <Sparkles size={12} className="text-blue-400 animate-pulse" />
+                <span>AI Included ⚡</span>
               </div>
               <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight">
                 Welcome back to your Career Command Center
               </h2>
               <p className="text-xs text-indigo-200/80 leading-relaxed">
-                As a signed-up user, you get <b>100% Unlimited Llama AI Assistant requests</b>, zero paywalls on any templates, watermarks-free prints, and live automatic cloud synchronization for all drafts.
+                Request capacity adjusts with demand to keep the service fast for everyone. You get full access to 6 premium templates, watermarks-free prints, and live automatic cloud synchronization for all drafts.
               </p>
             </div>
 

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { 
             success: false, 
-            error: `AI Rate limit exceeded. Guest tier is limited to 5 requests per 24 hours. Please Log In or Sign Up for 100% FREE unlimited AI requests! Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
+            error: `AI Rate limit exceeded. Guest tier is limited to 5 requests per 24 hours. Please Log In or Sign Up to unlock more high-speed AI requests. Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
           },
           { status: 429 }
         );
@@ -167,40 +167,7 @@ export async function POST(req: NextRequest) {
                 content: prompt
               }
             ],
-            temperature: typeof temperature === 'number' ? temperature : 0.4,
-            tools: [
-              {
-                type: 'function',
-                function: {
-                  name: 'improve_resume_summary',
-                  description: 'Refine a resume summary for impact and clarity.',
-                  parameters: {
-                    type: 'object',
-                    properties: {
-                      originalSummary: { type: 'string' },
-                      targetRole: { type: 'string' }
-                    },
-                    required: ['originalSummary']
-                  }
-                }
-              },
-              {
-                type: 'function',
-                function: {
-                  name: 'rewrite_bullet_points',
-                  description: 'Rewrite experience bullet points using STAR method and action verbs.',
-                  parameters: {
-                    type: 'object',
-                    properties: {
-                      rawBullets: { type: 'string' },
-                      metricFocus: { type: 'boolean' }
-                    },
-                    required: ['rawBullets']
-                  }
-                }
-              }
-            ],
-            tool_choice: 'auto'
+            temperature: typeof temperature === 'number' ? temperature : 0.4
           }),
         });
 
@@ -213,9 +180,20 @@ export async function POST(req: NextRequest) {
 
         const groqData = await groqResponse.json();
         text = groqData.choices?.[0]?.message?.content || '';
+        if (!text.trim()) {
+            throw new Error("API returned empty response.");
+        }
         selectedModel = model;
         console.log(`Success! Response generated with model: ${model}`);
-        break; // Success! Break the fallback loop
+        
+        return NextResponse.json({ 
+          success: true, 
+          text, 
+          model: selectedModel,
+          remaining: rateLimit.remaining,
+          resetTime: rateLimit.resetTime.toISOString()
+        });
+        // break; // Success! Break the fallback loop
       } catch (err: any) {
         console.error(`Exception with model ${model}:`, err);
         lastError = err;
@@ -230,6 +208,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // This part should technically not be reached if the loop breaks or returns early
     return NextResponse.json({ 
       success: true, 
       text, 

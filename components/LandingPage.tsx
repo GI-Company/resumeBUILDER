@@ -906,34 +906,121 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
               </div>
             </div>
             
-            <div className="w-full md:w-2/3 bg-gray-50 border border-gray-200/80 rounded-xl p-5 h-[230px] flex flex-col justify-between">
-              <div className="space-y-3 opacity-65 select-none pointer-events-none">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                  <div className="h-4 w-28 bg-gray-300 rounded" />
-                  <div className="h-3 w-36 bg-gray-200 rounded" />
-                </div>
-                <div className="space-y-1">
-                  <div className="h-2 w-full bg-gray-200 rounded" />
-                  <div className="h-2 w-4/5 bg-gray-200 rounded" />
-                </div>
-                {TEMPLATES_INFO[activeTemplateIdx].id.includes("sidebar") ? (
-                  <div className="grid grid-cols-3 gap-3 pt-2">
-                    <div className="col-span-1 space-y-1">
-                      <div className="h-3 w-10 bg-blue-200 rounded" />
-                      <div className="h-2 w-full bg-gray-200 rounded" />
-                      <div className="h-2 w-full bg-gray-200 rounded" />
+            <div className="w-full md:w-2/3 bg-white border border-gray-200 rounded-2xl p-5 h-[230px] flex flex-col justify-between shadow-xs relative overflow-hidden">
+              <div className="flex-1 min-h-0 select-none overflow-hidden pr-1">
+                {TEMPLATES_INFO[activeTemplateIdx].id === "sidebar-executive" && (
+                  <div className="grid grid-cols-3 gap-4 h-full font-sans text-left">
+                    <div className="col-span-1 bg-blue-50/50 border-r border-blue-100 p-2 rounded-lg flex flex-col gap-2">
+                      <div>
+                        <span className="block text-[8px] font-extrabold text-blue-700 uppercase tracking-widest">Skills</span>
+                        <p className="text-[7.5px] text-gray-600 leading-normal mt-0.5 font-medium">Agile, Jira, SQL, Python, Tableau, SaaS</p>
+                      </div>
+                      <div>
+                        <span className="block text-[8px] font-extrabold text-blue-700 uppercase tracking-widest">Education</span>
+                        <p className="text-[7.5px] text-gray-700 font-bold leading-tight mt-0.5">M.S. Management</p>
+                        <p className="text-[7px] text-gray-500">Stanford University</p>
+                      </div>
                     </div>
-                    <div className="col-span-2 space-y-1.5">
-                      <div className="h-3 w-20 bg-gray-300 rounded" />
-                      <div className="h-2 w-full bg-gray-200 rounded" />
-                      <div className="h-2 w-11/12 bg-gray-200 rounded" />
+                    <div className="col-span-2 flex flex-col justify-center">
+                      <h5 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h5>
+                      <span className="text-[10px] text-indigo-600 font-extrabold mt-0.5">Senior Product Manager</span>
+                      <div className="h-px bg-gray-200 my-1.5" />
+                      <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider block">Key Professional Accomplishments</span>
+                      <ul className="text-[8.5px] text-gray-600 space-y-1 mt-1 leading-relaxed list-disc pl-3">
+                        <li>Led 12 cross-functional teams to launch high-growth mobile applications.</li>
+                        <li>Scaled platform transaction volume by <b className="text-gray-900 font-semibold">145% YoY</b> using real-time telemetry.</li>
+                      </ul>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-1.5 pt-2">
-                    <div className="h-3.5 w-32 bg-gray-300 rounded" />
-                    <div className="h-2 w-full bg-gray-200 rounded" />
-                    <div className="h-2 w-5/6 bg-gray-200 rounded" />
+                )}
+
+                {TEMPLATES_INFO[activeTemplateIdx].id === "modern" && (
+                  <div className="border-t-4 border-blue-600 pt-2 text-left font-sans flex flex-col h-full justify-center">
+                    <div className="flex justify-between items-baseline">
+                      <h5 className="font-black text-sm text-gray-950 uppercase tracking-tight">Alex Morgan</h5>
+                      <span className="text-[8px] text-gray-400 font-semibold">San Francisco, CA</span>
+                    </div>
+                    <span className="text-[10px] text-blue-600 font-black mt-0.5 uppercase tracking-wide">Lead Cloud Architect</span>
+                    <div className="h-px bg-gray-100 my-1.5" />
+                    <span className="text-[8px] font-extrabold text-gray-400 uppercase tracking-widest block mb-0.5">Professional Summary</span>
+                    <p className="text-[8.5px] text-gray-700 leading-relaxed font-normal">
+                      Pioneered microservice architecture migrations for Fortune 100 enterprise software suites. Expert in Kubernetes, AWS, Go, high-concurrency systems, and zero-downtime database schemas.
+                    </p>
+                  </div>
+                )}
+
+                {TEMPLATES_INFO[activeTemplateIdx].id === "classic" && (
+                  <div className="text-center font-serif flex flex-col h-full justify-center">
+                    <h5 className="font-bold text-sm text-gray-900 tracking-wide uppercase">Alex Morgan</h5>
+                    <span className="text-[9px] text-gray-600 italic mt-0.5">Investment Banking Analyst • Morgan Stanley</span>
+                    <div className="border-y border-gray-200 py-1 my-1.5 flex justify-center gap-3 text-[7.5px] text-gray-500 font-sans">
+                      <span>New York, NY</span>
+                      <span>•</span>
+                      <span>alex@morgan.com</span>
+                      <span>•</span>
+                      <span>(555) 019-2834</span>
+                    </div>
+                    <span className="text-[8px] font-bold text-gray-800 uppercase tracking-widest block mb-1">Professional Experience</span>
+                    <p className="text-[8.5px] text-gray-700 leading-relaxed max-w-xl mx-auto italic font-sans text-center">
+                      "Conducted leveraged buyout (LBO) modeling for $4.2B acquisition deals. Engineered complex valuation models using discounted cash flows (DCF) with high accuracy."
+                    </p>
+                  </div>
+                )}
+
+                {TEMPLATES_INFO[activeTemplateIdx].id === "traditional" && (
+                  <div className="text-left font-sans flex flex-col h-full justify-center">
+                    <h5 className="font-extrabold text-sm text-slate-800">Alex Morgan</h5>
+                    <span className="text-[10px] text-slate-600 font-semibold">Operations Director</span>
+                    <div className="h-0.5 bg-slate-300 my-1.5" />
+                    <div className="grid grid-cols-4 gap-2 pt-0.5">
+                      <div className="col-span-1">
+                        <span className="text-[8.5px] text-slate-500 font-bold block">2021 - Present</span>
+                        <span className="text-[7px] text-slate-400 block">San Jose, CA</span>
+                      </div>
+                      <div className="col-span-3">
+                        <span className="text-[9px] font-bold text-slate-900 block">Head of Operations | Logistics Inc</span>
+                        <p className="text-[8.5px] text-slate-600 leading-relaxed mt-0.5">
+                          Streamlined supply-chain workflows, reducing dispatch delay by 22%. Managed $14M annual budget across 4 global distribution hubs.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {TEMPLATES_INFO[activeTemplateIdx].id === "minimal" && (
+                  <div className="text-left font-sans flex flex-col h-full justify-center">
+                    <h5 className="font-medium text-sm text-neutral-900 tracking-tight">Alex Morgan</h5>
+                    <span className="text-[9px] text-neutral-500 mt-0.5">Freelance Developer & UI Designer</span>
+                    <div className="my-1.5 h-px bg-neutral-200" />
+                    <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-wider block mb-0.5">Core Contributions</span>
+                    <ul className="text-[8.5px] text-neutral-600 space-y-0.5 leading-relaxed">
+                      <li>• Shipped 35+ production-ready Next.js & Tailwind web applications.</li>
+                      <li>• Audited and optimized accessibility (WCAG AA) for major ecommerce brands.</li>
+                      <li>• Implemented robust database architectures utilizing Supabase and Firestore.</li>
+                    </ul>
+                  </div>
+                )}
+
+                {TEMPLATES_INFO[activeTemplateIdx].id === "sidebar-fresh" && (
+                  <div className="grid grid-cols-3 gap-3 h-full font-sans text-left">
+                    <div className="col-span-1 bg-slate-50 border border-slate-150 p-2 rounded-lg flex flex-col justify-between">
+                      <div>
+                        <span className="block text-[8px] font-extrabold text-slate-700 uppercase tracking-wider">Contact</span>
+                        <p className="text-[7.5px] text-slate-500 leading-tight mt-0.5 break-all">ctnarrow.road@gmail.com</p>
+                      </div>
+                      <div>
+                        <span className="block text-[8px] font-extrabold text-slate-700 uppercase tracking-wider mt-1.5">Focus</span>
+                        <p className="text-[7.5px] text-slate-600 leading-tight font-medium">Developer Relations</p>
+                      </div>
+                    </div>
+                    <div className="col-span-2 flex flex-col justify-center">
+                      <h5 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h5>
+                      <span className="text-[9.5px] text-emerald-600 font-bold mt-0.5">Developer Advocate</span>
+                      <div className="h-px bg-gray-200 my-1.5" />
+                      <p className="text-[8.5px] text-gray-600 leading-normal font-normal">
+                        Present technical workshops, author highly ranked tutorials, and bridge communication between developer community and core engineering team.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1024,7 +1111,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
                 <ul className="space-y-3.5 text-xs text-gray-700">
                   <li className="flex items-start gap-2.5 font-semibold text-blue-900">
                     <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
-                    <span><b>100% Unlimited AI Agent</b> requests & quick tools</span>
+                    <div>
+                      <span><b>AI Included ⚡</b></span>
+                      <p className="text-[11px] text-gray-500 font-normal mt-0.5">Request capacity adjusts with demand to keep the service fast for everyone.</p>
+                    </div>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
