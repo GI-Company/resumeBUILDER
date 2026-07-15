@@ -229,7 +229,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            Meet <b>Agent Rez</b>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or step through a 5-minute guided career interview. No payment walls, no fake limits, and zero hidden export charges.
+            Meet <b>Agent Rez</b>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and unlimited AI usage available for signed-in users.
           </motion.p>
 
           {/* Core Call to Actions */}
@@ -266,10 +266,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
           >
             <span className="flex items-center gap-1.5 text-blue-600 font-extrabold text-[11px] uppercase tracking-wider">
               <Zap size={13} className="text-blue-500 animate-pulse shrink-0" />
-              100% Free Guarantee
+              100% Free to Start
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:block" />
-            <span className="text-gray-500">No watermarks, no paywalls, and absolutely no cards.</span>
+            <span className="text-gray-500">Free daily limits; sign up for unlimited access.</span>
           </motion.div>
 
           {/* Social Proof badges */}

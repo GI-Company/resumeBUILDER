@@ -1545,7 +1545,20 @@ export default function ResumeBuilder() {
     }
   };
 
+  const handleResetResume = () => {
+    localStorage.removeItem("resume_autosave_content");
+    setName("");
+    setContactLine("");
+    setSummary("");
+    setSkills([]);
+    setExperiences([]);
+    setEducations([]);
+    setLicenses([]);
+    setFooter("");
+  };
+
   const handleLoadPersona = (personaType: "software" | "product" | "design") => {
+    handleResetResume();
     isHistoryActionRef.current = true;
     if (personaType === "software") {
       setName("ALEX MORGAN");
@@ -4655,8 +4668,8 @@ export default function ResumeBuilder() {
                   
                   <button
                     onClick={() => {
+                      handleResetResume();
                       setShowOnboarding(false);
-                      // Already blank by default
                     }}
                     className="w-full group relative flex items-center p-4 border border-gray-200 rounded-xl hover:border-gray-400 hover:shadow-md transition-all text-left"
                   >
