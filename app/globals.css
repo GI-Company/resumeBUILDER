@@ -92,3 +92,9 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   background: #fff;
   box-shadow: 0 0 0 2px var(--accent);
 }
+
+/* Custom visual indicator for spelling errors if supported */
+[contenteditable="true"]::spelling-error {
+  text-decoration: underline wavy #ef4444 2px !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}

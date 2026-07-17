@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Dashboard from '@/components/Dashboard';
 import LandingPage from '@/components/LandingPage';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import dynamic from 'next/dynamic';
 
 const ResumeBuilder = dynamic(() => import('@/components/ResumeBuilder'), { 
@@ -58,7 +59,9 @@ export default function Page() {
   if (showBuilder) {
       return (
         <div className="min-h-screen bg-gray-50">
+          <ErrorBoundary onReset={handleCloseBuilder}>
             <ResumeBuilder onBack={handleCloseBuilder} initialTemplateId={initialTemplateId} />
+          </ErrorBoundary>
         </div>
       );
   }

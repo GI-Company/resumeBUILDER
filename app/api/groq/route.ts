@@ -33,47 +33,55 @@ function saveRateLimits() {
   }
 }
 
-// Perform rate limiting: 5 requests per IP address every 24 hours from first request
-function checkAndIncrementRateLimit(ip: string): { allowed: boolean; count: number; remaining: number; resetTime: Date } {
+// Perform rate limiting: 5 requests every 24 hours from first request
+function checkAndIncrementRateLimit(ip: string, cookieRecordStr: string | undefined): { allowed: boolean; count: number; remaining: number; resetTime: Date; newCookieVal: string } {
   loadRateLimits();
   const now = Date.now();
   const limitWindow = 24 * 60 * 60 * 1000; // 24 hours
   
-  let record = inMemoryCache[ip];
+  let ipRecord = inMemoryCache[ip];
+  let cookieRecord = null;
   
-  if (!record) {
-    record = { count: 1, firstRequestTime: now };
-    inMemoryCache[ip] = record;
-    saveRateLimits();
-    return { allowed: true, count: 1, remaining: 4, resetTime: new Date(now + limitWindow) };
+  if (cookieRecordStr) {
+    try {
+      cookieRecord = JSON.parse(cookieRecordStr);
+    } catch(e) {}
   }
   
-  const elapsed = now - record.firstRequestTime;
+  // Merge state from IP and Cookie to prevent bypass
+  let count = 0;
+  let firstRequestTime = now;
   
-  if (elapsed >= limitWindow) {
-    // 24 hour window expired - reset limit
-    record.count = 1;
-    record.firstRequestTime = now;
-    saveRateLimits();
-    return { allowed: true, count: 1, remaining: 4, resetTime: new Date(now + limitWindow) };
+  if (ipRecord && (now - ipRecord.firstRequestTime) < limitWindow) {
+    count = Math.max(count, ipRecord.count);
+    firstRequestTime = Math.min(firstRequestTime, ipRecord.firstRequestTime);
+  }
+  if (cookieRecord && (now - cookieRecord.firstRequestTime) < limitWindow) {
+    count = Math.max(count, cookieRecord.count);
+    firstRequestTime = Math.min(firstRequestTime, cookieRecord.firstRequestTime);
   }
   
-  if (record.count >= 5) {
+  if (count >= 5) {
     return { 
       allowed: false, 
-      count: record.count, 
+      count, 
       remaining: 0, 
-      resetTime: new Date(record.firstRequestTime + limitWindow) 
+      resetTime: new Date(firstRequestTime + limitWindow),
+      newCookieVal: JSON.stringify({ count, firstRequestTime })
     };
   }
   
-  record.count += 1;
+  count += 1;
+  const newRecord = { count, firstRequestTime };
+  inMemoryCache[ip] = newRecord;
   saveRateLimits();
+  
   return { 
     allowed: true, 
-    count: record.count, 
-    remaining: 5 - record.count, 
-    resetTime: new Date(record.firstRequestTime + limitWindow) 
+    count, 
+    remaining: 5 - count, 
+    resetTime: new Date(firstRequestTime + limitWindow),
+    newCookieVal: JSON.stringify(newRecord)
   };
 }
 
@@ -97,18 +105,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Enforce 5 AI requests per IP address every 24 hours ONLY for guests
-    let rateLimit = { allowed: true, count: 0, remaining: 9999, resetTime: new Date() };
+    // 3. Enforce 5 AI requests every 24 hours ONLY for guests
+    let rateLimit = { allowed: true, count: 0, remaining: 9999, resetTime: new Date(), newCookieVal: '' };
     if (!userObj) {
-      rateLimit = checkAndIncrementRateLimit(ip);
+      const cookieRecordStr = req.cookies.get('ai_rate_limit')?.value;
+      rateLimit = checkAndIncrementRateLimit(ip, cookieRecordStr);
+      
       if (!rateLimit.allowed) {
-        return NextResponse.json(
+        const res = NextResponse.json(
           { 
             success: false, 
             error: `AI Rate limit exceeded. Guest tier is limited to 5 requests per 24 hours. Please Log In or Sign Up to unlock more high-speed AI requests. Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
           },
           { status: 429 }
         );
+        res.cookies.set('ai_rate_limit', rateLimit.newCookieVal, { maxAge: 24 * 60 * 60, path: '/' });
+        return res;
       }
     }
 
@@ -190,13 +202,17 @@ export async function POST(req: NextRequest) {
         selectedModel = model;
         console.log(`Success! Response generated with model: ${model}`);
         
-        return NextResponse.json({ 
+        const responseData = NextResponse.json({ 
           success: true, 
           text, 
           model: selectedModel,
           remaining: rateLimit.remaining,
           resetTime: rateLimit.resetTime.toISOString()
         });
+        if (!userObj && rateLimit.newCookieVal) {
+          responseData.cookies.set('ai_rate_limit', rateLimit.newCookieVal, { maxAge: 24 * 60 * 60, path: '/' });
+        }
+        return responseData;
         // break; // Success! Break the fallback loop
       } catch (err: any) {
         console.error(`Exception with model ${model}:`, err);
@@ -213,13 +229,17 @@ export async function POST(req: NextRequest) {
     }
 
     // This part should technically not be reached if the loop breaks or returns early
-    return NextResponse.json({ 
+    const finalResponse = NextResponse.json({ 
       success: true, 
       text, 
       model: selectedModel,
       remaining: rateLimit.remaining,
       resetTime: rateLimit.resetTime.toISOString()
     });
+    if (!userObj && rateLimit.newCookieVal) {
+      finalResponse.cookies.set('ai_rate_limit', rateLimit.newCookieVal, { maxAge: 24 * 60 * 60, path: '/' });
+    }
+    return finalResponse;
 
   } catch (err: any) {
     console.error('Error in Groq API proxy:', err);

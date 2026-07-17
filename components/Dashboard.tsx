@@ -112,9 +112,94 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 text-gray-900 gap-3">
-        <Loader2 className="animate-spin text-blue-600" size={28} />
-        <span className="text-xs font-semibold text-gray-500">Retrieving your professional dashboard...</span>
+      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-600 selection:text-white">
+        {/* Upper Navigation Header Skeleton */}
+        <header className="border-b border-gray-200/80 bg-white sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-gray-200 h-9 w-9 rounded-xl animate-pulse" />
+              <div className="h-5 bg-gray-200 rounded w-24 animate-pulse" />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2 border-r border-gray-200 pr-4">
+                <div className="bg-gray-100 h-6 w-6 rounded-full animate-pulse" />
+                <div className="space-y-1">
+                  <div className="h-2 bg-gray-200 rounded w-12 animate-pulse" />
+                  <div className="h-3 bg-gray-200 rounded w-28 animate-pulse" />
+                </div>
+              </div>
+              <div className="h-8 bg-gray-200 rounded-lg w-20 animate-pulse" />
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-5xl mx-auto px-6 py-10">
+          {/* Welcome Banner Card Skeleton */}
+          <div className="bg-white border border-gray-200/80 rounded-2xl p-6 md:p-8 mb-10 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-3 max-w-xl flex-1">
+                <div className="h-4 bg-gray-200 rounded w-24 animate-pulse" />
+                <div className="h-7 bg-gray-200 rounded w-3/4 animate-pulse" />
+                <div className="space-y-1.5 pt-1">
+                  <div className="h-3 bg-gray-200 rounded w-full animate-pulse" />
+                  <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse" />
+                </div>
+              </div>
+              <div className="h-11 bg-gray-200 rounded-xl w-44 shrink-0 animate-pulse" />
+            </div>
+            {/* Subtle background shimmer effect */}
+            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-pulse" />
+          </div>
+
+          {/* Resumes Header Skeleton */}
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-56 animate-pulse" />
+              <div className="h-3 bg-gray-200 rounded w-72 animate-pulse" />
+            </div>
+          </div>
+
+          {/* Resumes Grid Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div 
+                key={i} 
+                className="border border-gray-200 rounded-2xl bg-white shadow-xs flex flex-col justify-between overflow-hidden h-[210px]"
+              >
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-gray-100 h-10 w-10 rounded-xl animate-pulse" />
+                    <div className="h-3 bg-gray-200 rounded w-16 animate-pulse" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse" />
+                  </div>
+                  <div className="mt-auto pt-2 border-t border-gray-100">
+                    <div className="h-3 bg-gray-100 rounded w-3/4 animate-pulse" />
+                  </div>
+                </div>
+                <div className="px-5 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                  <div className="h-3 bg-gray-200 rounded w-16 animate-pulse" />
+                  <div className="flex gap-3">
+                    <div className="h-4 bg-gray-100 rounded-full w-4 animate-pulse" />
+                    <div className="h-4 bg-gray-100 rounded-full w-4 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+
+        {/* Aesthetic Footer Skeleton */}
+        <footer className="bg-white border-t border-gray-200 mt-20 py-10">
+          <div className="max-w-5xl mx-auto px-6 text-center space-y-4">
+            <div className="h-3 bg-gray-200 rounded w-2/3 mx-auto animate-pulse" />
+            <div className="h-px bg-gray-100 max-w-xs mx-auto" />
+            <div className="h-3 bg-gray-200 rounded w-32 mx-auto animate-pulse" />
+          </div>
+        </footer>
       </div>
     );
   }

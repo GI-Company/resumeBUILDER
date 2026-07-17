@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS ai_rate_limits (
+    ip_address TEXT PRIMARY KEY,
+    count INT NOT NULL DEFAULT 1,
+    first_request_time TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE ai_rate_limits ENABLE ROW LEVEL SECURITY;

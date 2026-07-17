@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
+import { ContentEditableField } from "./ContentEditableField";
 import { Reorder, useDragControls } from "motion/react";
 import {
   GripVertical,
@@ -39,6 +40,7 @@ import {
   RefreshCw,
   Play,
   CheckSquare,
+  SpellCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -90,7 +92,7 @@ interface PageBreakGapProps {
   pageMargin: number;
 }
 
-const PageBreakGap = ({ id, pageBreakElementIds, gapHeights, pageMargin }: PageBreakGapProps) => {
+const PageBreakGap = memo(({ id, pageBreakElementIds, gapHeights, pageMargin }: PageBreakGapProps) => {
   const isBreak = pageBreakElementIds.includes(id);
   if (!isBreak) return null;
 
@@ -124,7 +126,7 @@ const PageBreakGap = ({ id, pageBreakElementIds, gapHeights, pageMargin }: PageB
       <div style={{ height: `${bottomSpacer}px` }} />
     </div>
   );
-};
+});
 
 const TEMPLATES = [
   {
@@ -296,7 +298,7 @@ const TUTORIAL_STEPS = [
 ];
 
 // --- Subcomponents ---
-const DragHandle = ({ dragControls }: { dragControls: any }) => (
+const DragHandle = memo(({ dragControls }: { dragControls: any }) => (
   <span
     className="drag-handle inline-flex items-center justify-center w-5 h-5 rounded-md cursor-grab text-[var(--ink-soft)] text-sm bg-black/5 hover:bg-black/10 hover:text-[var(--ink)] active:cursor-grabbing font-sans shrink-0 select-none no-print"
     onPointerDown={(e) => dragControls.start(e)}
@@ -304,9 +306,9 @@ const DragHandle = ({ dragControls }: { dragControls: any }) => (
   >
     <GripVertical size={14} />
   </span>
-);
+));
 
-const SubItemWrapper = ({ id, item, value, className, children }: any) => {
+const SubItemWrapper = memo(({ id, item, value, className, children }: any) => {
   const dc = useDragControls();
   const actualValue = item ?? value;
   return (
@@ -321,7 +323,7 @@ const SubItemWrapper = ({ id, item, value, className, children }: any) => {
       {typeof children === "function" ? children(dc) : children}
     </Reorder.Item>
   );
-};
+});
 
 const SaveResponseSchema = z.object({
   success: z.boolean(),
@@ -379,7 +381,7 @@ interface ProfilePhotoConfig {
   animation: string;
 }
 
-const SectionWrapper = ({
+const SectionWrapper = memo(({
   id,
   item,
   children,
@@ -524,7 +526,483 @@ const SectionWrapper = ({
       {children}
     </Reorder.Item>
   );
-};
+});
+
+
+const SectionRenderer = memo(({
+  section,
+  summary, setSummary,
+  licenses, setLicenses,
+  skills, setSkills,
+  experiences, setExperiences,
+  educations, setEducations,
+  manualBreaks, setManualBreaks,
+  pageBreakElementIds,
+  design, gapHeights,
+  spellcheckEnabled
+}: any) => {
+  return (
+    <SectionWrapper
+                  key={section.id}
+                  id={section.id}
+                  item={section}
+                  manualBreaks={manualBreaks}
+                  setManualBreaks={setManualBreaks}
+                  pageBreakElementIds={pageBreakElementIds}
+                  gapHeights={gapHeights}
+                  design={design}
+                  licenses={licenses}
+                  setLicenses={setLicenses}
+                  skills={skills}
+                  setSkills={setSkills}
+                  experiences={experiences}
+                  setExperiences={setExperiences}
+                  educations={educations}
+                  setEducations={setEducations}
+                >
+                  {/* SUMMARY */}
+                  {section.id === "summary" && (
+                    <>
+                      <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                      <ContentEditableField tagName="div"
+                        className="summary font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break outline-none print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                        data-page-break-id="summary-content"
+                        style={{
+                          backgroundColor: "var(--panel-rgba)",
+                          border: "var(--box-border)",
+                          boxShadow: "var(--box-shadow)",
+                          backdropFilter: "blur(var(--backdrop-blur))",
+                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                          breakBefore: pageBreakElementIds.includes("summary-content") ? "page" : "auto",
+                        }}
+                        html={summary} onChange={(val) => { setSummary(val); }}
+                        spellCheck={spellcheckEnabled}
+                      />
+                    </>
+                  )}
+
+                  {/* LICENSES */}
+                  {section.id === "licenses" && (
+                    <>
+                      <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                      <Reorder.Group
+                        values={licenses}
+                        onReorder={setLicenses}
+                        as="ul"
+                        className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                        id="lic-list"
+                        data-page-break-id="lic-list"
+                        style={{
+                          backgroundColor: "var(--panel-rgba)",
+                          border: "var(--box-border)",
+                          boxShadow: "var(--box-shadow)",
+                          backdropFilter: "blur(var(--backdrop-blur))",
+                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                          breakBefore: pageBreakElementIds.includes("lic-list") ? "page" : "auto",
+                        }}
+                      >
+                        {licenses.map((lic: any) => (
+<SubItemWrapper
+                              key={lic.id}
+                              value={lic}
+                              id={lic.id}
+                              
+                              className="relative group pl-1 mb-2"
+                            >
+{(dc: any) => (<>
+
+                              <div className="absolute left-[-1.8rem] top-0 no-print">
+                                <DragHandle dragControls={dc} />
+                              </div>
+                              <ContentEditableField tagName="span"
+                                className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
+                                html={lic.text} onChange={(val) => { setLicenses((prev: any[]) =>
+                                    prev.map((x) =>
+                                      x.id === lic.id ? { ...x, text: val } : x,
+                                    ),
+                                  ); }}
+                                spellCheck={spellcheckEnabled}
+                              />
+                              <button
+                                className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                                onClick={() =>
+                                  setLicenses((l: any[]) =>
+                                    l.filter((x) => x.id !== lic.id),
+                                  )
+                                }
+                              >
+                                ✕ remove
+                              </button>
+                            
+</>)}
+</SubItemWrapper>
+))}
+                      </Reorder.Group>
+                    </>
+                  )}
+
+                  {/* SKILLS */}
+                  {section.id === "skills" && (
+                    <>
+                      <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                      <Reorder.Group
+                        values={skills}
+                        onReorder={setSkills}
+                        className="skills-grid grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 rounded-[var(--radius)] p-5 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                        id="skills-grid"
+                        data-page-break-id="skills-grid"
+                        style={{
+                          backgroundColor: "var(--panel-rgba)",
+                          border: "var(--box-border)",
+                          boxShadow: "var(--box-shadow)",
+                          backdropFilter: "blur(var(--backdrop-blur))",
+                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                          breakBefore: pageBreakElementIds.includes("skills-grid") ? "page" : "auto",
+                        }}
+                      >
+                        {skills.map((sk: any) => (
+                            <SubItemWrapper
+                              key={sk.id}
+                              value={sk}
+                              id={sk.id}
+                              className="skill-cat relative pl-6 group"
+                            >
+{(dc: any) => (<>
+
+                              <div className="absolute left-0 top-0.5 no-print">
+                                <DragHandle dragControls={dc} />
+                              </div>
+                              <button
+                                className="hidden group-hover:block absolute right-0 top-0 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                                onClick={() =>
+                                  setSkills((s: any[]) =>
+                                    s.filter((x) => x.id !== sk.id),
+                                  )
+                                }
+                              >
+                                ✕
+                              </button>
+                              <ContentEditableField tagName="div"
+                                className="cat-title font-[family:var(--font-heading)] font-bold text-[14px] text-[var(--ink)] mb-1 outline-none"
+                                html={sk.title} onChange={(val) => { setSkills((prev: any[]) =>
+                                    prev.map((x) =>
+                                      x.id === sk.id ? { ...x, title: val } : x,
+                                    ),
+                                  ); }}
+                                spellCheck={spellcheckEnabled}
+                              />
+                              <ContentEditableField tagName="div"
+                                className="cat-items font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
+                                html={sk.items} onChange={(val) => { setSkills((prev: any[]) =>
+                                    prev.map((x) =>
+                                      x.id === sk.id ? { ...x, items: val } : x,
+                                    ),
+                                  ); }}
+                                spellCheck={spellcheckEnabled}
+                              />
+                            
+</>)}
+</SubItemWrapper>
+))}
+                      </Reorder.Group>
+                    </>
+                  )}
+
+                  {/* EXPERIENCE */}
+                  {section.id === "experience" && (
+                    <Reorder.Group
+                      values={experiences}
+                      onReorder={setExperiences}
+                    >
+                      {experiences.map((exp: any) => (
+                            <SubItemWrapper
+                              key={exp.id}
+                              value={exp}
+                              id={`exp-${exp.id}`}
+                              
+                              className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                              data-page-break-id={`exp-${exp.id}`}
+                              style={{
+                                backgroundColor: "var(--panel-rgba)",
+                                border: "var(--box-border)",
+                                boxShadow: "var(--box-shadow)",
+                                backdropFilter: "blur(var(--backdrop-blur))",
+                                WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                                breakBefore: pageBreakElementIds.includes(`exp-${exp.id}`) ? "page" : "auto",
+                              }}
+                            >
+{(dc: any) => (<>
+                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+
+                              <div className="absolute left-2 top-4 no-print">
+                                <DragHandle dragControls={dc} />
+                              </div>
+                              <button
+                                onClick={() =>
+                                  setExperiences((e: any[]) =>
+                                    e.filter((x) => x.id !== exp.id),
+                                  )
+                                }
+                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
+                              >
+                                <X size={12} /> remove
+                              </button>
+                              <div
+                                className={cn(
+                                  "exp-header",
+                                  design.jobLayout === "split"
+                                    ? "flex flex-col sm:flex-row justify-between items-start sm:items-baseline"
+                                    : "",
+                                )}
+                              >
+                               <ContentEditableField tagName="div"
+                                  className="exp-line1 font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none"
+                                  html={exp.title} onChange={(val) => { setExperiences((prev: any[]) =>
+                                      prev.map((x) =>
+                                        x.id === exp.id ? { ...x, title: val } : x,
+                                      ),
+                                    ); }}
+                                  spellCheck={spellcheckEnabled}
+                                />
+                                <ContentEditableField tagName="div"
+                                  className={cn(
+                                    "exp-line2 font-[family:var(--font-body)] italic font-semibold text-[13px] text-[var(--ink-soft)] outline-none",
+                                    design.jobLayout === "split"
+                                      ? "sm:ml-4 text-left sm:text-right shrink-0 mt-1 sm:my-0"
+                                      : "my-1",
+                                  )}
+                                  html={exp.date} onChange={(val) => { setExperiences((prev: any[]) =>
+                                      prev.map((x) =>
+                                        x.id === exp.id ? { ...x, date: val } : x,
+                                      ),
+                                    ); }}
+                                  spellCheck={spellcheckEnabled}
+                                />
+                              </div>
+                              <ul className="m-0 pl-5 exp-bullets mt-2">
+                                {exp.bullets.map((b: any) => (
+                                  <li
+                                    key={b.id}
+                                    className="relative group/bullet pl-1 mb-1.5"
+                                  >
+                                    <ContentEditableField tagName="span"
+                                      className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
+                                      html={b.text} onChange={(val) => { setExperiences((prev: any[]) =>
+                                          prev.map((x) =>
+                                            x.id === exp.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.map((y: any) =>
+                                                    y.id === b.id ? { ...y, text: val } : y,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        ); }}
+                                      spellCheck={spellcheckEnabled}
+                                    />
+                                    <button
+                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                                      onClick={() =>
+                                        setExperiences((e: any[]) =>
+                                          e.map((x) =>
+                                            x.id === exp.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.filter(
+                                                    (y: any) => y.id !== b.id,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      ✕
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <button
+                                onClick={() =>
+                                  setExperiences((e: any[]) =>
+                                    e.map((x) =>
+                                      x.id === exp.id
+                                        ? {
+                                            ...x,
+                                            bullets: [
+                                              ...x.bullets,
+                                              {
+                                                id: Date.now().toString(),
+                                                text: "New bullet",
+                                              },
+                                            ],
+                                          }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                                className="add-bullet font-sans text-[11px] font-semibold text-[var(--accent)] bg-transparent border border-dashed border-[var(--accent)] rounded-md px-2 py-1 cursor-pointer mt-2 ml-5 no-print"
+                              >
+                                + bullet
+                              </button>
+                              {exp.meta !== undefined && (
+                                <ContentEditableField tagName="div"
+                                  className="exp-meta mt-3 pt-2 border-t border-[var(--hairline)] font-sans text-xs text-[var(--ink-soft)] font-medium leading-relaxed outline-none"
+                                  html={exp.meta} onChange={(val) => { setExperiences((prev: any[]) =>
+                                      prev.map((x) =>
+                                        x.id === exp.id ? { ...x, meta: val } : x,
+                                      ),
+                                    ); }}
+                                  spellCheck={spellcheckEnabled}
+                                />
+                              )}
+                            
+</>)}
+</SubItemWrapper>
+))}
+                    </Reorder.Group>
+                  )}
+
+                  {/* EDUCATION */}
+                  {section.id === "education" && (
+                    <Reorder.Group
+                      values={educations}
+                      onReorder={setEducations}
+                    >
+                      {educations.map((edu: any) => (
+                            <SubItemWrapper
+                              key={edu.id}
+                              value={edu}
+                              id={`edu-${edu.id}`}
+                              
+                              className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                              data-page-break-id={`edu-${edu.id}`}
+                              style={{
+                                backgroundColor: "var(--panel-rgba)",
+                                border: "var(--box-border)",
+                                boxShadow: "var(--box-shadow)",
+                                backdropFilter: "blur(var(--backdrop-blur))",
+                                WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                                breakBefore: pageBreakElementIds.includes(`edu-${edu.id}`) ? "page" : "auto",
+                              }}
+                            >
+{(dc: any) => (<>
+                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+
+                              <div className="absolute left-2 top-4 no-print">
+                                <DragHandle dragControls={dc} />
+                              </div>
+                              <button
+                                onClick={() =>
+                                  setEducations((e: any[]) =>
+                                    e.filter((x) => x.id !== edu.id),
+                                  )
+                                }
+                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
+                              >
+                                <X size={12} /> remove
+                              </button>
+                              <ContentEditableField tagName="div"
+                                className="edu-degree font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none"
+                                html={edu.degree} onChange={(val) => { setEducations((prev: any[]) =>
+                                    prev.map((x) =>
+                                      x.id === edu.id ? { ...x, degree: val } : x,
+                                    ),
+                                  ); }}
+                                spellCheck={spellcheckEnabled}
+                              />
+                              <ul className="m-0 pl-5 edu-bullets mt-1">
+                                {edu.bullets.map((b: any) => (
+                                  <li
+                                    key={b.id}
+                                    className="relative group/bullet pl-1 mb-1"
+                                  >
+                                    <ContentEditableField tagName="span"
+                                      className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
+                                      html={b.text} onChange={(val) => { setEducations((prev: any[]) =>
+                                          prev.map((x) =>
+                                            x.id === edu.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.map((y: any) =>
+                                                    y.id === b.id ? { ...y, text: val } : y,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        ); }}
+                                      spellCheck={spellcheckEnabled}
+                                    />
+                                    <button
+                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                                      onClick={() =>
+                                        setEducations((e: any[]) =>
+                                          e.map((x) =>
+                                            x.id === edu.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.filter(
+                                                    (y: any) => y.id !== b.id,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      ✕
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <button
+                                onClick={() =>
+                                  setEducations((e: any[]) =>
+                                    e.map((x) =>
+                                      x.id === edu.id
+                                        ? {
+                                            ...x,
+                                            bullets: [
+                                              ...x.bullets,
+                                              {
+                                                id: Date.now().toString(),
+                                                text: "New bullet",
+                                              },
+                                            ],
+                                          }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                                className="add-bullet font-sans text-[11px] font-semibold text-[var(--accent)] bg-transparent border border-dashed border-[var(--accent)] rounded-md px-2 py-1 cursor-pointer mt-2 ml-5 no-print"
+                              >
+                                + bullet
+                              </button>
+                            
+</>)}
+</SubItemWrapper>
+))}
+                    </Reorder.Group>
+                  )}
+                </SectionWrapper>
+  );
+}, (prev, next) => {
+  if (prev.section !== next.section) return false;
+  if (prev.design !== next.design) return false;
+  if (prev.gapHeights !== next.gapHeights) return false;
+  if (prev.pageBreakElementIds !== next.pageBreakElementIds) return false;
+  if (prev.manualBreaks !== next.manualBreaks) return false;
+  if (prev.spellcheckEnabled !== next.spellcheckEnabled) return false;
+  
+  if (next.section.id === "summary") return prev.summary === next.summary;
+  if (next.section.id === "licenses") return prev.licenses === next.licenses;
+  if (next.section.id === "skills") return prev.skills === next.skills;
+  if (next.section.id === "experience") return prev.experiences === next.experiences;
+  if (next.section.id === "education") return prev.educations === next.educations;
+  
+  return true;
+});
 
 export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: () => void, initialTemplateId?: string }) {
   // --- Local Draft Retrieval ---
@@ -550,6 +1028,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [tutorialStep, setTutorialStep] = useState(0);
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
   const [pageDrawerOpen, setPageDrawerOpen] = useState(false);
+  const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
 
   // --- Design State ---
   const [design, setDesign] = useState<DesignConfig>(() => {
@@ -1248,9 +1727,15 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
           
           Provide a friendly, conversational message before the XML block congratulating the user on finishing their career interview and explaining how their resume was crafted.`;
 
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+
           const response = await fetch("/api/groq", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({
               prompt: compilePrompt,
               systemPrompt,
@@ -1344,9 +1829,15 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       Ensure each object in experiences, educations, and skills has a unique 'id' string (e.g., 'exp-X', 'edu-X', 'sk-X').
       If the user is just asking a question and no resume changes are needed, do not include the <UPDATE_RESUME> tags. Just reply conversationally.`;
 
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch("/api/groq", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           prompt: rawInput,
           systemPrompt,
@@ -2429,14 +2920,14 @@ Output:
         : marginPx;
 
       const sheetBottom = (idx + 1) * pageHeightPx + idx * 32;
-      const topSpacer = Math.max(0, sheetBottom - prevActualBottomInPage);
-      const total = topSpacer + 32 + marginPx;
+      const topSpacer = Math.max(0, Math.round(sheetBottom - prevActualBottomInPage));
+      const total = Math.round(topSpacer + 32 + marginPx);
 
       newGapHeights[brId] = { total, top: topSpacer };
     });
 
     const newBreaks = breakStarts.map((item) => {
-      return item.elTop - (pageStartY_initial ?? 0);
+      return Math.round(item.elTop - (pageStartY_initial ?? 0));
     });
 
     setPageBreaks((prev) => {
@@ -2478,18 +2969,27 @@ Output:
   }, [design.pageSize, design.pageMargin]);
 
   useEffect(() => {
-    calcPages();
-    const observer = new MutationObserver(calcPages);
+    let timeoutId: NodeJS.Timeout;
+    const runCalc = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        calcPages();
+      }, 300); // 300ms debounce to prevent layout thrashing
+    };
+
+    runCalc();
+    const observer = new MutationObserver(runCalc);
     if (resumeRef.current)
       observer.observe(resumeRef.current, {
         childList: true,
         subtree: true,
         characterData: true,
       });
-    window.addEventListener("resize", calcPages);
+    window.addEventListener("resize", runCalc);
     return () => {
+      clearTimeout(timeoutId);
       observer.disconnect();
-      window.removeEventListener("resize", calcPages);
+      window.removeEventListener("resize", runCalc);
     };
   }, [calcPages]);
 
@@ -4713,6 +5213,20 @@ Output:
               <HelpCircle size={16} /> Help
             </button>
             <button
+              onClick={() => setSpellcheckEnabled(!spellcheckEnabled)}
+              className={cn(
+                "p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all inline-flex items-center gap-1.5 border border-gray-200 shadow-sm",
+                spellcheckEnabled
+                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+                  : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              )}
+              title={spellcheckEnabled ? "Disable spellcheck (removes red wavy lines)" : "Enable native spellcheck (adds red wavy lines to typos)"}
+            >
+              <SpellCheck size={14} className="md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Spellcheck</span>
+              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", spellcheckEnabled ? "bg-emerald-500 animate-pulse" : "bg-gray-400")} />
+            </button>
+            <button
               onClick={handleSaveToCloud}
               disabled={isSaving}
               className="bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold hover:bg-gray-200 inline-flex items-center gap-1 md:gap-1.5 transition-all disabled:opacity-50"
@@ -4955,25 +5469,15 @@ Output:
                 )}
                 
                 <div className="flex-1 min-w-0">
-                  <div
+                  <ContentEditableField tagName="div"
                     className="name font-[family:var(--font-heading)] font-bold text-3xl text-[var(--ink)] m-0 mb-1.5 tracking-wide outline-none"
-                    contentEditable
-                    suppressContentEditableWarning
-                    dangerouslySetInnerHTML={{ __html: name }}
-                    onBlur={(e) => {
-                      const val = e.currentTarget.innerHTML;
-                      setName(val);
-                    }}
+                    html={name} onChange={(val) => { setName(val); }}
+                    spellCheck={spellcheckEnabled}
                   />
-                  <div
+                  <ContentEditableField tagName="div"
                     className="contact-line font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] outline-none"
-                    contentEditable
-                    suppressContentEditableWarning
-                    dangerouslySetInnerHTML={{ __html: contactLine }}
-                    onBlur={(e) => {
-                      const val = e.currentTarget.innerHTML;
-                      setContactLine(val);
-                    }}
+                    html={contactLine} onChange={(val) => { setContactLine(val); }}
+                    spellCheck={spellcheckEnabled}
                   />
                 </div>
               </div>
@@ -4987,512 +5491,33 @@ Output:
               className="w-full"
             >
               {sections.map((section: any) => (
-                <SectionWrapper
-                  key={section.id}
-                  id={section.id}
-                  item={section}
-                  manualBreaks={manualBreaks}
-                  setManualBreaks={setManualBreaks}
-                  pageBreakElementIds={pageBreakElementIds}
-                  gapHeights={gapHeights}
-                  design={design}
-                  licenses={licenses}
-                  setLicenses={setLicenses}
-                  skills={skills}
-                  setSkills={setSkills}
-                  experiences={experiences}
-                  setExperiences={setExperiences}
-                  educations={educations}
-                  setEducations={setEducations}
-                >
-                  {/* SUMMARY */}
-                  {section.id === "summary" && (
-                    <>
-                      <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-                      <div
-                        className="summary font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break outline-none print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                        data-page-break-id="summary-content"
-                        style={{
-                          backgroundColor: "var(--panel-rgba)",
-                          border: "var(--box-border)",
-                          boxShadow: "var(--box-shadow)",
-                          backdropFilter: "blur(var(--backdrop-blur))",
-                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                          breakBefore: pageBreakElementIds.includes("summary-content") ? "page" : "auto",
-                        }}
-                        contentEditable
-                        suppressContentEditableWarning
-                        dangerouslySetInnerHTML={{ __html: summary }}
-                        onBlur={(e) => {
-                          const val = e.currentTarget.innerHTML;
-                          setSummary(val);
-                        }}
-                      />
-                    </>
-                  )}
-
-                  {/* LICENSES */}
-                  {section.id === "licenses" && (
-                    <>
-                      <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-                      <Reorder.Group
-                        values={licenses}
-                        onReorder={setLicenses}
-                        as="ul"
-                        className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                        id="lic-list"
-                        data-page-break-id="lic-list"
-                        style={{
-                          backgroundColor: "var(--panel-rgba)",
-                          border: "var(--box-border)",
-                          boxShadow: "var(--box-shadow)",
-                          backdropFilter: "blur(var(--backdrop-blur))",
-                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                          breakBefore: pageBreakElementIds.includes("lic-list") ? "page" : "auto",
-                        }}
-                      >
-                        {licenses.map((lic: any) => (
-<SubItemWrapper
-                              key={lic.id}
-                              value={lic}
-                              id={lic.id}
-                              
-                              className="relative group pl-1 mb-2"
-                            >
-{(dc: any) => (<>
-
-                              <div className="absolute left-[-1.8rem] top-0 no-print">
-                                <DragHandle dragControls={dc} />
-                              </div>
-                              <span
-                                className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
-                                contentEditable
-                                suppressContentEditableWarning
-                                dangerouslySetInnerHTML={{ __html: lic.text }}
-                                onBlur={(e) => {
-                                  const val = e.currentTarget.innerHTML;
-                                  setLicenses((prev) =>
-                                    prev.map((x) =>
-                                      x.id === lic.id ? { ...x, text: val } : x,
-                                    ),
-                                  );
-                                }}
-                              />
-                              <button
-                                className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                onClick={() =>
-                                  setLicenses((l) =>
-                                    l.filter((x) => x.id !== lic.id),
-                                  )
-                                }
-                              >
-                                ✕ remove
-                              </button>
-                            
-</>)}
-</SubItemWrapper>
+  <SectionRenderer
+    key={section.id}
+    section={section}
+    summary={summary}
+    setSummary={setSummary}
+    licenses={licenses}
+    setLicenses={setLicenses}
+    skills={skills}
+    setSkills={setSkills}
+    experiences={experiences}
+    setExperiences={setExperiences}
+    educations={educations}
+    setEducations={setEducations}
+    manualBreaks={manualBreaks}
+    setManualBreaks={setManualBreaks}
+    pageBreakElementIds={pageBreakElementIds}
+    design={design}
+    gapHeights={gapHeights}
+    spellcheckEnabled={spellcheckEnabled}
+  />
 ))}
-                      </Reorder.Group>
-                    </>
-                  )}
-
-                  {/* SKILLS */}
-                  {section.id === "skills" && (
-                    <>
-                      <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-                      <Reorder.Group
-                        values={skills}
-                        onReorder={setSkills}
-                        className="skills-grid grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 rounded-[var(--radius)] p-5 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                        id="skills-grid"
-                        data-page-break-id="skills-grid"
-                        style={{
-                          backgroundColor: "var(--panel-rgba)",
-                          border: "var(--box-border)",
-                          boxShadow: "var(--box-shadow)",
-                          backdropFilter: "blur(var(--backdrop-blur))",
-                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                          breakBefore: pageBreakElementIds.includes("skills-grid") ? "page" : "auto",
-                        }}
-                      >
-                        {skills.map((sk: any) => (
-                            <SubItemWrapper
-                              key={sk.id}
-                              value={sk}
-                              id={sk.id}
-                              className="skill-cat relative pl-6 group"
-                            >
-{(dc: any) => (<>
-
-                              <div className="absolute left-0 top-0.5 no-print">
-                                <DragHandle dragControls={dc} />
-                              </div>
-                              <button
-                                className="hidden group-hover:block absolute right-0 top-0 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                onClick={() =>
-                                  setSkills((s) =>
-                                    s.filter((x) => x.id !== sk.id),
-                                  )
-                                }
-                              >
-                                ✕
-                              </button>
-                              <div
-                                className="cat-title font-[family:var(--font-heading)] font-bold text-[14px] text-[var(--ink)] mb-1 outline-none"
-                                contentEditable
-                                suppressContentEditableWarning
-                                dangerouslySetInnerHTML={{ __html: sk.title }}
-                                onBlur={(e) => {
-                                  const val = e.currentTarget.innerHTML;
-                                  setSkills((prev) =>
-                                    prev.map((x) =>
-                                      x.id === sk.id ? { ...x, title: val } : x,
-                                    ),
-                                  );
-                                }}
-                              />
-                              <div
-                                className="cat-items font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
-                                contentEditable
-                                suppressContentEditableWarning
-                                dangerouslySetInnerHTML={{ __html: sk.items }}
-                                onBlur={(e) => {
-                                  const val = e.currentTarget.innerHTML;
-                                  setSkills((prev) =>
-                                    prev.map((x) =>
-                                      x.id === sk.id ? { ...x, items: val } : x,
-                                    ),
-                                  );
-                                }}
-                              />
-                            
-</>)}
-</SubItemWrapper>
-))}
-                      </Reorder.Group>
-                    </>
-                  )}
-
-                  {/* EXPERIENCE */}
-                  {section.id === "experience" && (
-                    <Reorder.Group
-                      values={experiences}
-                      onReorder={setExperiences}
-                    >
-                      {experiences.map((exp: any) => (
-                            <SubItemWrapper
-                              key={exp.id}
-                              value={exp}
-                              id={`exp-${exp.id}`}
-                              
-                              className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                              data-page-break-id={`exp-${exp.id}`}
-                              style={{
-                                backgroundColor: "var(--panel-rgba)",
-                                border: "var(--box-border)",
-                                boxShadow: "var(--box-shadow)",
-                                backdropFilter: "blur(var(--backdrop-blur))",
-                                WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                                breakBefore: pageBreakElementIds.includes(`exp-${exp.id}`) ? "page" : "auto",
-                              }}
-                            >
-{(dc: any) => (<>
-                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-
-                              <div className="absolute left-2 top-4 no-print">
-                                <DragHandle dragControls={dc} />
-                              </div>
-                              <button
-                                onClick={() =>
-                                  setExperiences((e) =>
-                                    e.filter((x) => x.id !== exp.id),
-                                  )
-                                }
-                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
-                              >
-                                <X size={12} /> remove
-                              </button>
-                              <div
-                                className={cn(
-                                  "exp-header",
-                                  design.jobLayout === "split"
-                                    ? "flex flex-col sm:flex-row justify-between items-start sm:items-baseline"
-                                    : "",
-                                )}
-                              >
-                                 <div
-                                  className="exp-line1 font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none"
-                                  contentEditable
-                                  suppressContentEditableWarning
-                                  dangerouslySetInnerHTML={{ __html: exp.title }}
-                                  onBlur={(e) => {
-                                    const val = e.currentTarget.innerHTML;
-                                    setExperiences((prev) =>
-                                      prev.map((x) =>
-                                        x.id === exp.id ? { ...x, title: val } : x,
-                                      ),
-                                    );
-                                  }}
-                                />
-                                <div
-                                  className={cn(
-                                    "exp-line2 font-[family:var(--font-body)] italic font-semibold text-[13px] text-[var(--ink-soft)] outline-none",
-                                    design.jobLayout === "split"
-                                      ? "sm:ml-4 text-left sm:text-right shrink-0 mt-1 sm:my-0"
-                                      : "my-1",
-                                  )}
-                                  contentEditable
-                                  suppressContentEditableWarning
-                                  dangerouslySetInnerHTML={{ __html: exp.date }}
-                                  onBlur={(e) => {
-                                    const val = e.currentTarget.innerHTML;
-                                    setExperiences((prev) =>
-                                      prev.map((x) =>
-                                        x.id === exp.id ? { ...x, date: val } : x,
-                                      ),
-                                    );
-                                  }}
-                                />
-                              </div>
-                              <ul className="m-0 pl-5 exp-bullets mt-2">
-                                {exp.bullets.map((b: any) => (
-                                  <li
-                                    key={b.id}
-                                    className="relative group/bullet pl-1 mb-1.5"
-                                  >
-                                    <span
-                                      className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
-                                      contentEditable
-                                      suppressContentEditableWarning
-                                      dangerouslySetInnerHTML={{ __html: b.text }}
-                                      onBlur={(e) => {
-                                        const val = e.currentTarget.innerHTML;
-                                        setExperiences((prev) =>
-                                          prev.map((x) =>
-                                            x.id === exp.id
-                                              ? {
-                                                  ...x,
-                                                  bullets: x.bullets.map((y: any) =>
-                                                    y.id === b.id ? { ...y, text: val } : y,
-                                                  ),
-                                                }
-                                              : x,
-                                          ),
-                                        );
-                                      }}
-                                    />
-                                    <button
-                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                      onClick={() =>
-                                        setExperiences((e) =>
-                                          e.map((x) =>
-                                            x.id === exp.id
-                                              ? {
-                                                  ...x,
-                                                  bullets: x.bullets.filter(
-                                                    (y: any) => y.id !== b.id,
-                                                  ),
-                                                }
-                                              : x,
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      ✕
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                              <button
-                                onClick={() =>
-                                  setExperiences((e) =>
-                                    e.map((x) =>
-                                      x.id === exp.id
-                                        ? {
-                                            ...x,
-                                            bullets: [
-                                              ...x.bullets,
-                                              {
-                                                id: Date.now().toString(),
-                                                text: "New bullet",
-                                              },
-                                            ],
-                                          }
-                                        : x,
-                                    ),
-                                  )
-                                }
-                                className="add-bullet font-sans text-[11px] font-semibold text-[var(--accent)] bg-transparent border border-dashed border-[var(--accent)] rounded-md px-2 py-1 cursor-pointer mt-2 ml-5 no-print"
-                              >
-                                + bullet
-                              </button>
-                              {exp.meta !== undefined && (
-                                <div
-                                  className="exp-meta mt-3 pt-2 border-t border-[var(--hairline)] font-sans text-xs text-[var(--ink-soft)] font-medium leading-relaxed outline-none"
-                                  contentEditable
-                                  suppressContentEditableWarning
-                                  dangerouslySetInnerHTML={{ __html: exp.meta }}
-                                  onBlur={(e) => {
-                                    const val = e.currentTarget.innerHTML;
-                                    setExperiences((prev) =>
-                                      prev.map((x) =>
-                                        x.id === exp.id ? { ...x, meta: val } : x,
-                                      ),
-                                    );
-                                  }}
-                                />
-                              )}
-                            
-</>)}
-</SubItemWrapper>
-))}
-                    </Reorder.Group>
-                  )}
-
-                  {/* EDUCATION */}
-                  {section.id === "education" && (
-                    <Reorder.Group
-                      values={educations}
-                      onReorder={setEducations}
-                    >
-                      {educations.map((edu: any) => (
-                            <SubItemWrapper
-                              key={edu.id}
-                              value={edu}
-                              id={`edu-${edu.id}`}
-                              
-                              className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                              data-page-break-id={`edu-${edu.id}`}
-                              style={{
-                                backgroundColor: "var(--panel-rgba)",
-                                border: "var(--box-border)",
-                                boxShadow: "var(--box-shadow)",
-                                backdropFilter: "blur(var(--backdrop-blur))",
-                                WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                                breakBefore: pageBreakElementIds.includes(`edu-${edu.id}`) ? "page" : "auto",
-                              }}
-                            >
-{(dc: any) => (<>
-                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-
-                              <div className="absolute left-2 top-4 no-print">
-                                <DragHandle dragControls={dc} />
-                              </div>
-                              <button
-                                onClick={() =>
-                                  setEducations((e) =>
-                                    e.filter((x) => x.id !== edu.id),
-                                  )
-                                }
-                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
-                              >
-                                <X size={12} /> remove
-                              </button>
-                              <div
-                                className="edu-degree font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none"
-                                contentEditable
-                                suppressContentEditableWarning
-                                dangerouslySetInnerHTML={{ __html: edu.degree }}
-                                onBlur={(e) => {
-                                  const val = e.currentTarget.innerHTML;
-                                  setEducations((prev) =>
-                                    prev.map((x) =>
-                                      x.id === edu.id ? { ...x, degree: val } : x,
-                                    ),
-                                  );
-                                }}
-                              />
-                              <ul className="m-0 pl-5 edu-bullets mt-1">
-                                {edu.bullets.map((b: any) => (
-                                  <li
-                                    key={b.id}
-                                    className="relative group/bullet pl-1 mb-1"
-                                  >
-                                    <span
-                                      className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
-                                      contentEditable
-                                      suppressContentEditableWarning
-                                      dangerouslySetInnerHTML={{ __html: b.text }}
-                                      onBlur={(e) => {
-                                        const val = e.currentTarget.innerHTML;
-                                        setEducations((prev) =>
-                                          prev.map((x) =>
-                                            x.id === edu.id
-                                              ? {
-                                                  ...x,
-                                                  bullets: x.bullets.map((y: any) =>
-                                                    y.id === b.id ? { ...y, text: val } : y,
-                                                  ),
-                                                }
-                                              : x,
-                                          ),
-                                        );
-                                      }}
-                                    />
-                                    <button
-                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                      onClick={() =>
-                                        setEducations((e) =>
-                                          e.map((x) =>
-                                            x.id === edu.id
-                                              ? {
-                                                  ...x,
-                                                  bullets: x.bullets.filter(
-                                                    (y: any) => y.id !== b.id,
-                                                  ),
-                                                }
-                                              : x,
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      ✕
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                              <button
-                                onClick={() =>
-                                  setEducations((e) =>
-                                    e.map((x) =>
-                                      x.id === edu.id
-                                        ? {
-                                            ...x,
-                                            bullets: [
-                                              ...x.bullets,
-                                              {
-                                                id: Date.now().toString(),
-                                                text: "New bullet",
-                                              },
-                                            ],
-                                          }
-                                        : x,
-                                    ),
-                                  )
-                                }
-                                className="add-bullet font-sans text-[11px] font-semibold text-[var(--accent)] bg-transparent border border-dashed border-[var(--accent)] rounded-md px-2 py-1 cursor-pointer mt-2 ml-5 no-print"
-                              >
-                                + bullet
-                              </button>
-                            
-</>)}
-</SubItemWrapper>
-))}
-                    </Reorder.Group>
-                  )}
-                </SectionWrapper>
-              ))}
             </Reorder.Group>
 
-            <div
+            <ContentEditableField tagName="div"
               className="page-footer text-center font-sans text-[11px] text-[#a19b9d] mt-4 outline-none"
-              contentEditable
-              suppressContentEditableWarning
-              dangerouslySetInnerHTML={{ __html: footer }}
-              onBlur={(e) => {
-                const val = e.currentTarget.innerHTML;
-                setFooter(val);
-              }}
+              html={footer} onChange={(val) => { setFooter(val); }}
+              spellCheck={spellcheckEnabled}
             />
           </div>
         </div>
