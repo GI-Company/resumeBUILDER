@@ -329,6 +329,23 @@ const DragHandle = ({ dragControls }: { dragControls: any }) => (
   </span>
 );
 
+const SubItemWrapper = ({ id, item, value, className, children }: any) => {
+  const dc = useDragControls();
+  const actualValue = item ?? value;
+  return (
+    <Reorder.Item
+      key={id}
+      value={actualValue}
+      id={id}
+      dragListener={false}
+      dragControls={dc}
+      className={className}
+    >
+      {typeof children === "function" ? children(dc) : children}
+    </Reorder.Item>
+  );
+};
+
 const SaveResponseSchema = z.object({
   success: z.boolean(),
   code: z.string(),
@@ -385,7 +402,153 @@ interface ProfilePhotoConfig {
   animation: string;
 }
 
-export default function ResumeBuilder() {
+const SectionWrapper = ({
+  id,
+  item,
+  children,
+  manualBreaks,
+  setManualBreaks,
+  pageBreakElementIds,
+  gapHeights,
+  design,
+  licenses,
+  setLicenses,
+  skills,
+  setSkills,
+  experiences,
+  setExperiences,
+  educations,
+  setEducations,
+}: any) => {
+  const dragControls = useDragControls();
+  return (
+    <Reorder.Item
+      value={item}
+      id={id}
+      dragListener={false}
+      dragControls={dragControls}
+      data-section={id}
+      className={cn(
+        "section mt-0 relative",
+        manualBreaks[id] && "manual-break",
+      )}
+    >
+      <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+      <div
+        className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex items-center justify-between gap-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
+        data-page-break-id={`heading-${id}`}
+        style={{
+          backgroundColor: "var(--panel-dark-rgba)",
+          border: "var(--box-border)",
+          boxShadow: "var(--box-shadow)",
+          backdropFilter: "blur(var(--backdrop-blur))",
+          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+          breakBefore: pageBreakElementIds.includes(`heading-${id}`) ? "page" : "auto",
+        }}
+      >
+        <div className="heading-left flex items-center gap-2">
+          <DragHandle dragControls={dragControls} />
+          {id === "summary" && "Professional Summary"}
+          {id === "licenses" && "Certifications & Licenses"}
+          {id === "skills" && "Skills"}
+          {id === "experience" && "Professional Experience"}
+          {id === "education" && "Education"}
+        </div>
+        <div className="heading-left flex items-center gap-2">
+          <button
+            onClick={() => setManualBreaks((p: any) => ({ ...p, [id]: !p[id] }))}
+            className={cn(
+              "font-sans text-[11px] font-bold tracking-normal bg-transparent border border-[var(--hairline)] rounded-md px-2 py-1 cursor-pointer no-print flex items-center gap-1 transition-colors hover:bg-gray-100",
+              manualBreaks[id]
+                ? "bg-[var(--accent)] text-white border-[var(--accent)] hover:bg-[var(--accent)] hover:brightness-110"
+                : "text-[var(--ink-soft)]",
+            )}
+            title="Force this section to start a new printed page"
+          >
+            <ArrowDownToLine size={12} />
+            <span>Page Break</span>
+          </button>
+          {id === "licenses" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setLicenses([
+                  ...licenses,
+                  {
+                    id: Date.now().toString(),
+                    text: "<b>New Credential</b> — Issuing Organization",
+                  },
+                ])
+              }
+            >
+              <span>+ Add Credential</span>
+            </button>
+          )}
+          {id === "skills" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setSkills([
+                  ...skills,
+                  {
+                    id: Date.now().toString(),
+                    title: "New Category",
+                    items: "List skills here",
+                  },
+                ])
+              }
+            >
+              <span>+ Add Category</span>
+            </button>
+          )}
+          {id === "experience" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setExperiences([
+                  ...experiences,
+                  {
+                    id: Date.now().toString(),
+                    title: "New Job | Company",
+                    date: "Date",
+                    bullets: [
+                      { id: Date.now().toString(), text: "New bullet" },
+                    ],
+                    meta: "",
+                  },
+                ])
+              }
+            >
+              <span>+ Add Position</span>
+            </button>
+          )}
+          {id === "education" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setEducations([
+                  ...educations,
+                  {
+                    id: Date.now().toString(),
+                    degree: "Degree | School",
+                    bullets: [
+                      { id: Date.now().toString(), text: "New bullet" },
+                    ],
+                  },
+                ])
+              }
+            >
+              <span>+ Add Education</span>
+            </button>
+          )}
+        </div>
+      </div>
+      {children}
+    </Reorder.Item>
+  );
+};
+
+export default function ResumeBuilder({ onBack }: { onBack?: () => void }) {
   // --- Local Draft Retrieval ---
   let localDraft: any = null;
   if (typeof window !== "undefined") {
@@ -2412,134 +2575,6 @@ export default function ResumeBuilder() {
     .join(" ");
 
   // --- Renderers ---
-  const SectionWrapper = ({ id, item, children }: any) => {
-    const dragControls = useDragControls();
-    return (
-      <Reorder.Item
-        value={item}
-        id={id}
-        dragListener={false}
-        dragControls={dragControls}
-        data-section={id}
-        className={cn(
-          "section mt-0 relative",
-          manualBreaks[id] && "manual-break",
-        )}
-      >
-        <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-        <div
-          className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex items-center justify-between gap-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
-          data-page-break-id={`heading-${id}`}
-          style={{
-            backgroundColor: "var(--panel-dark-rgba)",
-            border: "var(--box-border)",
-            boxShadow: "var(--box-shadow)",
-            backdropFilter: "blur(var(--backdrop-blur))",
-            WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-            breakBefore: pageBreakElementIds.includes(`heading-${id}`) ? "page" : "auto",
-          }}
-        >
-          <div className="heading-left flex items-center gap-2">
-            <DragHandle dragControls={dragControls} />
-            {id === "summary" && "Professional Summary"}
-            {id === "licenses" && "Certifications & Licenses"}
-            {id === "skills" && "Skills"}
-            {id === "experience" && "Professional Experience"}
-            {id === "education" && "Education"}
-          </div>
-          <div className="heading-left flex items-center gap-2">
-            <button
-              onClick={() => setManualBreaks((p) => ({ ...p, [id]: !p[id] }))}
-              className={cn(
-                "font-sans text-[11px] font-bold tracking-normal bg-transparent border border-[var(--hairline)] rounded-md px-2 py-1 cursor-pointer no-print flex items-center gap-1 transition-colors hover:bg-gray-100",
-                manualBreaks[id]
-                  ? "bg-[var(--accent)] text-white border-[var(--accent)] hover:bg-[var(--accent)] hover:brightness-110"
-                  : "text-[var(--ink-soft)]",
-              )}
-              title="Force this section to start a new printed page"
-            >
-              <ArrowDownToLine size={12} />
-              <span>Page Break</span>
-            </button>
-            {id === "licenses" && (
-              <button
-                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
-                onClick={() =>
-                  setLicenses([
-                    ...licenses,
-                    {
-                      id: Date.now().toString(),
-                      text: "<b>New Credential</b> — Issuing Organization",
-                    },
-                  ])
-                }
-              >
-                <span>+ Add Credential</span>
-              </button>
-            )}
-            {id === "skills" && (
-              <button
-                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
-                onClick={() =>
-                  setSkills([
-                    ...skills,
-                    {
-                      id: Date.now().toString(),
-                      title: "New Category",
-                      items: "List skills here",
-                    },
-                  ])
-                }
-              >
-                <span>+ Add Category</span>
-              </button>
-            )}
-            {id === "experience" && (
-              <button
-                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
-                onClick={() =>
-                  setExperiences([
-                    ...experiences,
-                    {
-                      id: Date.now().toString(),
-                      title: "New Job | Company",
-                      date: "Date",
-                      bullets: [
-                        { id: Date.now().toString(), text: "New bullet" },
-                      ],
-                      meta: "",
-                    },
-                  ])
-                }
-              >
-                <span>+ Add Position</span>
-              </button>
-            )}
-            {id === "education" && (
-              <button
-                className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
-                onClick={() =>
-                  setEducations([
-                    ...educations,
-                    {
-                      id: Date.now().toString(),
-                      degree: "Degree | School",
-                      bullets: [
-                        { id: Date.now().toString(), text: "New bullet" },
-                      ],
-                    },
-                  ])
-                }
-              >
-                <span>+ Add Education</span>
-              </button>
-            )}
-          </div>
-        </div>
-        {children}
-      </Reorder.Item>
-    );
-  };
 
   return (
     <div className="h-screen w-full flex bg-[#f8f9fa] text-gray-900 antialiased overflow-hidden font-sans">
@@ -3193,7 +3228,7 @@ export default function ResumeBuilder() {
 
           {/* Add Content Panel */}
           {activeSidebarTab === "content" && (
-            <div className="flex-1 p-5">
+            <div className="flex-1 overflow-y-auto p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
                   Add Content
@@ -3265,6 +3300,23 @@ export default function ResumeBuilder() {
                     +
                   </div>{" "}
                   Add Education
+                </button>
+                <button
+                  onClick={() =>
+                    setLicenses([
+                      ...licenses,
+                      {
+                        id: Date.now().toString(),
+                        text: "New License or Certification",
+                      },
+                    ])
+                  }
+                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-sm flex items-center gap-2"
+                >
+                  <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                    +
+                  </div>{" "}
+                  Add Certification
                 </button>
               </div>
               <div className="mt-8">
@@ -4489,6 +4541,14 @@ export default function ResumeBuilder() {
         {/* Top Header */}
         <div className="h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-20 no-print shrink-0 shadow-sm relative">
           <div className="flex items-center gap-2 md:gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="mr-1 text-gray-900 bg-white border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-all cursor-pointer flex items-center gap-1.5 no-print"
+              >
+                ← <span className="hidden md:inline">{user ? "Back to Dashboard" : "Back"}</span><span className="md:hidden">Back</span>
+              </button>
+            )}
             <span className="font-[family:'Kalam',cursive] font-bold text-base md:text-lg text-gray-800">
               MYresume
             </span>
@@ -4587,10 +4647,10 @@ export default function ResumeBuilder() {
             <div className="w-px h-5 bg-gray-200 mx-1 hidden md:block"></div>
             <button
               onClick={() => setActiveSidebarTab(activeSidebarTab === "account" ? null : "account")}
-              className="relative hidden md:block rounded-full hover:ring-2 hover:ring-blue-100 transition-all"
+              className="relative rounded-full hover:ring-2 hover:ring-blue-100 transition-all ml-1"
             >
               {user ? (
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center">
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center">
                   <img
                     src={user.user_metadata?.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex"}
                     alt="User avatar"
@@ -4598,8 +4658,8 @@ export default function ResumeBuilder() {
                   />
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center">
-                  <UserIcon size={18} />
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center">
+                  <UserIcon size={16} className="md:w-[18px] md:h-[18px]" />
                 </div>
               )}
             </button>
@@ -4843,7 +4903,24 @@ export default function ResumeBuilder() {
               className="w-full"
             >
               {sections.map((section: any) => (
-                <SectionWrapper key={section.id} id={section.id} item={section}>
+                <SectionWrapper
+                  key={section.id}
+                  id={section.id}
+                  item={section}
+                  manualBreaks={manualBreaks}
+                  setManualBreaks={setManualBreaks}
+                  pageBreakElementIds={pageBreakElementIds}
+                  gapHeights={gapHeights}
+                  design={design}
+                  licenses={licenses}
+                  setLicenses={setLicenses}
+                  skills={skills}
+                  setSkills={setSkills}
+                  experiences={experiences}
+                  setExperiences={setExperiences}
+                  educations={educations}
+                  setEducations={setEducations}
+                >
                   {/* SUMMARY */}
                   {section.id === "summary" && (
                     <>
@@ -4890,17 +4967,16 @@ export default function ResumeBuilder() {
                           breakBefore: pageBreakElementIds.includes("lic-list") ? "page" : "auto",
                         }}
                       >
-                        {licenses.map((lic: any) => {
-                          const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
-                          return (
-                            <Reorder.Item
+                        {licenses.map((lic: any) => (
+<SubItemWrapper
                               key={lic.id}
                               value={lic}
                               id={lic.id}
-                              dragListener={false}
-                              dragControls={dc}
+                              
                               className="relative group pl-1 mb-2"
                             >
+{(dc: any) => (<>
+
                               <div className="absolute left-[-1.8rem] top-0 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
@@ -4928,9 +5004,10 @@ export default function ResumeBuilder() {
                               >
                                 ✕ remove
                               </button>
-                            </Reorder.Item>
-                          );
-                        })}
+                            
+</>)}
+</SubItemWrapper>
+))}
                       </Reorder.Group>
                     </>
                   )}
@@ -4954,16 +5031,15 @@ export default function ResumeBuilder() {
                           breakBefore: pageBreakElementIds.includes("skills-grid") ? "page" : "auto",
                         }}
                       >
-                        {skills.map((sk: any) => {
-                          const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
-                          return (
-                            <Reorder.Item
+                        {skills.map((sk: any) => (
+                            <SubItemWrapper
                               key={sk.id}
                               value={sk}
-                              dragListener={false}
-                              dragControls={dc}
+                              id={sk.id}
                               className="skill-cat relative pl-6 group"
                             >
+{(dc: any) => (<>
+
                               <div className="absolute left-0 top-0.5 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
@@ -5005,9 +5081,10 @@ export default function ResumeBuilder() {
                                   );
                                 }}
                               />
-                            </Reorder.Item>
-                          );
-                        })}
+                            
+</>)}
+</SubItemWrapper>
+))}
                       </Reorder.Group>
                     </>
                   )}
@@ -5018,17 +5095,12 @@ export default function ResumeBuilder() {
                       values={experiences}
                       onReorder={setExperiences}
                     >
-                      {experiences.map((exp: any) => {
-                        const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
-                        return (
-                          <React.Fragment key={exp.id}>
-                            <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-                            <Reorder.Item
+                      {experiences.map((exp: any) => (
+                            <SubItemWrapper
                               key={exp.id}
                               value={exp}
                               id={`exp-${exp.id}`}
-                              dragListener={false}
-                              dragControls={dc}
+                              
                               className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
                               data-page-break-id={`exp-${exp.id}`}
                               style={{
@@ -5040,6 +5112,9 @@ export default function ResumeBuilder() {
                                 breakBefore: pageBreakElementIds.includes(`exp-${exp.id}`) ? "page" : "auto",
                               }}
                             >
+{(dc: any) => (<>
+                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
@@ -5183,10 +5258,10 @@ export default function ResumeBuilder() {
                                   }}
                                 />
                               )}
-                            </Reorder.Item>
-                          </React.Fragment>
-                        );
-                      })}
+                            
+</>)}
+</SubItemWrapper>
+))}
                     </Reorder.Group>
                   )}
 
@@ -5196,17 +5271,12 @@ export default function ResumeBuilder() {
                       values={educations}
                       onReorder={setEducations}
                     >
-                      {educations.map((edu: any) => {
-                        const dc = useDragControls(); // eslint-disable-line react-hooks/rules-of-hooks
-                        return (
-                          <React.Fragment key={edu.id}>
-                            <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
-                            <Reorder.Item
+                      {educations.map((edu: any) => (
+                            <SubItemWrapper
                               key={edu.id}
                               value={edu}
                               id={`edu-${edu.id}`}
-                              dragListener={false}
-                              dragControls={dc}
+                              
                               className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
                               data-page-break-id={`edu-${edu.id}`}
                               style={{
@@ -5218,6 +5288,9 @@ export default function ResumeBuilder() {
                                 breakBefore: pageBreakElementIds.includes(`edu-${edu.id}`) ? "page" : "auto",
                               }}
                             >
+{(dc: any) => (<>
+                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
@@ -5317,10 +5390,10 @@ export default function ResumeBuilder() {
                               >
                                 + bullet
                               </button>
-                            </Reorder.Item>
-                          </React.Fragment>
-                        );
-                      })}
+                            
+</>)}
+</SubItemWrapper>
+))}
                     </Reorder.Group>
                   )}
                 </SectionWrapper>

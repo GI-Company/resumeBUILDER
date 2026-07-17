@@ -54,13 +54,7 @@ export default function Page() {
   if (showBuilder) {
       return (
         <div className="min-h-screen bg-gray-50">
-            <button 
-                onClick={handleCloseBuilder} 
-                className="fixed top-4 left-4 z-50 text-gray-900 bg-white border border-gray-200 p-2.5 rounded-xl text-xs font-bold hover:bg-gray-100 shadow-sm transition-all cursor-pointer flex items-center gap-1.5 no-print"
-            >
-                ← Back to Dashboard
-            </button>
-            <ResumeBuilder />
+            <ResumeBuilder onBack={handleCloseBuilder} />
         </div>
       );
   }

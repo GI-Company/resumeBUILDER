@@ -122,7 +122,13 @@ export async function POST(req: NextRequest) {
     const models = [
       "llama-3.3-70b-versatile",
       "llama-3.1-8b-instant",
-      "mixtral-8x7b-32768"
+      "qwen/qwen3-32b",
+      "qwen/qwen3.6-27b",
+      "meta-llama/llama-4-scout-17b-16e-instruct",
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "groq/compound",
+      "groq/compound-mini"
     ];
 
     let lastError: any = null;

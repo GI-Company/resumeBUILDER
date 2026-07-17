@@ -134,11 +134,15 @@ export async function POST(req: NextRequest) {
 
     // 6. Define the fallback list of models to optimize response times and availability
     const models = [
-      'groq/compound',
-      'groq/compound-mini',
       'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'qwen/qwen3-32b',
+      'qwen/qwen3.6-27b',
+      'meta-llama/llama-4-scout-17b-16e-instruct',
       'openai/gpt-oss-120b',
-      'openai/gpt-oss-20b'
+      'openai/gpt-oss-20b',
+      'groq/compound',
+      'groq/compound-mini'
     ];
 
     let lastError: any = null;
@@ -216,6 +220,7 @@ export async function POST(req: NextRequest) {
       remaining: rateLimit.remaining,
       resetTime: rateLimit.resetTime.toISOString()
     });
+
   } catch (err: any) {
     console.error('Error in Groq API proxy:', err);
     return NextResponse.json(
