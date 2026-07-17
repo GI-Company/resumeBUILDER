@@ -41,6 +41,10 @@ import {
   Play,
   CheckSquare,
   SpellCheck,
+  EyeOff,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -74,6 +78,23 @@ function shadeColor(hex: string, percent: number) {
   );
 }
 
+// Cookie Helper Functions
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
+function setCookie(name: string, value: string, days = 365) {
+  if (typeof document === "undefined") return;
+  const date = new Date();
+  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+  const expires = `; expires=${date.toUTCString()}`;
+  document.cookie = `${name}=${value || ""}${expires}; path=/; SameSite=Lax`;
+}
+
 const PRESET_AVATARS = [
   { id: "avatar-1", name: "Alex", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex" },
   { id: "avatar-2", name: "Jordan", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jordan" },
@@ -90,25 +111,30 @@ interface PageBreakGapProps {
   pageBreakElementIds: string[];
   gapHeights?: Record<string, { total: number; top: number }>;
   pageMargin: number;
+  pageMarginX?: number;
+  pageMarginY?: number;
 }
 
-const PageBreakGap = memo(({ id, pageBreakElementIds, gapHeights, pageMargin }: PageBreakGapProps) => {
+const PageBreakGap = memo(({ id, pageBreakElementIds, gapHeights, pageMargin, pageMarginX, pageMarginY }: PageBreakGapProps) => {
   const isBreak = pageBreakElementIds.includes(id);
   if (!isBreak) return null;
 
+  const mX = pageMarginX ?? pageMargin;
+  const mY = pageMarginY ?? pageMargin;
+
   const pageIndex = pageBreakElementIds.indexOf(id) + 2;
   const gapInfo = gapHeights?.[id];
-  const totalHeight = gapInfo ? gapInfo.total : (2 * pageMargin + 32);
-  const topSpacer = gapInfo ? gapInfo.top : pageMargin;
-  const bottomSpacer = pageMargin;
+  const totalHeight = gapInfo ? gapInfo.total : (2 * mY + 32);
+  const topSpacer = gapInfo ? gapInfo.top : mY;
+  const bottomSpacer = mY;
 
   return (
     <div
-      className="page-break-gap no-print relative w-[calc(100%+2*var(--page-margin))] flex flex-col items-center justify-center pointer-events-none select-none z-10"
+      className="page-break-gap no-print relative w-[calc(100%+2*var(--page-margin-x))] flex flex-col items-center justify-center pointer-events-none select-none z-10"
       style={{
         height: `${totalHeight}px`,
-        marginLeft: "calc(-1 * var(--page-margin))",
-        marginRight: "calc(-1 * var(--page-margin))",
+        marginLeft: "calc(-1 * var(--page-margin-x))",
+        marginRight: "calc(-1 * var(--page-margin-x))",
       }}
     >
       {/* Top Margin Spacer */}
@@ -350,6 +376,8 @@ interface DesignConfig {
   headerAlign: string;
   listStyle: string;
   pageMargin: number;
+  pageMarginLeftRight?: number;
+  pageMarginTopBottom?: number;
   itemSpacing: number;
   jobLayout: string;
   boxOpacity: number;
@@ -398,6 +426,14 @@ const SectionWrapper = memo(({
   setExperiences,
   educations,
   setEducations,
+  projects,
+  setProjects,
+  publications,
+  setPublications,
+  awards,
+  setAwards,
+  sectionHeaders,
+  setSectionHeaders,
 }: any) => {
   const dragControls = useDragControls();
   return (
@@ -413,7 +449,7 @@ const SectionWrapper = memo(({
         manualBreaks[id] && "manual-break",
       )}
     >
-      <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+      <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
       <div
         className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex items-center justify-between gap-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
         data-page-break-id={`heading-${id}`}
@@ -428,11 +464,25 @@ const SectionWrapper = memo(({
       >
         <div className="heading-left flex items-center gap-2">
           <DragHandle dragControls={dragControls} />
-          {id === "summary" && "Professional Summary"}
-          {id === "licenses" && "Certifications & Licenses"}
-          {id === "skills" && "Skills"}
-          {id === "experience" && "Professional Experience"}
-          {id === "education" && "Education"}
+          <ContentEditableField tagName="span"
+            className="outline-none hover:bg-white/15 px-1 rounded transition-all cursor-text min-w-[120px]"
+            html={sectionHeaders?.[id] || (
+              id === "summary" ? "Professional Summary" :
+              id === "licenses" ? "Certifications & Licenses" :
+              id === "skills" ? "Skills" :
+              id === "experience" ? "Professional Experience" :
+              id === "education" ? "Education" :
+              id === "projects" ? "Projects" :
+              id === "publications" ? "Publications" :
+              id === "awards" ? "Awards & Honors" : id
+            )}
+            onChange={(val) => {
+              setSectionHeaders?.((prev: any) => ({
+                ...prev,
+                [id]: val
+              }));
+            }}
+          />
         </div>
         <div className="heading-left flex items-center gap-2">
           <button
@@ -521,6 +571,58 @@ const SectionWrapper = memo(({
               <span>+ Add Education</span>
             </button>
           )}
+          {id === "projects" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setProjects([
+                  ...projects,
+                  {
+                    id: Date.now().toString(),
+                    title: "<b>New Project Name</b> — Technologies",
+                    date: "Date",
+                    bullets: [
+                      { id: Date.now().toString(), text: "New detail bullet" },
+                    ],
+                  },
+                ])
+              }
+            >
+              <span>+ Add Project</span>
+            </button>
+          )}
+          {id === "publications" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setPublications([
+                  ...publications,
+                  {
+                    id: Date.now().toString(),
+                    text: "<b>New Publication</b> — Journal/Conference, Year",
+                  },
+                ])
+              }
+            >
+              <span>+ Add Publication</span>
+            </button>
+          )}
+          {id === "awards" && (
+            <button
+              className="font-sans text-[11px] font-semibold text-[var(--ink-soft)] bg-transparent border border-[var(--hairline)] hover:bg-gray-100 hover:text-[var(--ink)] active:scale-95 rounded-md px-2 py-1 transition-all cursor-pointer no-print flex items-center gap-1"
+              onClick={() =>
+                setAwards([
+                  ...awards,
+                  {
+                    id: Date.now().toString(),
+                    text: "<b>New Award or Honor</b> — Issuing Body, Year",
+                  },
+                ])
+              }
+            >
+              <span>+ Add Award</span>
+            </button>
+          )}
         </div>
       </div>
       {children}
@@ -536,6 +638,10 @@ const SectionRenderer = memo(({
   skills, setSkills,
   experiences, setExperiences,
   educations, setEducations,
+  projects, setProjects,
+  publications, setPublications,
+  awards, setAwards,
+  sectionHeaders, setSectionHeaders,
   manualBreaks, setManualBreaks,
   pageBreakElementIds,
   design, gapHeights,
@@ -559,11 +665,19 @@ const SectionRenderer = memo(({
                   setExperiences={setExperiences}
                   educations={educations}
                   setEducations={setEducations}
+                  projects={projects}
+                  setProjects={setProjects}
+                  publications={publications}
+                  setPublications={setPublications}
+                  awards={awards}
+                  setAwards={setAwards}
+                  sectionHeaders={sectionHeaders}
+                  setSectionHeaders={setSectionHeaders}
                 >
                   {/* SUMMARY */}
                   {section.id === "summary" && (
                     <>
-                      <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                      <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                       <ContentEditableField tagName="div"
                         className="summary font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break outline-none print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
                         data-page-break-id="summary-content"
@@ -584,7 +698,7 @@ const SectionRenderer = memo(({
                   {/* LICENSES */}
                   {section.id === "licenses" && (
                     <>
-                      <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                      <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                       <Reorder.Group
                         values={licenses}
                         onReorder={setLicenses}
@@ -644,7 +758,7 @@ const SectionRenderer = memo(({
                   {/* SKILLS */}
                   {section.id === "skills" && (
                     <>
-                      <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                      <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                       <Reorder.Group
                         values={skills}
                         onReorder={setSkills}
@@ -672,16 +786,27 @@ const SectionRenderer = memo(({
                               <div className="absolute left-0 top-0.5 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
-                              <button
-                                className="hidden group-hover:block absolute right-0 top-0 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                onClick={() =>
-                                  setSkills((s: any[]) =>
-                                    s.filter((x) => x.id !== sk.id),
-                                  )
-                                }
-                              >
-                                ✕
-                              </button>
+                              <div className="hidden group-hover:flex items-center gap-2 absolute right-0 top-0 no-print">
+                                <button
+                                  className="text-[var(--accent)] text-[10px] font-bold cursor-pointer font-sans bg-white px-1.5 py-0.5 rounded border border-gray-200 shadow-xs hover:bg-gray-50 transition-colors"
+                                  onClick={() => {
+                                    setSkills((prev: any[]) => prev.map(x => x.id === sk.id ? { ...x, showProgress: !x.showProgress } : x));
+                                  }}
+                                  title="Toggle progress bars for this category"
+                                >
+                                  📊 {sk.showProgress ? "Plain Text" : "Bar Levels"}
+                                </button>
+                                <button
+                                  className="text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans"
+                                  onClick={() =>
+                                    setSkills((s: any[]) =>
+                                      s.filter((x) => x.id !== sk.id),
+                                    )
+                                  }
+                                >
+                                  ✕
+                                </button>
+                              </div>
                               <ContentEditableField tagName="div"
                                 className="cat-title font-[family:var(--font-heading)] font-bold text-[14px] text-[var(--ink)] mb-1 outline-none"
                                 html={sk.title} onChange={(val) => { setSkills((prev: any[]) =>
@@ -691,15 +816,65 @@ const SectionRenderer = memo(({
                                   ); }}
                                 spellCheck={spellcheckEnabled}
                               />
-                              <ContentEditableField tagName="div"
-                                className="cat-items font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
-                                html={sk.items} onChange={(val) => { setSkills((prev: any[]) =>
-                                    prev.map((x) =>
-                                      x.id === sk.id ? { ...x, items: val } : x,
-                                    ),
-                                  ); }}
-                                spellCheck={spellcheckEnabled}
-                              />
+                              
+                              {sk.showProgress ? (
+                                <div className="mt-2.5 space-y-3 pr-2">
+                                  {sk.items.split(",").map((it: string) => it.trim()).filter(Boolean).map((skillName: string) => {
+                                    const level = sk.levels?.[skillName] ?? 80;
+                                    return (
+                                      <div key={skillName} className="skill-level-row flex flex-col gap-1">
+                                        <div className="flex justify-between items-center text-xs">
+                                          <span className="font-semibold text-[var(--ink)] text-[12px]">{skillName}</span>
+                                          <span className="text-[var(--ink-soft)] font-mono text-[10px] no-print">{level}%</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex-1 bg-gray-200/55 rounded-full h-1.5 overflow-hidden relative">
+                                            <div 
+                                              className="h-full rounded-full transition-all duration-300"
+                                              style={{ 
+                                                width: `${level}%`,
+                                                backgroundColor: "var(--accent)"
+                                              }}
+                                            />
+                                          </div>
+                                          <input 
+                                            type="range"
+                                            min="10"
+                                            max="100"
+                                            value={level}
+                                            onChange={(e) => {
+                                              const newLvl = parseInt(e.target.value);
+                                              setSkills((prev: any[]) => prev.map(x => {
+                                                if (x.id === sk.id) {
+                                                  return {
+                                                    ...x,
+                                                    levels: {
+                                                      ...(x.levels ?? {}),
+                                                      [skillName]: newLvl
+                                                    }
+                                                  };
+                                                }
+                                                return x;
+                                              }));
+                                            }}
+                                            className="w-16 h-4 accent-[var(--accent)] cursor-pointer no-print opacity-60 hover:opacity-100 transition-opacity"
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <ContentEditableField tagName="div"
+                                  className="cat-items font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
+                                  html={sk.items} onChange={(val) => { setSkills((prev: any[]) =>
+                                      prev.map((x) =>
+                                        x.id === sk.id ? { ...x, items: val } : x,
+                                      ),
+                                    ); }}
+                                  spellCheck={spellcheckEnabled}
+                                />
+                              )}
                             
 </>)}
 </SubItemWrapper>
@@ -732,7 +907,7 @@ const SectionRenderer = memo(({
                               }}
                             >
 {(dc: any) => (<>
-                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
 
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
@@ -888,7 +1063,7 @@ const SectionRenderer = memo(({
                               }}
                             >
 {(dc: any) => (<>
-                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
 
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
@@ -985,6 +1160,250 @@ const SectionRenderer = memo(({
 ))}
                     </Reorder.Group>
                   )}
+
+                  {/* PROJECTS */}
+                  {section.id === "projects" && (
+                    <Reorder.Group
+                      values={projects}
+                      onReorder={setProjects}
+                    >
+                      {projects?.map((proj: any) => (
+                            <SubItemWrapper
+                              key={proj.id}
+                              value={proj}
+                              id={`proj-${proj.id}`}
+                              className="proj-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                              data-page-break-id={`proj-${proj.id}`}
+                              style={{
+                                backgroundColor: "var(--panel-rgba)",
+                                border: "var(--box-border)",
+                                boxShadow: "var(--box-shadow)",
+                                backdropFilter: "blur(var(--backdrop-blur))",
+                                WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                                breakBefore: pageBreakElementIds.includes(`proj-${proj.id}`) ? "page" : "auto",
+                              }}
+                            >
+{(dc: any) => (<>
+                              <PageBreakGap id={`proj-${proj.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+
+                              <div className="absolute left-2 top-4 no-print">
+                                <DragHandle dragControls={dc} />
+                              </div>
+                              <button
+                                onClick={() =>
+                                  setProjects((p: any[]) =>
+                                    p.filter((x) => x.id !== proj.id),
+                                  )
+                                }
+                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
+                              >
+                                <X size={12} /> remove
+                              </button>
+                              
+                              <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1 mb-1">
+                                <ContentEditableField tagName="div"
+                                  className="proj-title font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none flex-1"
+                                  html={proj.title} onChange={(val) => { setProjects((prev: any[]) =>
+                                      prev.map((x) =>
+                                        x.id === proj.id ? { ...x, title: val } : x,
+                                      ),
+                                    ); }}
+                                  spellCheck={spellcheckEnabled}
+                                />
+                                <ContentEditableField tagName="div"
+                                  className="proj-date font-mono text-xs text-[var(--ink-soft)] font-medium no-print md:print:block"
+                                  html={proj.date} onChange={(val) => { setProjects((prev: any[]) =>
+                                      prev.map((x) =>
+                                        x.id === proj.id ? { ...x, date: val } : x,
+                                      ),
+                                    ); }}
+                                  spellCheck={spellcheckEnabled}
+                                />
+                              </div>
+
+                              <ul className="m-0 pl-5 proj-bullets mt-1">
+                                {proj.bullets?.map((b: any) => (
+                                  <li
+                                    key={b.id}
+                                    className="relative group/bullet pl-1 mb-1"
+                                  >
+                                    <ContentEditableField tagName="span"
+                                      className="font-[family:var(--font-body)] text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
+                                      html={b.text} onChange={(val) => { setProjects((prev: any[]) =>
+                                          prev.map((x) =>
+                                            x.id === proj.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.map((y: any) =>
+                                                    y.id === b.id ? { ...y, text: val } : y,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        ); }}
+                                      spellCheck={spellcheckEnabled}
+                                    />
+                                    <button
+                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                                      onClick={() =>
+                                        setProjects((p: any[]) =>
+                                          p.map((x) =>
+                                            x.id === proj.id
+                                              ? {
+                                                  ...x,
+                                                  bullets: x.bullets.filter(
+                                                    (y: any) => y.id !== b.id,
+                                                  ),
+                                                }
+                                              : x,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      ✕
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <button
+                                onClick={() =>
+                                  setProjects((p: any[]) =>
+                                    p.map((x) =>
+                                      x.id === proj.id
+                                        ? {
+                                            ...x,
+                                            bullets: [
+                                              ...(x.bullets ?? []),
+                                              {
+                                                id: Date.now().toString(),
+                                                text: "New bullet",
+                                              },
+                                            ],
+                                          }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                                className="add-bullet font-sans text-[11px] font-semibold text-[var(--accent)] bg-transparent border border-dashed border-[var(--accent)] rounded-md px-2 py-1 cursor-pointer mt-2 ml-5 no-print"
+                              >
+                                + bullet
+                              </button>
+                            
+</>)}
+                            </SubItemWrapper>
+                      ))}
+                    </Reorder.Group>
+                  )}
+
+                  {/* PUBLICATIONS */}
+                  {section.id === "publications" && (
+                    <Reorder.Group
+                      values={publications}
+                      onReorder={setPublications}
+                      as="ul"
+                      className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                      id="pub-list"
+                      data-page-break-id="pub-list"
+                      style={{
+                        backgroundColor: "var(--panel-rgba)",
+                        border: "var(--box-border)",
+                        boxShadow: "var(--box-shadow)",
+                        backdropFilter: "blur(var(--backdrop-blur))",
+                        WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                        breakBefore: pageBreakElementIds.includes("pub-list") ? "page" : "auto",
+                      }}
+                    >
+                      {publications?.map((pub: any) => (
+                          <SubItemWrapper
+                            key={pub.id}
+                            value={pub}
+                            id={pub.id}
+                            className="relative group pl-1 mb-2"
+                          >
+{(dc: any) => (<>
+                            <div className="absolute left-[-1.8rem] top-0 no-print">
+                              <DragHandle dragControls={dc} />
+                            </div>
+                            <ContentEditableField tagName="span"
+                              className="font-[family:var(--font-body)] text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
+                              html={pub.text} onChange={(val) => { setPublications((prev: any[]) =>
+                                  prev.map((x) =>
+                                    x.id === pub.id ? { ...x, text: val } : x,
+                                  ),
+                                ); }}
+                              spellCheck={spellcheckEnabled}
+                            />
+                            <button
+                              className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                              onClick={() =>
+                                setPublications((p: any[]) =>
+                                  p.filter((x) => x.id !== pub.id),
+                                )
+                              }
+                            >
+                              ✕ remove
+                            </button>
+                          
+</>)}
+                          </SubItemWrapper>
+                      ))}
+                    </Reorder.Group>
+                  )}
+
+                  {/* AWARDS */}
+                  {section.id === "awards" && (
+                    <Reorder.Group
+                      values={awards}
+                      onReorder={setAwards}
+                      as="ul"
+                      className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                      id="award-list"
+                      data-page-break-id="award-list"
+                      style={{
+                        backgroundColor: "var(--panel-rgba)",
+                        border: "var(--box-border)",
+                        boxShadow: "var(--box-shadow)",
+                        backdropFilter: "blur(var(--backdrop-blur))",
+                        WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                        breakBefore: pageBreakElementIds.includes("award-list") ? "page" : "auto",
+                      }}
+                    >
+                      {awards?.map((aw: any) => (
+                          <SubItemWrapper
+                            key={aw.id}
+                            value={aw}
+                            id={aw.id}
+                            className="relative group pl-1 mb-2"
+                          >
+{(dc: any) => (<>
+                            <div className="absolute left-[-1.8rem] top-0 no-print">
+                              <DragHandle dragControls={dc} />
+                            </div>
+                            <ContentEditableField tagName="span"
+                              className="font-[family:var(--font-body)] text-sm text-[var(--ink-soft)] leading-[var(--line-height)] outline-none"
+                              html={aw.text} onChange={(val) => { setAwards((prev: any[]) =>
+                                  prev.map((x) =>
+                                    x.id === aw.id ? { ...x, text: val } : x,
+                                  ),
+                                ); }}
+                              spellCheck={spellcheckEnabled}
+                            />
+                            <button
+                              className="hidden group-hover:inline ml-2 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
+                              onClick={() =>
+                                setAwards((a: any[]) =>
+                                  a.filter((x) => x.id !== aw.id),
+                                )
+                              }
+                            >
+                              ✕ remove
+                            </button>
+                          
+</>)}
+                          </SubItemWrapper>
+                      ))}
+                    </Reorder.Group>
+                  )}
                 </SectionWrapper>
   );
 }, (prev, next) => {
@@ -994,12 +1413,16 @@ const SectionRenderer = memo(({
   if (prev.pageBreakElementIds !== next.pageBreakElementIds) return false;
   if (prev.manualBreaks !== next.manualBreaks) return false;
   if (prev.spellcheckEnabled !== next.spellcheckEnabled) return false;
+  if (prev.sectionHeaders?.[next.section.id] !== next.sectionHeaders?.[next.section.id]) return false;
   
   if (next.section.id === "summary") return prev.summary === next.summary;
   if (next.section.id === "licenses") return prev.licenses === next.licenses;
   if (next.section.id === "skills") return prev.skills === next.skills;
   if (next.section.id === "experience") return prev.experiences === next.experiences;
   if (next.section.id === "education") return prev.educations === next.educations;
+  if (next.section.id === "projects") return prev.projects === next.projects;
+  if (next.section.id === "publications") return prev.publications === next.publications;
+  if (next.section.id === "awards") return prev.awards === next.awards;
   
   return true;
 });
@@ -1024,11 +1447,27 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 
   // --- UI State ---
   const [templateGalleryOpen, setTemplateGalleryOpen] = useState(true);
-  const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const hasSeenLocal = localStorage.getItem("resume_tutorial_seen");
+      const hasSeenCookie = getCookie("resume_tutorial_seen");
+      return !hasSeenLocal && !hasSeenCookie;
+    }
+    return false;
+  });
+  const [dontShowTutorialAgain, setDontShowTutorialAgain] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !!localStorage.getItem("resume_tutorial_seen") || !!getCookie("resume_tutorial_seen");
+    }
+    return false;
+  });
   const [tutorialStep, setTutorialStep] = useState(0);
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
   const [pageDrawerOpen, setPageDrawerOpen] = useState(false);
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
+  const [canvasZoom, setCanvasZoom] = useState<number>(100);
+  const [printPreviewMode, setPrintPreviewMode] = useState<boolean>(false);
+  const [showMarginGuides, setShowMarginGuides] = useState<boolean>(true);
 
   // --- Design State ---
   const [design, setDesign] = useState<DesignConfig>(() => {
@@ -1380,6 +1819,42 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     { id: "education" },
   ]);
   const [manualBreaks, setManualBreaks] = useState<Record<string, boolean>>(() => localDraft?.manualBreaks ?? {});
+
+  const [sectionHeaders, setSectionHeaders] = useState<Record<string, string>>(() => localDraft?.sectionHeaders ?? {
+    summary: "Professional Summary",
+    licenses: "Certifications & Licenses",
+    skills: "Skills",
+    experience: "Professional Experience",
+    education: "Education",
+    projects: "Projects",
+    publications: "Publications",
+    awards: "Awards & Honors"
+  });
+
+  const [projects, setProjects] = useState<any[]>(() => localDraft?.projects ?? [
+    {
+      id: "proj-1",
+      title: "<b>Personal Portfolio Website</b> — Next.js & Tailwind",
+      date: "2024",
+      bullets: [
+        { id: "pb-1", text: "Built with Next.js, Tailwind CSS, and Framer Motion for premium portfolio presentation." },
+      ]
+    }
+  ]);
+
+  const [publications, setPublications] = useState<any[]>(() => localDraft?.publications ?? [
+    {
+      id: "pub-1",
+      text: "<b>Real-time Collaborative Platforms</b> — Technical Journal, 2024"
+    }
+  ]);
+
+  const [awards, setAwards] = useState<any[]>(() => localDraft?.awards ?? [
+    {
+      id: "aw-1",
+      text: "<b>First Place Hackathon</b> — Developer Coalition, 2023"
+    }
+  ]);
 
   const [licenses, setLicenses] = useState<any[]>(() => localDraft?.licenses ?? [
     {
@@ -2128,6 +2603,10 @@ Output:
         if (c.experiences) setExperiences(c.experiences);
         if (c.educations) setEducations(c.educations);
         if (c.profilePhoto) setProfilePhoto(c.profilePhoto);
+        if (c.sectionHeaders) setSectionHeaders(c.sectionHeaders);
+        if (c.projects) setProjects(c.projects);
+        if (c.publications) setPublications(c.publications);
+        if (c.awards) setAwards(c.awards);
         
         // Hide onboarding modal when successfully loaded
         setShowOnboarding(false);
@@ -2145,6 +2624,10 @@ Output:
           experiences: c.experiences || [],
           educations: c.educations || [],
           profilePhoto: c.profilePhoto || profilePhoto,
+          sectionHeaders: c.sectionHeaders || {},
+          projects: c.projects || [],
+          publications: c.publications || [],
+          awards: c.awards || [],
         };
         setHistory([loadedSnapshot]);
         setHistoryIndex(0);
@@ -2152,6 +2635,18 @@ Output:
       }
     } catch (err: any) {
       toast.error("Failed to load resume: " + err.message, { id: toastId });
+    }
+  };
+
+  const handleFitWidth = () => {
+    const wrap = document.querySelector(".canvas-wrap");
+    if (wrap) {
+      const availableWidth = wrap.clientWidth - 48; // padding
+      const pageWidth = design.pageSize === "letter" ? 816 : 794;
+      const computedZoom = Math.floor((availableWidth / pageWidth) * 100);
+      const clamped = Math.min(Math.max(computedZoom, 50), 150);
+      setCanvasZoom(clamped);
+      toast.success(`Auto-fitted canvas to ${clamped}% width! 🔍`);
     }
   };
 
@@ -2175,6 +2670,10 @@ Output:
         setEducations(prevState.educations);
         setDesign(prevState.design);
         setProfilePhoto(prevState.profilePhoto);
+        if (prevState.sectionHeaders) setSectionHeaders(prevState.sectionHeaders);
+        if (prevState.projects) setProjects(prevState.projects);
+        if (prevState.publications) setPublications(prevState.publications);
+        if (prevState.awards) setAwards(prevState.awards);
         setHistoryIndex(prevIndex);
       }
     }
@@ -2200,6 +2699,10 @@ Output:
         setEducations(nextState.educations);
         setDesign(nextState.design);
         setProfilePhoto(nextState.profilePhoto);
+        if (nextState.sectionHeaders) setSectionHeaders(nextState.sectionHeaders);
+        if (nextState.projects) setProjects(nextState.projects);
+        if (nextState.publications) setPublications(nextState.publications);
+        if (nextState.awards) setAwards(nextState.awards);
         setHistoryIndex(nextIndex);
       }
     }
@@ -2532,6 +3035,10 @@ Output:
       experiences,
       educations,
       profilePhoto,
+      sectionHeaders,
+      projects,
+      publications,
+      awards,
     };
 
     if (typeof window !== "undefined") {
@@ -2578,6 +3085,10 @@ Output:
     educations,
     design,
     profilePhoto,
+    sectionHeaders,
+    projects,
+    publications,
+    awards,
     user,
     resumeId,
     historyIndex,
@@ -2817,7 +3328,7 @@ Output:
     if (!resumeRef.current) return;
     const resume = resumeRef.current;
     const pageHeightPx = design.pageSize === "letter" ? 1056 : 1123;
-    const marginPx = design.pageMargin;
+    const marginPx = design.pageMarginTopBottom ?? design.pageMargin;
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
     const units = Array.from(
@@ -2966,7 +3477,7 @@ Output:
       }
       return prev;
     });
-  }, [design.pageSize, design.pageMargin]);
+  }, [design.pageSize, design.pageMargin, design.pageMarginLeftRight, design.pageMarginTopBottom]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -3055,6 +3566,10 @@ Output:
     double: `3px double var(--hairline)`,
   } as any)[design.borderStyle || "hairline"] || "none";
 
+  const pageWidthPx = design.pageSize === "letter" ? 816 : 794;
+  const pageHeightPx = design.pageSize === "letter" ? 1056 : 1123;
+  const totalHeightPx = pageHeightPx * (pageBreakElementIds.length + 1) + 32 * pageBreakElementIds.length;
+
   const pageStyles = {
     "--ink": "#232025",
     "--ink-soft": "#6b6568",
@@ -3081,6 +3596,8 @@ Output:
     "--page-width": design.pageSize === "letter" ? "816px" : "794px",
     "--page-height": design.pageSize === "letter" ? "1056px" : "1123px",
     "--page-margin": `${design.pageMargin}px`,
+    "--page-margin-y": `${design.pageMarginTopBottom ?? design.pageMargin}px`,
+    "--page-margin-x": `${design.pageMarginLeftRight ?? design.pageMargin}px`,
     "--sidebar-w": "230px",
     "--box-opacity": boxOp.toString(),
     "--box-shadow": shadowValue,
@@ -3293,7 +3810,21 @@ Output:
             </div>
             <div className="flex items-center justify-between mt-6">
               <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-                <input type="checkbox" /> Don&apos;t show this again
+                <input
+                  type="checkbox"
+                  checked={dontShowTutorialAgain}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setDontShowTutorialAgain(checked);
+                    if (checked && typeof window !== "undefined") {
+                      localStorage.setItem("resume_tutorial_seen", "true");
+                      setCookie("resume_tutorial_seen", "true", 365);
+                    } else if (typeof window !== "undefined") {
+                      localStorage.removeItem("resume_tutorial_seen");
+                      setCookie("resume_tutorial_seen", "", -1);
+                    }
+                  }}
+                /> Don&apos;t show this again
               </label>
               <div className="flex gap-2">
                 {tutorialStep > 0 && (
@@ -3313,7 +3844,13 @@ Output:
                   </button>
                 ) : (
                   <button
-                    onClick={() => setTutorialOpen(false)}
+                    onClick={() => {
+                      if (dontShowTutorialAgain && typeof window !== "undefined") {
+                        localStorage.setItem("resume_tutorial_seen", "true");
+                        setCookie("resume_tutorial_seen", "true", 365);
+                      }
+                      setTutorialOpen(false);
+                    }}
                     className="rounded-lg px-4 py-2 text-sm font-semibold bg-gray-900 text-white hover:bg-black"
                   >
                     Let&apos;s go
@@ -3445,6 +3982,40 @@ Output:
                   <h3 className="text-xs font-semibold text-gray-900">
                     Typography
                   </h3>
+                  
+                  {/* Typography Pairing Presets */}
+                  <div className="space-y-1.5 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-gray-600">
+                      Click to apply pairing preset:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { name: "Elegant Editorial", heading: "'Playfair Display',serif", body: "'Lora',serif", scale: 95, lineHeight: 1.5 },
+                        { name: "Modern Minimalist", heading: "'Poppins',sans-serif", body: "'Inter',sans-serif", scale: 100, lineHeight: 1.4 },
+                        { name: "Contemporary Classic", heading: "Georgia,serif", body: "Georgia,serif", scale: 100, lineHeight: 1.5 },
+                        { name: "Playful Tech", heading: "'Kalam',cursive", body: "'Inter',sans-serif", scale: 100, lineHeight: 1.4 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => {
+                            setDesign((p: any) => ({
+                              ...p,
+                              fontHeading: preset.heading,
+                              fontBody: preset.body,
+                              scale: preset.scale,
+                              lineHeight: preset.lineHeight,
+                            }));
+                            toast.success(`Applied ${preset.name} typography! ✍️`);
+                          }}
+                          className="p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200 text-[10px] font-semibold text-gray-700 transition-all text-center cursor-pointer bg-white/55"
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
                       Heading Font
@@ -3485,9 +4056,11 @@ Output:
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
-                      Text Size
-                    </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                        Text Size ({design.scale}%)
+                      </label>
+                    </div>
                     <input
                       type="range"
                       min="85"
@@ -3498,6 +4071,27 @@ Output:
                         setDesign((p) => ({
                           ...p,
                           scale: parseInt(e.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                        Line Spacing ({design.lineHeight})
+                      </label>
+                    </div>
+                    <input
+                      type="range"
+                      min="1.1"
+                      max="2.0"
+                      step="0.05"
+                      className="w-full accent-blue-600"
+                      value={design.lineHeight}
+                      onChange={(e) =>
+                        setDesign((p) => ({
+                          ...p,
+                          lineHeight: parseFloat(e.target.value),
                         }))
                       }
                     />
@@ -3701,22 +4295,166 @@ Output:
                       }
                     />
                   </div>
+                  {/* Preset Margins */}
+                  <div className="space-y-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100 mb-2">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                      Standard Margin Presets
+                    </span>
+                    <div className="grid grid-cols-3 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDesign((p) => ({
+                            ...p,
+                            pageMargin: 48,
+                            pageMarginLeftRight: 48,
+                            pageMarginTopBottom: 48,
+                          }));
+                          toast.success("Applied Compact Margins (0.5 in) 📏");
+                        }}
+                        className={cn(
+                          "py-1.5 px-1 text-center rounded-md border text-[10px] font-bold transition-all cursor-pointer",
+                          design.pageMargin === 48 &&
+                            (design.pageMarginLeftRight ?? 48) === 48 &&
+                            (design.pageMarginTopBottom ?? 48) === 48
+                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100"
+                        )}
+                      >
+                        0.5&quot; Compact
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDesign((p) => ({
+                            ...p,
+                            pageMargin: 72,
+                            pageMarginLeftRight: 72,
+                            pageMarginTopBottom: 72,
+                          }));
+                          toast.success("Applied Balanced Margins (0.75 in) 📏");
+                        }}
+                        className={cn(
+                          "py-1.5 px-1 text-center rounded-md border text-[10px] font-bold transition-all cursor-pointer",
+                          design.pageMargin === 72 &&
+                            (design.pageMarginLeftRight ?? 72) === 72 &&
+                            (design.pageMarginTopBottom ?? 72) === 72
+                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100"
+                        )}
+                      >
+                        0.75&quot; Balanced
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDesign((p) => ({
+                            ...p,
+                            pageMargin: 96,
+                            pageMarginLeftRight: 96,
+                            pageMarginTopBottom: 96,
+                          }));
+                          toast.success("Applied Traditional Margins (1.0 in) 📏");
+                        }}
+                        className={cn(
+                          "py-1.5 px-1 text-center rounded-md border text-[10px] font-bold transition-all cursor-pointer",
+                          design.pageMargin === 96 &&
+                            (design.pageMarginLeftRight ?? 96) === 96 &&
+                            (design.pageMarginTopBottom ?? 96) === 96
+                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100"
+                        )}
+                      >
+                        1.0&quot; Classic
+                      </button>
+                    </div>
+                    {/* Toggle Safe Area guides */}
+                    <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-200/50">
+                      <span className="text-[10px] font-bold text-gray-600">Show Alignment Guides</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMarginGuides(!showMarginGuides);
+                          toast.success(showMarginGuides ? "Alignment guides hidden! 🙈" : "Alignment guides active! 👁️");
+                        }}
+                        className={cn(
+                          "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                          showMarginGuides ? "bg-blue-500" : "bg-gray-200"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            showMarginGuides ? "translate-x-3" : "translate-x-0"
+                          )}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
-                      Page Margin
-                    </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                        Global Margin ({design.pageMargin}px)
+                      </label>
+                    </div>
                     <input
                       type="range"
-                      min="20"
-                      max="80"
+                      min="10"
+                      max="100"
                       className="w-full accent-blue-600"
                       value={design.pageMargin}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
                         setDesign((p) => ({
                           ...p,
-                          pageMargin: parseInt(e.target.value),
-                        }))
-                      }
+                          pageMargin: val,
+                          pageMarginLeftRight: val,
+                          pageMarginTopBottom: val,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                        Horizontal Margin ({design.pageMarginLeftRight ?? design.pageMargin}px)
+                      </label>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      className="w-full accent-blue-600"
+                      value={design.pageMarginLeftRight ?? design.pageMargin}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setDesign((p) => ({
+                          ...p,
+                          pageMarginLeftRight: val,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                        Vertical Margin ({design.pageMarginTopBottom ?? design.pageMargin}px)
+                      </label>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      className="w-full accent-blue-600"
+                      value={design.pageMarginTopBottom ?? design.pageMargin}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setDesign((p) => ({
+                          ...p,
+                          pageMarginTopBottom: val,
+                        }));
+                      }}
                     />
                   </div>
                 </div>
@@ -3821,6 +4559,55 @@ Output:
                   <X size={18} />
                 </button>
               </div>
+              
+              {/* Section Visibility Toggles */}
+              <div className="bg-gray-50/70 rounded-xl p-3.5 border border-gray-100 mb-5">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2.5">
+                  Toggle Resume Sections:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "summary", label: "Summary" },
+                    { id: "experience", label: "Experience" },
+                    { id: "skills", label: "Skills" },
+                    { id: "education", label: "Education" },
+                    { id: "licenses", label: "Certifications" },
+                    { id: "projects", label: "Projects" },
+                    { id: "publications", label: "Publications" },
+                    { id: "awards", label: "Awards" },
+                  ].map((s) => {
+                    const isActive = sections.some((sec) => sec.id === s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          if (isActive) {
+                            setSections(sections.filter((sec) => sec.id !== s.id));
+                            toast.success(`Hidden "${s.label}" section 👁️`);
+                          } else {
+                            setSections([...sections, { id: s.id }]);
+                            toast.success(`Shown "${s.label}" section 👁️`);
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center justify-between p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer",
+                          isActive
+                            ? "bg-blue-50/50 border-blue-200 text-blue-700"
+                            : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                        )}
+                      >
+                        <span>{s.label}</span>
+                        <span className={cn(
+                          "w-2 h-2 rounded-full",
+                          isActive ? "bg-blue-600 animate-pulse" : "bg-gray-300"
+                        )} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <button
                   onClick={() =>
@@ -3837,12 +4624,12 @@ Output:
                       },
                     ])
                   }
-                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-sm flex items-center gap-2"
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                     +
                   </div>{" "}
-                  Add Experience
+                  Add Experience Entry
                 </button>
                 <button
                   onClick={() =>
@@ -3855,9 +4642,9 @@ Output:
                       },
                     ])
                   }
-                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-sm flex items-center gap-2"
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                     +
                   </div>{" "}
                   Add Skill Category
@@ -3875,12 +4662,12 @@ Output:
                       },
                     ])
                   }
-                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-sm flex items-center gap-2"
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                     +
                   </div>{" "}
-                  Add Education
+                  Add Education Entry
                 </button>
                 <button
                   onClick={() =>
@@ -3892,12 +4679,82 @@ Output:
                       },
                     ])
                   }
-                  className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-sm flex items-center gap-2"
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
                 >
-                  <div className="w-6 h-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                     +
                   </div>{" "}
                   Add Certification
+                </button>
+                <button
+                  onClick={() => {
+                    // Make sure projects is active in sections
+                    if (!sections.some((sec) => sec.id === "projects")) {
+                      setSections([...sections, { id: "projects" }]);
+                    }
+                    setProjects([
+                      ...projects,
+                      {
+                        id: Date.now().toString(),
+                        title: "<b>New Project Name</b> — Technologies",
+                        date: "Date",
+                        bullets: [
+                          { id: Date.now().toString(), text: "New detail bullet" },
+                        ],
+                      },
+                    ]);
+                    toast.success("Added project entry! 🚀");
+                  }}
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
+                >
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                    +
+                  </div>{" "}
+                  Add Project Entry
+                </button>
+                <button
+                  onClick={() => {
+                    // Make sure publications is active
+                    if (!sections.some((sec) => sec.id === "publications")) {
+                      setSections([...sections, { id: "publications" }]);
+                    }
+                    setPublications([
+                      ...publications,
+                      {
+                        id: Date.now().toString(),
+                        text: "<b>New Publication</b> — Journal/Conference, Year",
+                      },
+                    ]);
+                    toast.success("Added publication entry! 📚");
+                  }}
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
+                >
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                    +
+                  </div>{" "}
+                  Add Publication Entry
+                </button>
+                <button
+                  onClick={() => {
+                    // Make sure awards is active
+                    if (!sections.some((sec) => sec.id === "awards")) {
+                      setSections([...sections, { id: "awards" }]);
+                    }
+                    setAwards([
+                      ...awards,
+                      {
+                        id: Date.now().toString(),
+                        text: "<b>New Award or Honor</b> — Issuing Body, Year",
+                      },
+                    ]);
+                    toast.success("Added award entry! 🏆");
+                  }}
+                  className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
+                >
+                  <div className="w-5 h-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                    +
+                  </div>{" "}
+                  Add Award Entry
                 </button>
               </div>
               <div className="mt-8">
@@ -5207,10 +6064,14 @@ Output:
 
           <div className="flex items-center gap-1.5 md:gap-2">
             <button
-              onClick={() => setTutorialOpen(true)}
-              className="p-1.5 md:px-3 md:py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-gray-100 text-gray-600 hover:text-gray-900 hidden md:flex items-center gap-1.5"
+              onClick={() => {
+                setTutorialStep(0);
+                setTutorialOpen(true);
+              }}
+              className="p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all hover:bg-amber-100 text-amber-800 bg-amber-50 border border-amber-200/40 hidden md:flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+              title="Take an optional interactive tour of MYresume"
             >
-              <HelpCircle size={16} /> Help
+              <HelpCircle size={14} className="text-amber-500 animate-pulse" /> Take Tour
             </button>
             <button
               onClick={() => setSpellcheckEnabled(!spellcheckEnabled)}
@@ -5225,6 +6086,26 @@ Output:
               <SpellCheck size={14} className="md:w-4 md:h-4" />
               <span className="hidden sm:inline">Spellcheck</span>
               <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", spellcheckEnabled ? "bg-emerald-500 animate-pulse" : "bg-gray-400")} />
+            </button>
+            <button
+              onClick={() => {
+                setPrintPreviewMode(!printPreviewMode);
+                toast.success(
+                  !printPreviewMode
+                    ? "Print Preview Enabled! (Editor overlays hidden) 👁️"
+                    : "Print Preview Disabled! (Editor overlays restored) ✍️"
+                );
+              }}
+              className={cn(
+                "p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all inline-flex items-center gap-1.5 border border-gray-200 shadow-sm cursor-pointer",
+                printPreviewMode
+                  ? "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                  : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              )}
+              title={printPreviewMode ? "Exit Print Preview (Return to editing mode)" : "Enter Print Preview (Hide handles & see exact layout)"}
+            >
+              {printPreviewMode ? <EyeOff size={14} className="md:w-4 md:h-4" /> : <Eye size={14} className="md:w-4 md:h-4" />}
+              <span className="hidden sm:inline">{printPreviewMode ? "Exit Preview" : "Print Preview"}</span>
             </button>
             <button
               onClick={handleSaveToCloud}
@@ -5366,21 +6247,39 @@ Output:
           className={cn(
             "flex-1 overflow-y-auto overflow-x-auto px-2 py-4 md:px-4 md:py-10 flex justify-start md:justify-center canvas-wrap",
             layoutClasses,
+            printPreviewMode && "print-preview-active"
           )}
           style={pageStyles}
         >
+          {/* Zoom & Centering Container */}
           <div
-            ref={resumeRef}
-            className="page relative w-[var(--page-width)] max-w-full bg-transparent print:bg-[var(--paper)] shadow-none print:shadow-none mb-8 p-[var(--page-margin)] text-[calc(1em*var(--text-scale))]"
+            className="relative flex items-start justify-center transition-all duration-200 mx-auto"
             style={{
-              minHeight: `calc(var(--page-height) * ${pageBreakElementIds.length + 1} + 32px * ${pageBreakElementIds.length})`,
+              width: `${pageWidthPx * (canvasZoom / 100)}px`,
+              height: `${(totalHeightPx + 40) * (canvasZoom / 100)}px`,
+              minWidth: `${pageWidthPx * (canvasZoom / 100)}px`,
+              minHeight: `${(totalHeightPx + 40) * (canvasZoom / 100)}px`,
+              overflow: "visible",
             }}
           >
-            {/* Absolute Page Background Sheets behind the content */}
-            {Array.from({ length: pageBreakElementIds.length + 1 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="absolute left-0 right-0 shadow-[0_10px_35px_rgba(0,0,0,0.12)] border border-gray-200/50 rounded-[4px] pointer-events-none no-print transition-all duration-300"
+            <div
+              ref={resumeRef}
+              className={cn(
+                "page relative origin-top transition-all duration-200",
+                printPreviewMode && "print-preview-active"
+              )}
+              style={{
+                width: `${pageWidthPx}px`,
+                transform: `scale(${canvasZoom / 100})`,
+                transformOrigin: "top center",
+                minHeight: `calc(var(--page-height) * ${pageBreakElementIds.length + 1} + 32px * ${pageBreakElementIds.length})`,
+              }}
+            >
+              {/* Absolute Page Background Sheets behind the content */}
+              {Array.from({ length: pageBreakElementIds.length + 1 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="absolute left-0 right-0 shadow-[0_10px_35px_rgba(0,0,0,0.12)] border border-gray-200/50 rounded-[4px] pointer-events-none no-print page-sheet transition-all duration-300"
                 style={{
                   top: `calc(${idx} * (var(--page-height) + 32px))`,
                   height: "var(--page-height)",
@@ -5389,8 +6288,29 @@ Output:
                 }}
               />
             ))}
+
+            {/* Visual Margin Alignment Guides (Dashed safe area border) */}
+            {showMarginGuides && !printPreviewMode && (
+              Array.from({ length: pageBreakElementIds.length + 1 }).map((_, idx) => (
+                <div
+                  key={`margin-guide-${idx}`}
+                  className="absolute border border-dashed border-blue-400/35 pointer-events-none no-print transition-all duration-300 rounded"
+                  style={{
+                    top: `calc(${idx} * (var(--page-height) + 32px) + var(--page-margin-y))`,
+                    left: "var(--page-margin-x)",
+                    right: "var(--page-margin-x)",
+                    height: `calc(var(--page-height) - 2 * var(--page-margin-y))`,
+                    zIndex: 40,
+                  }}
+                >
+                  <div className="absolute top-1 left-2 text-[9px] font-sans font-extrabold tracking-wider text-blue-500/40 select-none uppercase">
+                    Print Safe Area
+                  </div>
+                </div>
+              ))
+            )}
             {/* Header */}
-            <PageBreakGap id="header" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} />
+            <PageBreakGap id="header" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
             <div
               className={cn(
                 "header rounded-[var(--radius)] py-6 px-6 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300",
@@ -5504,6 +6424,14 @@ Output:
     setExperiences={setExperiences}
     educations={educations}
     setEducations={setEducations}
+    projects={projects}
+    setProjects={setProjects}
+    publications={publications}
+    setPublications={setPublications}
+    awards={awards}
+    setAwards={setAwards}
+    sectionHeaders={sectionHeaders}
+    setSectionHeaders={setSectionHeaders}
     manualBreaks={manualBreaks}
     setManualBreaks={setManualBreaks}
     pageBreakElementIds={pageBreakElementIds}
@@ -5519,6 +6447,105 @@ Output:
               html={footer} onChange={(val) => { setFooter(val); }}
               spellCheck={spellcheckEnabled}
             />
+          </div>
+          </div>
+        </div>
+
+        {/* Floating Canvas Controls (Zoom & Print Preview) */}
+        <div className="absolute bottom-20 right-4 md:bottom-6 md:right-6 z-40 flex items-center gap-1.5 md:gap-2 bg-white/95 backdrop-blur-md border border-gray-200 p-1.5 rounded-xl shadow-lg no-print transition-all duration-300">
+          <div className="flex items-center gap-0.5 border-r border-gray-100 pr-1.5 md:pr-2">
+            <button
+              type="button"
+              onClick={() => setCanvasZoom(prev => Math.max(50, prev - 10))}
+              className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCanvasZoom(100)}
+              className="px-2 py-0.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+              title="Reset Zoom to 100%"
+            >
+              {canvasZoom}%
+            </button>
+            <button
+              type="button"
+              onClick={() => setCanvasZoom(prev => Math.min(150, prev + 10))}
+              className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn size={16} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleFitWidth}
+            className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 cursor-pointer text-xs font-semibold px-1.5"
+            title="Auto-Fit Page Width"
+          >
+            <Maximize2 size={14} />
+            <span className="hidden sm:inline">Fit Width</span>
+          </button>
+
+          <div className="w-px h-5 bg-gray-200" />
+
+          {/* Alignment Guides Toggle */}
+          <div className="flex items-center gap-2 pl-1" title="Toggle printable margin guidelines">
+            <span className="text-[11px] font-bold text-gray-500 hidden sm:inline font-sans">Guides</span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMarginGuides(!showMarginGuides);
+                toast.success(
+                  !showMarginGuides
+                    ? "Alignment guides active! 👁️"
+                    : "Alignment guides hidden! 🙈"
+                );
+              }}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                showMarginGuides ? "bg-blue-600" : "bg-gray-200"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                  showMarginGuides ? "translate-x-4" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-gray-200" />
+
+          {/* Elegant Toggle Switch for Print Preview */}
+          <div className="flex items-center gap-2 pl-1">
+            <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">Print Preview</span>
+            <button
+              type="button"
+              onClick={() => {
+                setPrintPreviewMode(!printPreviewMode);
+                toast.success(
+                  !printPreviewMode
+                    ? "Print Preview Enabled! (Editor overlays hidden) 👁️"
+                    : "Print Preview Disabled! (Editor overlays restored) ✍️"
+                );
+              }}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                printPreviewMode ? "bg-blue-600" : "bg-gray-200"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                  printPreviewMode ? "translate-x-4" : "translate-x-0"
+                )}
+              />
+            </button>
           </div>
         </div>
 

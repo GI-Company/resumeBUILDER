@@ -98,3 +98,49 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   text-decoration: underline wavy #ef4444 2px !important;
   background-color: rgba(239, 68, 68, 0.05) !important;
 }
+
+/* Print Preview Mode CSS rules to hide interactive edit overlays, drag handles, & empty placeholders on screen */
+.print-preview-active .drag-handle,
+.print-preview-active .add-bullet,
+.print-preview-active .add-entry-btn,
+.print-preview-active .remove-entry,
+.print-preview-active .remove-bullet-btn,
+.print-preview-active button.no-print,
+.print-preview-active .spellcheck-indicator,
+.print-preview-active .remove-btn,
+.print-preview-active .remove-entry-btn,
+.print-preview-active .absolute.left-[-1.8rem],
+.print-preview-active .absolute.left-2.top-4,
+.print-preview-active .format-bar {
+  display: none !important;
+}
+
+/* We specifically want to preserve page-sheets and page-break-gaps in print preview on-screen so they see exact margin folds */
+.print-preview-active .no-print:not(.page-sheet):not(.page-break-gap) {
+  display: none !important;
+}
+
+/* Make page fold dividers and indicators visually clean and non-interfering in print preview */
+.print-preview-active .page-break-gap > div:nth-child(2) {
+  opacity: 0.15 !important;
+}
+.print-preview-active .page-break-gap span {
+  opacity: 0.2 !important;
+}
+
+/* Lock text and photo uploads during print preview to simulate flat output */
+.print-preview-active [contenteditable="true"] {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+.print-preview-active [contenteditable="true"]:hover,
+.print-preview-active [contenteditable="true"]:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Clean spellcheck underline removal in print preview */
+.print-preview-active [contenteditable="true"]::spelling-error {
+  text-decoration: none !important;
+  background-color: transparent !important;
+}
