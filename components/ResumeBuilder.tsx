@@ -995,7 +995,13 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [saveOverwriteId, setSaveOverwriteId] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(320);
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return !params.has("id") && !initialTemplateId;
+    }
+    return true;
+  });
 
   // Password update states
   const [currentPassword, setCurrentPassword] = useState("");
@@ -1297,13 +1303,30 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       
       CRITICAL DIRECTIVE: If the user asks you to edit, change, rewrite, add, or delete anything in their resume, you MUST embed a complete, updated resume JSON block within <UPDATE_RESUME> and </UPDATE_RESUME> XML tags in your response. 
       
-      Example:
-      "I have updated your skills section to include Kubernetes. Here is the updated draft in the editor:
+      Examples of your responses:
+      
+      User: "Add Kubernetes to my skills"
+      Agent Rez: "I have updated your skills section to include Kubernetes. Here is the updated draft in the editor:
       <UPDATE_RESUME>
       {
         "name": "Alex Morgan",
         "contactLine": "...",
         "summary": "...",
+        "experiences": [...],
+        "educations": [...],
+        "skills": [
+          { "id": "sk-1", "title": "Technologies", "items": "React, Node.js, Kubernetes" }
+        ]
+      }
+      </UPDATE_RESUME>"
+      
+      User: "Rewrite my summary to be more leadership focused"
+      Agent Rez: "I've rewritten your summary to highlight your executive leadership and strategic vision. How does this look?
+      <UPDATE_RESUME>
+      {
+        "name": "Alex Morgan",
+        "contactLine": "...",
+        "summary": "Visionary executive leader with 15+ years driving digital transformation and managing cross-functional teams to deliver scalable enterprise solutions. Proven track record of aligning technology initiatives with core business objectives to accelerate revenue growth.",
         "experiences": [...],
         "educations": [...],
         "skills": [...]
@@ -1460,9 +1483,29 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       // 2. Formulate prompts based on active preset
       let systemPrompt = "You are a professional resume writer.";
       if (aiPresetType === "summary") {
-        systemPrompt = "You are an elite, professional resume-writing assistant. Refine, improve, or suggest professional phrasing for the user's summary. Make it impact-driven, professional, and clear. Do NOT use generic buzzwords or fluff. Return ONLY the polished summary text. Do not include any introduction, conversational chat, greeting, or outer quotes.";
+        systemPrompt = `You are an elite, professional resume-writing assistant. Refine, improve, or suggest professional phrasing for the user's summary. Make it impact-driven, professional, and clear. Do NOT use generic buzzwords or fluff. Return ONLY the polished summary text. Do not include any introduction, conversational chat, greeting, or outer quotes.
+
+Examples of rewriting:
+Input: "I am a software engineer who likes coding and working on teams. I know react and node."
+Output: "Results-driven Software Engineer with expertise in full-stack development using React and Node.js. Proven ability to collaborate within cross-functional agile teams to deliver scalable, user-centric web applications while maintaining high code quality."
+
+Input: "marketing person who did ads and got more sales"
+Output: "Data-driven Marketing Specialist with a proven track record of designing and executing high-ROI digital advertising campaigns. Adept at leveraging market analytics to drive user acquisition and increase revenue."`;
       } else if (aiPresetType === "bullets") {
-        systemPrompt = "You are an elite resume editor. Rewrite the user's raw experience or bullet points into highly professional, action-oriented bullet points using the STAR method (Situation, Task, Action, Result). Use strong, metric-focused active verbs. Start each line with a bullet symbol (•) or a clean list format. Return ONLY the updated bullet points. Do not write introductory or conversational text.";
+        systemPrompt = `You are an elite resume editor. Rewrite the user's raw experience or bullet points into highly professional, action-oriented bullet points using the STAR method (Situation, Task, Action, Result). Use strong, metric-focused active verbs. Start each line with a bullet symbol (•) or a clean list format. Return ONLY the updated bullet points. Do not write introductory or conversational text.
+
+Examples of rewriting:
+Input: "helped with the database and made it faster"
+Output: 
+• Optimized database query performance by 40% through index restructuring, reducing average load times for critical endpoints.
+
+Input: "talked to customers to figure out what they want"
+Output:
+• Conducted over 50 user discovery interviews to synthesize product requirements, directly influencing the Q3 product roadmap.
+
+Input: "fixed bugs in the app"
+Output:
+• Resolved 100+ critical software defects, increasing application stability by 25% and significantly improving end-user satisfaction.`;
       } else {
         systemPrompt = "You are an expert resume writer. Help the user with their custom request regarding their resume content. Be concise, impact-oriented, and return ONLY the relevant rewritten resume text or direct suggestions without any conversational chat.";
       }
@@ -1564,6 +1607,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   };
 
   const loadResumeFromCloud = async (id: string) => {
+    const toastId = toast.loading("Loading resume...");
     try {
       const { data, error } = await supabase
         .from("resumes")
@@ -1593,6 +1637,9 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         if (c.experiences) setExperiences(c.experiences);
         if (c.educations) setEducations(c.educations);
         if (c.profilePhoto) setProfilePhoto(c.profilePhoto);
+        
+        // Hide onboarding modal when successfully loaded
+        setShowOnboarding(false);
 
         const loadedSnapshot = {
           name: loadedName,
@@ -1610,9 +1657,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         };
         setHistory([loadedSnapshot]);
         setHistoryIndex(0);
+        toast.success("Resume loaded successfully!", { id: toastId });
       }
     } catch (err: any) {
-      toast.error("Failed to load resume: " + err.message);
+      toast.error("Failed to load resume: " + err.message, { id: toastId });
     }
   };
 
