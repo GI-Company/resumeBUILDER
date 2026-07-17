@@ -990,6 +990,9 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [resumesListOpen, setResumesListOpen] = useState(false);
   const [myResumes, setMyResumes] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveResumeName, setSaveResumeName] = useState("My Resume");
+  const [saveOverwriteId, setSaveOverwriteId] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(320);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(true);
@@ -1550,7 +1553,8 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     try {
       const { data, error } = await supabase
         .from("resumes")
-        .select("id, updated_at")
+        .select("id, updated_at, content")
+        .eq("status", "active")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       setMyResumes(data || []);
@@ -1992,65 +1996,36 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     };
 
     if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("resume_autosave_content", JSON.stringify(trimmedPayload));
-      } catch (e) {
-        console.error("Failed to save to localStorage, likely quota exceeded:", e);
+      // Debounce local storage saves slightly to avoid blocking main thread too often
+      const timer = setTimeout(() => {
+        try {
+          localStorage.setItem("resume_autosave_content", JSON.stringify(trimmedPayload));
+        } catch (e) {
+          console.error("Failed to save to localStorage, likely quota exceeded:", e);
+        }
+      }, 500);
+      
+      // Update history
+      if (!isHistoryActionRef.current) {
+        setHistory((prev) => {
+          const current = prev[historyIndex];
+          if (current && JSON.stringify(current) === JSON.stringify(trimmedPayload)) {
+            return prev;
+          }
+          const newHistory = prev.slice(0, historyIndex + 1);
+          newHistory.push(trimmedPayload);
+          if (newHistory.length > 50) {
+            newHistory.shift();
+          }
+          setHistoryIndex(newHistory.length - 1);
+          return newHistory;
+        });
+      } else {
+        isHistoryActionRef.current = false;
       }
+      
+      return () => clearTimeout(timer);
     }
-    
-    // Backend autosave if logged in
-    if (user) {
-        const saveToBackend = async (payload: any) => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.access_token) return;
-            
-            try {
-                const response = await fetch("/api/resume/save", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        id: resumeId,
-                        content: payload,
-                        status: 'active',
-                        clientId: 'web'
-                    })
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Save failed');
-                }
-            } catch (err: any) {
-                console.error("Autosave failed:", err);
-                toast.error(err.message || "Failed to autosave resume");
-            }
-        };
-        
-        const timer = setTimeout(() => saveToBackend(trimmedPayload), 2000);
-        return () => clearTimeout(timer);
-    }
-
-    if (isHistoryActionRef.current) {
-      isHistoryActionRef.current = false;
-      return;
-    }
-
-    setHistory((prev) => {
-      const current = prev[historyIndex];
-      if (current && JSON.stringify(current) === JSON.stringify(trimmedPayload)) {
-        return prev;
-      }
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(trimmedPayload);
-      if (newHistory.length > 50) {
-        newHistory.shift();
-      }
-      setHistoryIndex(newHistory.length - 1);
-      return newHistory;
-    });
   }, [
     name,
     contactLine,
@@ -2098,7 +2073,21 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   };
 
   const handleSaveToCloud = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Please log in to save to the cloud.");
+      setAuthModalOpen(true);
+      return;
+    }
+    await fetchMyResumes();
+    setSaveOverwriteId(resumeId);
+    setSaveResumeName(name || "My Resume");
+    setSaveModalOpen(true);
+  };
+
+  const executeSaveToCloud = async () => {
     setIsSaving(true);
+    setSaveModalOpen(false);
 
     const payload = {
       design,
@@ -2113,16 +2102,12 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       contactLine,
       summary,
       footer,
+      resumeName: saveResumeName,
     };
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please log in to save to the cloud.");
-        setAuthModalOpen(true);
-        setIsSaving(false);
-        return;
-      }
+      if (!session) return;
 
       const response = await fetch("/api/resume/save", {
         method: "POST",
@@ -2131,7 +2116,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
           "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          id: resumeId,
+          id: saveOverwriteId, // if overwriting, use that id, else undefined/null to create new
           content: payload,
           clientId: clientId || "web",
           status: 'active',
@@ -2168,7 +2153,11 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       }
     } catch (err: any) {
       console.error("Save failed", err);
-      toast.error("Failed to save to cloud");
+      if (err.message?.includes("3 active resumes")) {
+         toast.error("You have reached the 3 resume limit. Please overwrite an existing one.");
+      } else {
+         toast.error("Failed to save to cloud");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -2604,6 +2593,65 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
       />
+
+      {/* Save Modal */}
+      {saveModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Save to Cloud</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Resume Name</label>
+              <input
+                type="text"
+                value={saveResumeName}
+                onChange={(e) => setSaveResumeName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. Software Engineer Resume"
+              />
+            </div>
+
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-2">Save Destination (Limit 3 active resumes)</p>
+              <div className="space-y-2">
+                {myResumes.length < 3 && (
+                  <label className={cn("flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all", saveOverwriteId === null ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300")}>
+                    <input type="radio" name="save_dest" checked={saveOverwriteId === null} onChange={() => setSaveOverwriteId(null)} className="hidden" />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-900">Create New Resume</div>
+                      <div className="text-xs text-gray-500">{myResumes.length} / 3 slots used</div>
+                    </div>
+                  </label>
+                )}
+                {myResumes.map(r => (
+                  <label key={r.id} className={cn("flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all", saveOverwriteId === r.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300")}>
+                    <input type="radio" name="save_dest" checked={saveOverwriteId === r.id} onChange={() => setSaveOverwriteId(r.id)} className="hidden" />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-900">Overwrite "{r.content?.resumeName || r.content?.name || 'Untitled'}"</div>
+                      <div className="text-xs text-gray-500">Last updated: {new Date(r.updated_at).toLocaleDateString()}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setSaveModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeSaveToCloud}
+                disabled={isSaving || (myResumes.length >= 3 && saveOverwriteId === null)}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Format Bar */}
       {formatBar.visible && (
