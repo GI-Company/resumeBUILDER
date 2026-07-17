@@ -35,26 +35,30 @@ export default function Page() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleOpenResume = (id?: string) => {
+  const handleOpenResume = (id?: string, templateId?: string) => {
     if (id && id !== 'new') {
       window.history.pushState({}, '', `?id=${id}`);
     } else {
       window.history.pushState({}, '', window.location.pathname);
     }
     setShowBuilder(true);
+    setInitialTemplateId(templateId);
   };
 
   const handleCloseBuilder = () => {
     window.history.pushState({}, '', window.location.pathname);
     setShowBuilder(false);
+    setInitialTemplateId(undefined);
   };
+
+  const [initialTemplateId, setInitialTemplateId] = useState<string | undefined>(undefined);
 
   if (loading) return null;
 
   if (showBuilder) {
       return (
         <div className="min-h-screen bg-gray-50">
-            <ResumeBuilder onBack={handleCloseBuilder} />
+            <ResumeBuilder onBack={handleCloseBuilder} initialTemplateId={initialTemplateId} />
         </div>
       );
   }
@@ -63,5 +67,5 @@ export default function Page() {
     return <Dashboard onOpenResume={handleOpenResume} />;
   }
 
-  return <LandingPage onOpenResume={() => handleOpenResume('new')} />;
+  return <LandingPage onOpenResume={(templateId) => handleOpenResume('new', templateId)} />;
 }

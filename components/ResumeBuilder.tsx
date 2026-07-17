@@ -128,124 +128,9 @@ const PageBreakGap = ({ id, pageBreakElementIds, gapHeights, pageMargin }: PageB
 
 const TEMPLATES = [
   {
-    id: "blank",
-    name: "Blank Custom",
-    desc: "A completely blank template for full customization.",
-    layout: "classic",
-    heading: "sans-serif",
-    body: "sans-serif",
-    accent: "#000000",
-    panel: "#ffffff",
-    radius: 0,
-    headingStyle: "plain",
-    italic: false,
-    headerAlign: "left",
-    listStyle: "disc",
-    pageMargin: 32,
-    itemSpacing: 16,
-    jobLayout: "stacked",
-    paper: "#ffffff",
-    boxOpacity: 0,
-    boxShadow: "none",
-    borderStyle: "none",
-    backdropBlur: 0,
-  },
-  {
-    id: "classic",
-    name: "Classic Script",
-    desc: "Warm handwritten headings over a soft neutral panel. A safe, personable all-rounder.",
-    layout: "classic",
-    heading: "'Kalam',cursive",
-    body: "'Lora',serif",
-    accent: "#3a353a",
-    panel: "#ffffff",
-    radius: 10,
-    headingStyle: "bar",
-    italic: true,
-    headerAlign: "left",
-    listStyle: "disc",
-    pageMargin: 38,
-    itemSpacing: 16,
-    jobLayout: "stacked",
-    paper: "#ffffff",
-    boxOpacity: 0,
-    boxShadow: "none",
-    borderStyle: "none",
-    backdropBlur: 0,
-  },
-  {
-    id: "modern",
-    name: "Modern Sans",
-    desc: "Clean geometric sans with an underline rule. Good for tech and product roles.",
-    layout: "classic",
-    heading: "'Poppins',sans-serif",
-    body: "'Inter',sans-serif",
-    accent: "#2f5d62",
-    panel: "#ffffff",
-    radius: 6,
-    headingStyle: "underline",
-    italic: false,
-    headerAlign: "left",
-    listStyle: "square",
-    pageMargin: 48,
-    itemSpacing: 24,
-    jobLayout: "split",
-    paper: "#ffffff",
-    boxOpacity: 90,
-    boxShadow: "none",
-    borderStyle: "none",
-    backdropBlur: 8,
-  },
-  {
-    id: "traditional",
-    name: "Traditional Serif",
-    desc: "Editorial serif pairing with plain headings. Reads formal and established.",
-    layout: "classic",
-    heading: "'Playfair Display',serif",
-    body: "'Source Serif 4',serif",
-    accent: "#4a3324",
-    panel: "#ffffff",
-    radius: 2,
-    headingStyle: "plain",
-    italic: true,
-    headerAlign: "center",
-    listStyle: "circle",
-    pageMargin: 48,
-    itemSpacing: 20,
-    jobLayout: "split",
-    paper: "#fdfbfa",
-    boxOpacity: 95,
-    boxShadow: "medium",
-    borderStyle: "double",
-    backdropBlur: 2,
-  },
-  {
-    id: "minimal",
-    name: "Minimal ATS-Safe",
-    desc: "No color, no boxes, small caps headings. Built to parse cleanly in applicant tracking systems.",
-    layout: "classic",
-    heading: "Georgia,serif",
-    body: "Georgia,serif",
-    accent: "#000000",
-    panel: "#ffffff",
-    radius: 0,
-    headingStyle: "smallcaps",
-    italic: false,
-    headerAlign: "center",
-    listStyle: "disc",
-    pageMargin: 38,
-    itemSpacing: 16,
-    jobLayout: "split",
-    paper: "#ffffff",
-    boxOpacity: 0,
-    boxShadow: "none",
-    borderStyle: "none",
-    backdropBlur: 0,
-  },
-  {
     id: "sidebar-executive",
     name: "Sidebar Executive",
-    desc: "Two-column layout: certifications, skills, and education in a side rail; summary and experience take the lead column.",
+    desc: "A stunning two-column layout optimal for senior candidates.",
     layout: "sidebar",
     heading: "'Playfair Display',serif",
     body: "'Source Serif 4',serif",
@@ -266,9 +151,101 @@ const TEMPLATES = [
     backdropBlur: 4,
   },
   {
+    id: "modern",
+    name: "Modern Chic",
+    desc: "Clean, elegant lines with a premium tech-focused accent color.",
+    layout: "classic",
+    heading: "'Poppins',sans-serif",
+    body: "'Inter',sans-serif",
+    accent: "#2f5d62",
+    panel: "#ffffff",
+    radius: 6,
+    headingStyle: "underline",
+    italic: false,
+    headerAlign: "left",
+    listStyle: "square",
+    pageMargin: 48,
+    itemSpacing: 24,
+    jobLayout: "split",
+    paper: "#ffffff",
+    boxOpacity: 90,
+    boxShadow: "none",
+    borderStyle: "none",
+    backdropBlur: 8,
+  },
+  {
+    id: "classic",
+    name: "Harvard Classic",
+    desc: "The gold standard of investment banking and elite professional resumes.",
+    layout: "classic",
+    heading: "'Playfair Display',serif",
+    body: "'Source Serif 4',serif",
+    accent: "#4a3324",
+    panel: "#ffffff",
+    radius: 2,
+    headingStyle: "plain",
+    italic: true,
+    headerAlign: "center",
+    listStyle: "circle",
+    pageMargin: 48,
+    itemSpacing: 20,
+    jobLayout: "split",
+    paper: "#fdfbfa",
+    boxOpacity: 95,
+    boxShadow: "medium",
+    borderStyle: "double",
+    backdropBlur: 2,
+  },
+  {
+    id: "traditional",
+    name: "Traditional Professional",
+    desc: "A reliable, highly structured grid-based layout.",
+    layout: "classic",
+    heading: "Georgia,serif",
+    body: "Georgia,serif",
+    accent: "#000000",
+    panel: "#ffffff",
+    radius: 0,
+    headingStyle: "smallcaps",
+    italic: false,
+    headerAlign: "center",
+    listStyle: "disc",
+    pageMargin: 38,
+    itemSpacing: 16,
+    jobLayout: "split",
+    paper: "#ffffff",
+    boxOpacity: 0,
+    boxShadow: "none",
+    borderStyle: "none",
+    backdropBlur: 0,
+  },
+  {
+    id: "minimal",
+    name: "Minimalist Slate",
+    desc: "Zero clutter, premium spacing. Pushes content density.",
+    layout: "classic",
+    heading: "'Inter',sans-serif",
+    body: "'Inter',sans-serif",
+    accent: "#000000",
+    panel: "#ffffff",
+    radius: 0,
+    headingStyle: "plain",
+    italic: false,
+    headerAlign: "left",
+    listStyle: "disc",
+    pageMargin: 38,
+    itemSpacing: 16,
+    jobLayout: "stacked",
+    paper: "#ffffff",
+    boxOpacity: 0,
+    boxShadow: "none",
+    borderStyle: "none",
+    backdropBlur: 0,
+  },
+  {
     id: "sidebar-fresh",
     name: "Sidebar Fresh",
-    desc: "Two-column layout with a teal accent and rounded panels. Approachable and modern.",
+    desc: "A modern spin on the executive template.",
     layout: "sidebar",
     heading: "'Poppins',sans-serif",
     body: "'Nunito Sans',sans-serif",
@@ -423,6 +400,7 @@ const SectionWrapper = ({
   const dragControls = useDragControls();
   return (
     <Reorder.Item
+      key={id}
       value={item}
       id={id}
       dragListener={false}
@@ -548,7 +526,7 @@ const SectionWrapper = ({
   );
 };
 
-export default function ResumeBuilder({ onBack }: { onBack?: () => void }) {
+export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: () => void, initialTemplateId?: string }) {
   // --- Local Draft Retrieval ---
   let localDraft: any = null;
   if (typeof window !== "undefined") {
@@ -574,7 +552,9 @@ export default function ResumeBuilder({ onBack }: { onBack?: () => void }) {
   const [pageDrawerOpen, setPageDrawerOpen] = useState(false);
 
   // --- Design State ---
-  const [design, setDesign] = useState<DesignConfig>(() => localDraft?.design ?? {
+  const [design, setDesign] = useState<DesignConfig>(() => {
+    const initialTemplate = initialTemplateId ? TEMPLATES.find(t => t.id === initialTemplateId) : null;
+    return initialTemplate ?? localDraft?.design ?? {
     template: "classic",
     fontHeading: "'Kalam',cursive",
     fontBody: "'Lora',serif",
@@ -598,6 +578,7 @@ export default function ResumeBuilder({ onBack }: { onBack?: () => void }) {
     boxShadow: "none",
     borderStyle: "none",
     backdropBlur: 4,
+    };
   });
 
   // --- Profile Photo State ---
@@ -2038,9 +2019,13 @@ export default function ResumeBuilder({ onBack }: { onBack?: () => void }) {
                         clientId: 'web'
                     })
                 });
-                if (!response.ok) throw new Error('Save failed');
-            } catch (err) {
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Save failed');
+                }
+            } catch (err: any) {
                 console.error("Autosave failed:", err);
+                toast.error(err.message || "Failed to autosave resume");
             }
         };
         
@@ -4639,7 +4624,10 @@ export default function ResumeBuilder({ onBack }: { onBack?: () => void }) {
               <CloudUpload size={14} className="md:w-4 md:h-4" /> <span>{isSaving ? "Saving..." : "Save"}</span>
             </button>
             <button
-              onClick={() => window.print()}
+              onClick={() => {
+                calcPages();
+                setTimeout(() => window.print(), 100);
+              }}
               className="bg-blue-600 text-white border border-blue-600 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold inline-flex items-center gap-1 md:gap-1.5 transition-all hover:bg-blue-700 active:scale-95 shadow-sm"
             >
               <Printer size={14} className="md:w-4 md:h-4" /> <span>PDF</span>

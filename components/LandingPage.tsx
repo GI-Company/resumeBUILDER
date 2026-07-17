@@ -90,7 +90,7 @@ const SANDBOX_PRESETS = {
   }
 };
 
-export default function LandingPage({ onOpenResume }: { onOpenResume: () => void }) {
+export default function LandingPage({ onOpenResume }: { onOpenResume: (templateId: string) => void }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeSandboxTab, setActiveSandboxTab] = useState<"bullets" | "summary" | "keywords">("bullets");
   const [sandboxInput, setSandboxInput] = useState("");
@@ -240,7 +240,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <button 
-              onClick={onOpenResume} 
+              onClick={() => onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id)} 
               className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
               <Play size={16} />
@@ -1025,7 +1025,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
                 )}
               </div>
               <button
-                onClick={onOpenResume}
+                onClick={() => onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id)}
                 className="w-full sm:w-auto self-end bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
                 <span>Edit template now</span>
@@ -1084,7 +1084,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: () => void
                 </ul>
               </div>
               <button 
-                onClick={onOpenResume}
+                onClick={() => onOpenResume("classic")}
                 className="w-full bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer shadow-xs"
               >
                 Start Editing Instantly (No signup)
