@@ -48,7 +48,7 @@ export const SectionWrapper = memo(({
     >
       <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
       <div
-        className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex items-center justify-between gap-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
+        className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
         data-page-break-id={`heading-${id}`}
         style={{
           backgroundColor: "var(--panel-dark-rgba)",
@@ -81,7 +81,7 @@ export const SectionWrapper = memo(({
             }}
           />
         </div>
-        <div className="heading-left flex items-center gap-2">
+        <div className="heading-actions flex flex-wrap items-center gap-1.5 ml-auto">
           <button
             onClick={() => setManualBreaks((p: any) => ({ ...p, [id]: !p[id] }))}
             className={cn(
