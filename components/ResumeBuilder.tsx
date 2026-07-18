@@ -6317,43 +6317,74 @@ Output:
             </div>
 
             {/* Sections */}
-            <Reorder.Group
-              values={sections}
-              onReorder={setSections}
-              id="sections-container"
-              className="w-full"
-            >
-              {sections.map((section: any) => (
-  <SectionRenderer
-    key={section.id}
-    section={section}
-    summary={summary}
-    setSummary={setSummary}
-    licenses={licenses}
-    setLicenses={setLicenses}
-    skills={skills}
-    setSkills={setSkills}
-    experiences={experiences}
-    setExperiences={setExperiences}
-    educations={educations}
-    setEducations={setEducations}
-    projects={projects}
-    setProjects={setProjects}
-    publications={publications}
-    setPublications={setPublications}
-    awards={awards}
-    setAwards={setAwards}
-    sectionHeaders={sectionHeaders}
-    setSectionHeaders={setSectionHeaders}
-    manualBreaks={manualBreaks}
-    setManualBreaks={setManualBreaks}
-    pageBreakElementIds={pageBreakElementIds}
-    design={design}
-    gapHeights={gapHeights}
-    spellcheckEnabled={spellcheckEnabled}
-  />
-))}
-            </Reorder.Group>
+            {(() => {
+              const renderSection = (section: any, keyPrefix: string = "") => (
+                <SectionRenderer
+                  key={`${keyPrefix}${section.id}`}
+                  section={section}
+                  summary={summary}
+                  setSummary={setSummary}
+                  licenses={licenses}
+                  setLicenses={setLicenses}
+                  skills={skills}
+                  setSkills={setSkills}
+                  experiences={experiences}
+                  setExperiences={setExperiences}
+                  educations={educations}
+                  setEducations={setEducations}
+                  projects={projects}
+                  setProjects={setProjects}
+                  publications={publications}
+                  setPublications={setPublications}
+                  awards={awards}
+                  setAwards={setAwards}
+                  sectionHeaders={sectionHeaders}
+                  setSectionHeaders={setSectionHeaders}
+                  manualBreaks={manualBreaks}
+                  setManualBreaks={setManualBreaks}
+                  pageBreakElementIds={pageBreakElementIds}
+                  spellcheckEnabled={spellcheckEnabled}
+                  design={design}
+                  gapHeights={gapHeights}
+                />
+              );
+              
+              return (
+                <>
+                  <div className="block print:hidden w-full">
+                    <Reorder.Group
+                      values={sections}
+                      onReorder={setSections}
+                      id="sections-container"
+                      className="w-full"
+                    >
+                      {sections.map((section: any) => renderSection(section))}
+                    </Reorder.Group>
+                  </div>
+                  
+                  <div className="hidden print:block w-full">
+                    {design.layout === "sidebar" ? (
+                      <div className="flex w-full gap-[1.1rem] items-start">
+                        <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
+                          {sections
+                            .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
+                            .map((s: any) => renderSection(s, "print-"))}
+                        </div>
+                        <div className="flex-1 flex flex-col min-w-0">
+                          {sections
+                            .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
+                            .map((s: any) => renderSection(s, "print-"))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col w-full">
+                        {sections.map((s: any) => renderSection(s, "print-"))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
 
             <ContentEditableField tagName="div"
               className="page-footer text-center font-sans text-[11px] text-[#a19b9d] mt-4 outline-none"
