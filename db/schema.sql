@@ -5,9 +5,13 @@ CREATE TABLE IF NOT EXISTS resumes (
     user_id UUID REFERENCES auth.users(id),
     content JSONB NOT NULL DEFAULT '{}'::jsonb,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'trash', 'archive')),
+    is_public BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Safely add the column if the table already existed before this update
+ALTER TABLE resumes ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Function to enforce max 3 active resumes
 CREATE OR REPLACE FUNCTION check_resume_limit()
@@ -51,10 +55,10 @@ ALTER TABLE resumes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 
--- Public can select their own resume by ID (assuming UUID is unguessable enough for sharing)
+-- Public can select their own resume by ID if it is public
 DROP POLICY IF EXISTS "Public read by ID" ON resumes;
 CREATE POLICY "Public read by ID" ON resumes
-    FOR SELECT USING (true);
+    FOR SELECT USING (is_public = true);
     
 DROP POLICY IF EXISTS "Users can see their own resumes" ON resumes;
 CREATE POLICY "Users can see their own resumes" ON resumes
@@ -177,3 +181,54 @@ BEGIN
     RETURN json_build_object('success', true, 'code', 'OK', 'id', v_new_id);
 END;
 $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. Guest AI Rate Limits
+CREATE TABLE IF NOT EXISTS guest_ai_limits (
+    ip_address TEXT PRIMARY KEY,
+    count INT NOT NULL DEFAULT 0,
+    first_request_time TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE guest_ai_limits ENABLE ROW LEVEL SECURITY;
+
+-- RPC: Check and Increment Guest AI Rate Limit (5 requests / 24 hours)
+CREATE OR REPLACE FUNCTION check_guest_ai_limit(p_ip TEXT)
+RETURNS JSON AS $BODY$
+DECLARE
+    v_limit_window INTERVAL := '24 hours';
+    v_record RECORD;
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    INSERT INTO guest_ai_limits (ip_address, count, first_request_time)
+    VALUES (p_ip, 1, v_now)
+    ON CONFLICT (ip_address) DO UPDATE
+    SET 
+        count = CASE 
+            WHEN (NOW() - guest_ai_limits.first_request_time) >= INTERVAL '24 hours' THEN 1
+            ELSE guest_ai_limits.count + 1
+        END,
+        first_request_time = CASE 
+            WHEN (NOW() - guest_ai_limits.first_request_time) >= INTERVAL '24 hours' THEN NOW()
+            ELSE guest_ai_limits.first_request_time
+        END
+    RETURNING count, first_request_time INTO v_record;
+
+    IF v_record.count > 5 THEN
+        RETURN json_build_object(
+            'allowed', false, 
+            'count', v_record.count, 
+            'remaining', 0, 
+            'resetTime', v_record.first_request_time + v_limit_window
+        );
+    END IF;
+
+    RETURN json_build_object(
+        'allowed', true, 
+        'count', v_record.count, 
+        'remaining', 5 - v_record.count, 
+        'resetTime', v_record.first_request_time + v_limit_window
+    );
+END;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+

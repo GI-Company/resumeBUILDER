@@ -8,85 +8,31 @@ const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabaseServer = createClient(supabaseUrl, supabaseAnonKey);
 
-const LIMIT_FILE = "/tmp/ai_rate_limits.json";
-let inMemoryCache: Record<string, { count: number; firstRequestTime: number }> = {};
-
-// Helper to load rate limits from filesystem with in-memory fallback
-function loadRateLimits() {
+// Rate limiting is now handled securely via Supabase RPC to work correctly on serverless platforms
+async function checkAndIncrementRateLimit(ip: string): Promise<{ allowed: boolean; count: number; remaining: number; resetTime: Date }> {
   try {
-    if (fs.existsSync(LIMIT_FILE)) {
-      const data = fs.readFileSync(LIMIT_FILE, "utf-8");
-      inMemoryCache = JSON.parse(data);
+    const { data, error } = await supabaseServer.rpc('check_guest_ai_limit', { p_ip: ip });
+    if (error || !data) {
+      console.error('Supabase rate limit RPC failed:', error);
+      // Fail open gracefully if DB is down, but log the error
+      return { allowed: true, count: 1, remaining: 4, resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000) };
     }
-  } catch (e) {
-    console.error("Failed to load rate limits file, using in-memory cache:", e);
-  }
-}
-
-// Helper to save rate limits to filesystem
-function saveRateLimits() {
-  try {
-    fs.writeFileSync(LIMIT_FILE, JSON.stringify(inMemoryCache, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Failed to write rate limits file:", e);
-  }
-}
-
-// Perform rate limiting: 5 requests every 24 hours from first request
-function checkAndIncrementRateLimit(ip: string, cookieRecordStr: string | undefined): { allowed: boolean; count: number; remaining: number; resetTime: Date; newCookieVal: string } {
-  loadRateLimits();
-  const now = Date.now();
-  const limitWindow = 24 * 60 * 60 * 1000; // 24 hours
-  
-  let ipRecord = inMemoryCache[ip];
-  let cookieRecord = null;
-  
-  if (cookieRecordStr) {
-    try {
-      cookieRecord = JSON.parse(cookieRecordStr);
-    } catch(e) {}
-  }
-  
-  // Merge state from IP and Cookie to prevent bypass
-  let count = 0;
-  let firstRequestTime = now;
-  
-  if (ipRecord && (now - ipRecord.firstRequestTime) < limitWindow) {
-    count = Math.max(count, ipRecord.count);
-    firstRequestTime = Math.min(firstRequestTime, ipRecord.firstRequestTime);
-  }
-  if (cookieRecord && (now - cookieRecord.firstRequestTime) < limitWindow) {
-    count = Math.max(count, cookieRecord.count);
-    firstRequestTime = Math.min(firstRequestTime, cookieRecord.firstRequestTime);
-  }
-  
-  if (count >= 5) {
-    return { 
-      allowed: false, 
-      count, 
-      remaining: 0, 
-      resetTime: new Date(firstRequestTime + limitWindow),
-      newCookieVal: JSON.stringify({ count, firstRequestTime })
+    return {
+      allowed: data.allowed,
+      count: data.count,
+      remaining: data.remaining,
+      resetTime: new Date(data.resetTime)
     };
+  } catch (err) {
+    console.error('Rate limit exception:', err);
+    return { allowed: true, count: 1, remaining: 4, resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000) };
   }
-  
-  count += 1;
-  const newRecord = { count, firstRequestTime };
-  inMemoryCache[ip] = newRecord;
-  saveRateLimits();
-  
-  return { 
-    allowed: true, 
-    count, 
-    remaining: 5 - count, 
-    resetTime: new Date(firstRequestTime + limitWindow),
-    newCookieVal: JSON.stringify(newRecord)
-  };
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || (req as any).ip || "127.0.0.1";
+    // Note: Vercel sets x-real-ip and x-forwarded-for. We prefer x-real-ip if available.
+    const ip = req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || (req as any).ip || "127.0.0.1";
     
     // Check user authorization first
     let userObj = null;
@@ -103,22 +49,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let rateLimit = { allowed: true, count: 0, remaining: 9999, resetTime: new Date(), newCookieVal: '' };
+    let rateLimit = { allowed: true, count: 0, remaining: 9999, resetTime: new Date() };
     
     if (!userObj) {
-      const cookieRecordStr = req.cookies.get('ai_rate_limit')?.value;
-      rateLimit = checkAndIncrementRateLimit(ip, cookieRecordStr);
+      rateLimit = await checkAndIncrementRateLimit(ip);
       
       if (!rateLimit.allowed) {
-        const res = NextResponse.json(
+        return NextResponse.json(
           { 
             success: false, 
             error: `AI Rate limit exceeded. Guest tier is limited to 5 requests per 24 hours. Please Log In or Sign Up to unlock more high-speed AI requests. Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
           },
           { status: 429 }
         );
-        res.cookies.set('ai_rate_limit', rateLimit.newCookieVal, { maxAge: 24 * 60 * 60, path: '/' });
-        return res;
       }
     }
 
@@ -251,9 +194,6 @@ export async function POST(req: NextRequest) {
     try {
       const parsedData = JSON.parse(cleanJson);
       const res = NextResponse.json({ success: true, data: parsedData, model: selectedModel });
-      if (!userObj && rateLimit.newCookieVal) {
-        res.cookies.set('ai_rate_limit', rateLimit.newCookieVal, { maxAge: 24 * 60 * 60, path: '/' });
-      }
       return res;
     } catch (parseErr: any) {
       console.error("Failed to parse JSON response from Groq:", text);
@@ -262,9 +202,6 @@ export async function POST(req: NextRequest) {
         error: "AI did not return valid JSON. Please try again with a simpler or more specific input.",
         rawText: text 
       }, { status: 500 });
-      if (!userObj && rateLimit.newCookieVal) {
-        res.cookies.set('ai_rate_limit', rateLimit.newCookieVal, { maxAge: 24 * 60 * 60, path: '/' });
-      }
       return res;
     }
   } catch (err: any) {
