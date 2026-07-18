@@ -7,11 +7,16 @@
 }
 
 @media print {
-  body, html { 
+  body, html, #__next, main, .h-screen, .h-full, .overflow-hidden { 
     background: #fff !important; 
     margin: 0 !important; 
     padding: 0 !important; 
     height: auto !important; 
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important; 
+    display: block !important;
+    position: static !important;
   }
   .no-print, .toolbar, .design-panel, .format-bar, .page-drawer, .overlay-scrim { 
     display: none !important; 
@@ -21,6 +26,7 @@
     overflow: visible !important; 
     display: block !important;
     height: auto !important;
+    position: static !important;
   }
   .canvas-wrap > div {
     width: auto !important;
@@ -28,6 +34,8 @@
     min-width: 0 !important;
     min-height: 0 !important;
     transform: none !important;
+    margin: 0 !important;
+    position: static !important;
   }
   .page { 
     box-shadow: none !important; 
@@ -36,16 +44,20 @@
     padding: var(--page-margin-y) var(--page-margin-x) !important;
     transform: none !important; /* CRITICAL: prevents scaling clipping */
     min-height: 0 !important;
+    height: auto !important;
     overflow: visible !important;
+    position: static !important;
+    page-break-inside: avoid;
   }
   .page-sheet { display: none !important; }
-  .manual-break { page-break-before: always; break-before: page; }
-  .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
-  .print-break-after-avoid { break-after: avoid-page; page-break-after: avoid; }
+  .manual-break { page-break-before: always !important; break-before: page !important; }
+  .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .print-break-after-avoid { break-after: avoid-page !important; page-break-after: avoid !important; }
   [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent !important; box-shadow: none !important; }
   
   @page {
     margin: 0;
+    size: letter portrait;
   }
 }
 
