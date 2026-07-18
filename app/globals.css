@@ -32,18 +32,18 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
 }
 
 .heading-underline .section-heading {
-  background: none;
-  box-shadow: none;
-  border-bottom: 2px solid var(--accent);
+  background: transparent !important;
+  box-shadow: none !important;
+  border-bottom: 2px solid var(--accent) !important;
   border-radius: 0;
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 .heading-plain .section-heading {
-  background: none;
-  box-shadow: none;
-  padding-left: 0;
-  padding-right: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 .heading-smallcaps .section-heading .heading-left {
   text-transform: uppercase;
