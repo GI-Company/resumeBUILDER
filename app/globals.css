@@ -108,6 +108,7 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   grid-template-columns: var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem);
   column-gap: 1.1rem;
   align-items: start;
+  grid-auto-flow: dense;
 }
 .layout-sidebar .section[data-section="licenses"],
 .layout-sidebar .section[data-section="skills"],
