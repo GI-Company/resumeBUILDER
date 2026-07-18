@@ -460,8 +460,10 @@ const SectionRenderer = memo(({
                                 {exp.bullets.map((b: any) => (
                                   <li
                                     key={b.id}
+                                    data-page-break-id={`bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1.5"
                                   >
+                                    <PageBreakGap id={`bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                     <ContentEditableField tagName="span"
                                       className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
                                       html={b.text} onChange={(val) => { setExperiences((prev: any[]) =>
@@ -524,15 +526,18 @@ const SectionRenderer = memo(({
                                 + bullet
                               </button>
                               {exp.meta !== undefined && (
-                                <ContentEditableField tagName="div"
-                                  className="exp-meta mt-3 pt-2 border-t border-[var(--hairline)] font-sans text-xs text-[var(--ink-soft)] font-medium leading-relaxed outline-none"
-                                  html={exp.meta} onChange={(val) => { setExperiences((prev: any[]) =>
-                                      prev.map((x) =>
-                                        x.id === exp.id ? { ...x, meta: val } : x,
-                                      ),
-                                    ); }}
-                                  spellCheck={spellcheckEnabled}
-                                />
+                                <div data-page-break-id={`meta-${exp.id}`} className="w-full">
+                                  <PageBreakGap id={`meta-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                                  <ContentEditableField tagName="div"
+                                    className="exp-meta mt-3 pt-2 border-t border-[var(--hairline)] font-sans text-xs text-[var(--ink-soft)] font-medium leading-relaxed outline-none"
+                                    html={exp.meta} onChange={(val) => { setExperiences((prev: any[]) =>
+                                        prev.map((x) =>
+                                          x.id === exp.id ? { ...x, meta: val } : x,
+                                        ),
+                                      ); }}
+                                    spellCheck={spellcheckEnabled}
+                                  />
+                                </div>
                               )}
                             
 </>)}
@@ -593,8 +598,10 @@ const SectionRenderer = memo(({
                                 {edu.bullets.map((b: any) => (
                                   <li
                                     key={b.id}
+                                    data-page-break-id={`edu-bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1"
                                   >
+                                    <PageBreakGap id={`edu-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                     <ContentEditableField tagName="span"
                                       className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
                                       html={b.text} onChange={(val) => { setEducations((prev: any[]) =>
@@ -727,8 +734,10 @@ const SectionRenderer = memo(({
                                 {proj.bullets?.map((b: any) => (
                                   <li
                                     key={b.id}
+                                    data-page-break-id={`proj-bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1"
                                   >
+                                    <PageBreakGap id={`proj-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                     <ContentEditableField tagName="span"
                                       className="font-[family:var(--font-body)] text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
                                       html={b.text} onChange={(val) => { setProjects((prev: any[]) =>
@@ -2997,7 +3006,7 @@ Output:
     const screenContainer = resume.querySelector(".block.print\\:hidden") ?? resume;
     const units = Array.from(
       screenContainer.querySelectorAll(
-        ".header, .section-heading, .summary, .bullet-list, .skills-grid, .exp-entry, .edu-entry",
+        ".header, .section-heading, .summary, .bullet-list, .skills-grid, .exp-entry, .exp-bullets li, .exp-meta, .edu-entry, .edu-bullets li, .proj-entry, .proj-bullets li",
       ),
     ) as HTMLElement[];
 
