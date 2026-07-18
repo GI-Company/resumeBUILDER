@@ -5833,14 +5833,14 @@ Output:
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f3f4f6] pb-16 md:pb-0">
         {/* Top Header */}
-        <div className="h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-20 no-print shrink-0 shadow-sm relative">
-          <div className="flex items-center gap-2 md:gap-3">
+        <div className="h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-20 no-print shrink-0 shadow-sm relative gap-2">
+          <div className="flex items-center gap-2 md:gap-3 flex-1 justify-start min-w-0">
             {onBack && (
               <button
                 onClick={onBack}
-                className="mr-1 text-gray-900 bg-white border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-all cursor-pointer flex items-center gap-1.5 no-print"
+                className="mr-1 text-gray-900 bg-white border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 shadow-sm transition-all cursor-pointer flex items-center gap-1.5 no-print shrink-0"
               >
-                ← <span className="hidden md:inline">{user ? "Back to Dashboard" : "Back"}</span><span className="md:hidden">Back</span>
+                ← <span className="hidden lg:inline">{user ? "Back to Dashboard" : "Back"}</span><span className="lg:hidden">Back</span>
               </button>
             )}
             <span className="font-[family:'Kalam',cursive] font-bold text-base md:text-lg text-gray-800">
@@ -5879,7 +5879,7 @@ Output:
             </div>
           </div>
           
-          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm">
+          <div className="hidden md:flex flex-none items-center gap-1 bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0">
             <button
               onClick={() => setActiveSidebarTab(activeSidebarTab === "templates" ? null : "templates")}
               className={cn(
@@ -5918,21 +5918,21 @@ Output:
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 flex-1 justify-end min-w-0">
             <button
               onClick={() => {
                 setTutorialStep(0);
                 setTutorialOpen(true);
               }}
-              className="p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all hover:bg-amber-100 text-amber-800 bg-amber-50 border border-amber-200/40 hidden md:flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+              className="p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all hover:bg-amber-100 text-amber-800 bg-amber-50 border border-amber-200/40 hidden md:flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0"
               title="Take an optional interactive tour of MYresume"
             >
-              <HelpCircle size={14} className="text-amber-500 animate-pulse" /> Take Tour
+              <HelpCircle size={14} className="text-amber-500 animate-pulse" /> <span className="hidden lg:inline">Take Tour</span>
             </button>
             <button
               onClick={() => setSpellcheckEnabled(!spellcheckEnabled)}
               className={cn(
-                "p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all inline-flex items-center gap-1.5 border border-gray-200 shadow-sm",
+                "p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all inline-flex items-center gap-1.5 border border-gray-200 shadow-sm shrink-0",
                 spellcheckEnabled
                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
                   : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
@@ -5940,7 +5940,7 @@ Output:
               title={spellcheckEnabled ? "Disable spellcheck (removes red wavy lines)" : "Enable native spellcheck (adds red wavy lines to typos)"}
             >
               <SpellCheck size={14} className="md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Spellcheck</span>
+              <span className="hidden lg:inline">Spellcheck</span>
               <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", spellcheckEnabled ? "bg-emerald-500 animate-pulse" : "bg-gray-400")} />
             </button>
             <button
@@ -5953,7 +5953,7 @@ Output:
                 );
               }}
               className={cn(
-                "p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all inline-flex items-center gap-1.5 border border-gray-200 shadow-sm cursor-pointer",
+                "p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all inline-flex items-center gap-1.5 border border-gray-200 shadow-sm cursor-pointer shrink-0",
                 printPreviewMode
                   ? "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
                   : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
@@ -5961,14 +5961,14 @@ Output:
               title={printPreviewMode ? "Exit Print Preview (Return to editing mode)" : "Enter Print Preview (Hide handles & see exact layout)"}
             >
               {printPreviewMode ? <EyeOff size={14} className="md:w-4 md:h-4" /> : <Eye size={14} className="md:w-4 md:h-4" />}
-              <span className="hidden sm:inline">{printPreviewMode ? "Exit Preview" : "Print Preview"}</span>
+              <span className="hidden lg:inline">{printPreviewMode ? "Exit Preview" : "Print Preview"}</span>
             </button>
             <button
               onClick={handleSaveToCloud}
               disabled={isSaving}
-              className="bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold hover:bg-gray-200 inline-flex items-center gap-1 md:gap-1.5 transition-all disabled:opacity-50"
+              className="bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold hover:bg-gray-200 inline-flex items-center gap-1 md:gap-1.5 transition-all disabled:opacity-50 shrink-0"
             >
-              <CloudUpload size={14} className="md:w-4 md:h-4" /> <span>{isSaving ? "Saving..." : "Save"}</span>
+              <CloudUpload size={14} className="md:w-4 md:h-4" /> <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save"}</span>
             </button>
             <div className="relative group flex items-center">
               <button
