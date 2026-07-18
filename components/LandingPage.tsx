@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AuthModal from './AuthModal';
-import { supabase } from '@/lib/supabase';
 
 // Templates details for interactive preview
 const TEMPLATES_INFO = [
@@ -108,10 +107,11 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-        if (!error && count !== null) setFoundingCount(count);
+        const res = await fetch('/api/stats');
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.count === 'number') setFoundingCount(data.count);
+        }
       } catch {
         // Silently fail — counter just won't show
       }

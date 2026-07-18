@@ -1,23 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { parseResumeSchema } from '@/lib/validations';
+import { env } from '@/lib/env';
+
+// Canonical free-tier model chain (ordered by quality for parsing tasks)
+const MODEL_CHAIN = [
+  'groq/compound',
+  'llama-3.3-70b-versatile',
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
+  'qwen/qwen3.6-27b',
+  'groq/compound-mini',
+  'llama-3.1-8b-instant',
+];
+const SYSTEM_PROMPT = `You are an elite, world-class resume-writing expert. Based on the user's input (which could be an old resume, a prompt describing their career, list of achievements, or unstructured text), write a high-impact, professional resume.
+
+You MUST return a JSON object with EXACTLY the following format:
+{
+  "name": "Jane Doe",
+  "contactLine": "City, ST | (123) 456-7890 | email@domain.com | linkedin.com/in/username",
+  "summary": "Professional summary paragraph...",
+  "experiences": [
+    {
+      "id": "exp-1",
+      "title": "Senior Frontend Engineer | Tech Company",
+      "date": "Jan 2022 - Present",
+      "bullets": [
+        { "id": "b-1", "text": "Designed and deployed..." },
+        { "id": "b-2", "text": "Collaborated with..." }
+      ],
+      "meta": "Stack: React, TypeScript, Tailwind"
+    }
+  ],
+  "educations": [
+    {
+      "id": "edu-1",
+      "degree": "B.S. in Computer Science | University Name",
+      "date": "2020",
+      "bullets": [{ "id": "b-e1", "text": "GPA 3.8, Honors" }]
+    }
+  ],
+  "skills": [
+    { "id": "sk-1", "title": "Programming Languages", "items": "TypeScript, JavaScript, Python" },
+    { "id": "sk-2", "title": "Frameworks & Databases", "items": "React, Next.js, PostgreSQL" }
+  ]
+}
+
+CRITICAL INSTRUCTION: Return ONLY the JSON block. No pre-text, no markdown code blocks, no follow-up text. Raw valid JSON only.`;
 
 export async function POST(req: NextRequest) {
   try {
     const { errorResponse } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 
-    const apiKey = process.env.GROQ;
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: "Groq API Key (GROQ) is not configured on the server." },
-        { status: 500 }
-      );
-    }
-
     const body = await req.json();
     const parsedBody = parseResumeSchema.safeParse(body);
-
     if (!parsedBody.success) {
       return NextResponse.json(
         { success: false, error: parsedBody.error.issues[0].message },
@@ -26,135 +63,51 @@ export async function POST(req: NextRequest) {
     }
 
     const { rawText } = parsedBody.data;
+    let lastError: Error | null = null;
 
-    // Attempting models
-    const models = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
-      "qwen/qwen3-32b",
-      "qwen/qwen3.6-27b",
-      "meta-llama/llama-4-scout-17b-16e-instruct",
-      "openai/gpt-oss-120b",
-      "openai/gpt-oss-20b",
-      "groq/compound",
-      "groq/compound-mini"
-    ];
-
-    let lastError: any = null;
-    let selectedModel = "";
-    let text = "";
-
-    for (const model of models) {
+    for (const model of MODEL_CHAIN) {
       try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
+        console.log(`[parse] Attempting model: ${model}`);
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.GROQ}`,
           },
           body: JSON.stringify({
-            model: model,
-            messages: [
-              {
-                role: "system",
-                content: `You are an elite, world-class resume-writing expert. Based on the user's input (which could be an old resume, a prompt describing their career, list of achievements, or unstructured text), write a high-impact, professional resume.
-                
-                You MUST return a JSON object with EXACTLY the following format:
-                {
-                  "name": "Jane Doe",
-                  "contactLine": "City, ST | (123) 456-7890 | email@domain.com | linkedin.com/in/username",
-                  "summary": "Professional summary paragraph...",
-                  "experiences": [
-                    {
-                      "title": "Senior Frontend Engineer | Tech Company",
-                      "date": "Jan 2022 - Present",
-                      "bullets": [
-                        { "text": "Designed and deployed..." },
-                        { "text": "Collaborated with..." }
-                      ],
-                      "meta": "Stack: React, TypeScript, Tailwind"
-                    }
-                  ],
-                  "educations": [
-                    {
-                      "degree": "B.S. in Computer Science | University Name",
-                      "bullets": [
-                        { "text": "GPA 3.8, Honors" }
-                      ]
-                    }
-                  ],
-                  "skills": [
-                    {
-                      "title": "Programming Languages",
-                      "items": "TypeScript, JavaScript, Python"
-                    },
-                    {
-                      "title": "Frameworks & Databases",
-                      "items": "React, Next.js, PostgreSQL"
-                    }
-                  ]
-                }
-                
-                CRITICAL INSTRUCTION: Return ONLY the JSON block. Do not include any pre-text, conversational introductions, markdown code blocks (e.g. do not wrap in \`\`\`json), or follow-up suggestions. Output raw, valid, minified JSON only.`
-              },
-              {
-                role: "user",
-                content: rawText
-              }
-            ],
+            model,
             temperature: 0.2,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: rawText },
+            ],
           }),
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.warn(`Model ${model} failed with status ${response.status}:`, errorText);
-          lastError = new Error(`Model ${model} returned status ${response.status}`);
+          lastError = new Error(`Model ${model} returned ${response.status}`);
           continue;
         }
 
         const groqData = await response.json();
-        text = groqData.choices?.[0]?.message?.content || "";
-        selectedModel = model;
-        break;
-      } catch (err: any) {
-        console.error(`Exception with model ${model} in parse:`, err);
-        lastError = err;
+        let text: string = groqData.choices?.[0]?.message?.content ?? '';
+        text = text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+
+        const parsedData = JSON.parse(text);
+        return NextResponse.json({ success: true, data: parsedData, model });
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error(`[parse] Exception with model ${model}:`, lastError.message);
       }
     }
 
-    if (!selectedModel) {
-      return NextResponse.json(
-        { success: false, error: "All Groq models failed. " + (lastError?.message || "Network error") },
-        { status: 502 }
-      );
-    }
-
-    // Parse text clean
-    let cleanJson = text.trim();
-    if (cleanJson.startsWith("```")) {
-      cleanJson = cleanJson.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
-    }
-    cleanJson = cleanJson.trim();
-
-    try {
-      const parsedData = JSON.parse(cleanJson);
-      const res = NextResponse.json({ success: true, data: parsedData, model: selectedModel });
-      return res;
-    } catch (parseErr: any) {
-      console.error("Failed to parse JSON response from Groq:", text);
-      const res = NextResponse.json({ 
-        success: false, 
-        error: "AI did not return valid JSON. Please try again with a simpler or more specific input.",
-        rawText: text 
-      }, { status: 500 });
-      return res;
-    }
-  } catch (err: any) {
-    console.error("Error in Groq parse/build route:", err);
     return NextResponse.json(
-      { success: false, error: err.message || "Internal Server Error" },
-      { status: 500 }
+      { success: false, error: `All Groq models failed. Last error: ${lastError?.message ?? 'Unknown'}` },
+      { status: 502 }
     );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    console.error('[parse] Unhandled error:', message);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

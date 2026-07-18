@@ -49,16 +49,29 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
 
 // ---------------------------------------------------------------------------
 // Authenticated user rate limiting via Supabase RPC (user ID-based)
+// NOTE: Requires the check_user_ai_limit RPC to exist in your Supabase DB.
+// If the RPC doesn't exist yet, this fails open (allows the request) so
+// logged-in users are never blocked due to a missing migration.
 // ---------------------------------------------------------------------------
 export async function checkUserRateLimit(userId: string): Promise<RateLimitResult> {
   try {
     const { data, error } = await supabase.rpc('check_user_ai_limit', { p_user_id: userId });
-    if (error || !data) {
-      console.error('Supabase user rate limit RPC failed:', error);
+    if (error) {
+      // RPC doesn't exist yet (PGRST202) or other DB error — fail open for auth users
+      console.warn('check_user_ai_limit RPC not available, failing open for auth user:', error.message);
       return {
         allowed: true,
-        count: 1,
-        remaining: USER_DAILY_LIMIT - 1,
+        count: 0,
+        remaining: USER_DAILY_LIMIT,
+        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        isAuthenticated: true,
+      };
+    }
+    if (!data) {
+      return {
+        allowed: true,
+        count: 0,
+        remaining: USER_DAILY_LIMIT,
         resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
         isAuthenticated: true,
       };
@@ -74,8 +87,8 @@ export async function checkUserRateLimit(userId: string): Promise<RateLimitResul
     console.error('User rate limit exception:', err);
     return {
       allowed: true,
-      count: 1,
-      remaining: USER_DAILY_LIMIT - 1,
+      count: 0,
+      remaining: USER_DAILY_LIMIT,
       resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
       isAuthenticated: true,
     };
