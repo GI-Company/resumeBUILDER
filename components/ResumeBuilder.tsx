@@ -6365,21 +6365,21 @@ Output:
                   <div className="hidden print:block w-full">
                     {design.layout === "sidebar" ? (
                       <div className="flex w-full gap-[1.1rem] items-start">
-                        <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
+                        <Reorder.Group values={sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id))} onReorder={() => {}} className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
                           {sections
                             .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
                             .map((s: any) => renderSection(s, "print-"))}
-                        </div>
-                        <div className="flex-1 flex flex-col min-w-0">
+                        </Reorder.Group>
+                        <Reorder.Group values={sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id))} onReorder={() => {}} className="flex-1 flex flex-col min-w-0">
                           {sections
                             .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
                             .map((s: any) => renderSection(s, "print-"))}
-                        </div>
+                        </Reorder.Group>
                       </div>
                     ) : (
-                      <div className="flex flex-col w-full">
+                      <Reorder.Group values={sections} onReorder={() => {}} className="flex flex-col w-full">
                         {sections.map((s: any) => renderSection(s, "print-"))}
-                      </div>
+                      </Reorder.Group>
                     )}
                   </div>
                 </>
