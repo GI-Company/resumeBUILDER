@@ -29,18 +29,15 @@
     position: static !important;
   }
   .canvas-wrap > div {
-    width: auto !important;
     height: auto !important;
-    min-width: 0 !important;
     min-height: 0 !important;
     transform: none !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     position: static !important;
   }
   .page { 
     box-shadow: none !important; 
-    margin: 0 !important; 
-    width: 100% !important; 
+    margin: 0 auto !important; 
     padding: var(--page-margin-y) var(--page-margin-x) !important;
     transform: none !important; /* CRITICAL: prevents scaling clipping */
     min-height: 0 !important;
@@ -48,12 +45,16 @@
     overflow: visible !important;
     position: static !important;
     page-break-inside: avoid;
+    break-inside: auto;
   }
   .page-sheet { display: none !important; }
   .manual-break { page-break-before: always !important; break-before: page !important; }
   .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
   .print-break-after-avoid { break-after: avoid-page !important; page-break-after: avoid !important; }
   [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent !important; box-shadow: none !important; }
+  
+  /* Safari Print Bug Fix: 1fr grids squish to 0. Force percentages. */
+  .grid-cols-2, .md\:grid-cols-2 { grid-template-columns: 50% 50% !important; }
   
   @page {
     margin: 0;
@@ -103,7 +104,8 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
 /* Sidebar Layout */
 .layout-sidebar #sections-container {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  /* SAFARI PRINT BUG FIX: Safari resolves 1fr to min-content in print. Use calc() instead. */
+  grid-template-columns: var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem);
   column-gap: 1.1rem;
   align-items: start;
 }
@@ -117,7 +119,7 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   grid-column: 2;
 }
 .layout-sidebar .skills-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: 100%;
   padding: 1rem 1.2rem;
 }
 .layout-sidebar .bullet-list {
