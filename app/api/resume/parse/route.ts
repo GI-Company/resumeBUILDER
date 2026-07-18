@@ -1,69 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-
-// Initialize Supabase server-side client
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabaseServer = createClient(supabaseUrl, supabaseAnonKey);
-
-// Rate limiting is now handled securely via Supabase RPC to work correctly on serverless platforms
-async function checkAndIncrementRateLimit(ip: string): Promise<{ allowed: boolean; count: number; remaining: number; resetTime: Date }> {
-  try {
-    const { data, error } = await supabaseServer.rpc('check_guest_ai_limit', { p_ip: ip });
-    if (error || !data) {
-      console.error('Supabase rate limit RPC failed:', error);
-      // Fail open gracefully if DB is down, but log the error
-      return { allowed: true, count: 1, remaining: 4, resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000) };
-    }
-    return {
-      allowed: data.allowed,
-      count: data.count,
-      remaining: data.remaining,
-      resetTime: new Date(data.resetTime)
-    };
-  } catch (err) {
-    console.error('Rate limit exception:', err);
-    return { allowed: true, count: 1, remaining: 4, resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000) };
-  }
-}
+import { enforceRateLimit } from '@/lib/rateLimit';
+import { parseResumeSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
-    // Note: Vercel sets x-real-ip and x-forwarded-for. We prefer x-real-ip if available.
-    const ip = req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || (req as any).ip || "127.0.0.1";
-    
-    // Check user authorization first
-    let userObj = null;
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
-        if (!authError && user) {
-          userObj = user;
-        }
-      } catch (err) {
-        console.warn("Optional auth verification failed:", err);
-      }
-    }
-
-    let rateLimit = { allowed: true, count: 0, remaining: 9999, resetTime: new Date() };
-    
-    if (!userObj) {
-      rateLimit = await checkAndIncrementRateLimit(ip);
-      
-      if (!rateLimit.allowed) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: `AI Rate limit exceeded. Guest tier is limited to 5 requests per 24 hours. Please Log In or Sign Up to unlock more high-speed AI requests. Your limit resets at ${rateLimit.resetTime.toLocaleTimeString()}.` 
-          },
-          { status: 429 }
-        );
-      }
-    }
+    const { errorResponse } = await enforceRateLimit(req);
+    if (errorResponse) return errorResponse;
 
     const apiKey = process.env.GROQ;
     if (!apiKey) {
@@ -73,13 +15,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { rawText } = await req.json();
-    if (!rawText) {
+    const body = await req.json();
+    const parsedBody = parseResumeSchema.safeParse(body);
+
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { success: false, error: "Missing rawText in request body." },
+        { success: false, error: parsedBody.error.errors[0].message },
         { status: 400 }
       );
     }
+
+    const { rawText } = parsedBody.data;
 
     // Attempting models
     const models = [

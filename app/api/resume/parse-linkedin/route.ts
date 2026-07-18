@@ -1,15 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from '@/lib/rateLimit';
+import { parseLinkedinSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
-    const { input } = await req.json();
-    if (!input) {
+    const { errorResponse } = await enforceRateLimit(req);
+    if (errorResponse) return errorResponse;
+
+    const body = await req.json();
+    const parsedBody = parseLinkedinSchema.safeParse(body);
+
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { success: false, error: "Missing input in request body." },
+        { success: false, error: parsedBody.error.errors[0].message },
         { status: 400 }
       );
     }
+
+    const { input } = parsedBody.data;
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     let prompt = "";

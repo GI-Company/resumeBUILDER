@@ -1,29 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { createClient } from "@supabase/supabase-js";
-
-// Initialize Supabase server-side client
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabaseServer = createClient(supabaseUrl, supabaseAnonKey);
+import { enforceRateLimit } from '@/lib/rateLimit';
+import { parseDocSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
-    // Check optional user authorization to secure the API
-    let userObj = null;
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const { data: { user }, error: authError } = await supabaseServer.auth.getUser(token);
-        if (!authError && user) {
-          userObj = user;
-        }
-      } catch (err) {
-        console.warn("Auth verification failed in parse-doc:", err);
-      }
-    }
+    const { errorResponse } = await enforceRateLimit(req);
+    if (errorResponse) return errorResponse;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -33,13 +16,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { base64Data, mimeType, filename } = await req.json();
-    if (!base64Data || !mimeType) {
+    const body = await req.json();
+    const parsedBody = parseDocSchema.safeParse(body);
+
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { success: false, error: "Missing file data or MIME type." },
+        { success: false, error: parsedBody.error.errors[0].message },
         { status: 400 }
       );
     }
+
+    const { base64Data, mimeType, filename } = parsedBody.data;
 
     const ai = new GoogleGenAI({ apiKey });
 
