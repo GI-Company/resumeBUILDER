@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { ContentEditableField } from "./ContentEditableField";
-import { Reorder, useDragControls } from "motion/react";
+import { Reorder, useDragControls, motion } from "motion/react";
 import {
-  GripVertical,
+  GripVertical, GripHorizontal,
   X,
   Bold,
   Italic,
@@ -5881,7 +5881,7 @@ Output:
             </div>
           </div>
           
-          <div className={cn("hidden md:flex flex-none items-center bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0 transition-all duration-300", isTopMenuMinimized ? "w-auto" : "gap-1")}>
+          <motion.div drag dragMomentum={false} className={cn("hidden md:flex flex-none items-center bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0 transition-all duration-300 group cursor-grab active:cursor-grabbing", isTopMenuMinimized ? "w-auto" : "gap-1")}>
             {isTopMenuMinimized ? (
                <button onClick={() => setIsTopMenuMinimized(false)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white text-sm font-medium text-gray-600 transition-all cursor-pointer shadow-sm border border-transparent hover:border-gray-200">
                  <Menu size={16} /> Menu
@@ -5931,7 +5931,7 @@ Output:
                 </button>
               </>
             )}
-          </div>
+          </motion.div>
 
           <div className="flex items-center gap-1.5 md:gap-2 flex-1 justify-end min-w-0">
             <button
@@ -6330,9 +6330,9 @@ Output:
         </div>
 
         {/* Floating Canvas Controls (Zoom & Print Preview) */}
-        <div className={cn(
-          "absolute bottom-20 right-4 md:bottom-6 md:right-6 z-40 flex items-center bg-white/95 backdrop-blur-md border border-gray-200 shadow-lg no-print transition-all duration-300",
-          isFormatBarMinimized ? "p-2 rounded-full cursor-pointer hover:bg-gray-50 opacity-80 hover:opacity-100" : "gap-1.5 md:gap-2 p-1.5 rounded-xl"
+        <motion.div drag dragMomentum={false} className={cn(
+          "absolute bottom-20 right-4 md:bottom-6 md:right-6 z-40 flex items-center bg-white/95 backdrop-blur-md border border-gray-200 shadow-lg no-print transition-all duration-300 group cursor-grab active:cursor-grabbing",
+          isFormatBarMinimized ? "p-2 rounded-full hover:bg-gray-50 opacity-80 hover:opacity-100" : "gap-1.5 md:gap-2 p-1.5 rounded-xl"
         )}>
           {isFormatBarMinimized ? (
             <div onClick={() => setIsFormatBarMinimized(false)} className="flex items-center justify-center w-6 h-6" title="Show Formatting Tools">
@@ -6448,7 +6448,7 @@ Output:
               </button>
             </>
           )}
-        </div>
+        </motion.div>
 
         {/* Mobile Bottom Navigation Bar */}
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-40 md:hidden flex items-center justify-around px-2 no-print shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
