@@ -119,6 +119,11 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
 .layout-sidebar .section[data-section="experience"] {
   grid-column: 2;
 }
+.layout-sidebar .page-break-gap {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
 .layout-sidebar .skills-grid {
   grid-template-columns: 100%;
   padding: 1rem 1.2rem;
