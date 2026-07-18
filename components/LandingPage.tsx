@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AuthModal from './AuthModal';
+import { supabase } from '@/lib/supabase';
 
 // Templates details for interactive preview
 const TEMPLATES_INFO = [
@@ -100,7 +101,24 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
   const [activeTemplateIdx, setActiveTemplateIdx] = useState(0);
   const [selectedProofTemplate, setSelectedProofTemplate] = useState<"harvard" | "sidebar" | "minimal">("harvard");
 
-  // Set default sample when sandbox tab changes
+  const [foundingCount, setFoundingCount] = useState<number | null>(null);
+  const FOUNDING_LIMIT = 500;
+
+  // Fetch total signed-up user count for founding member counter
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        if (!error && count !== null) setFoundingCount(count);
+      } catch {
+        // Silently fail — counter just won't show
+      }
+    };
+    fetchCount();
+  }, []);
+
   useEffect(() => {
     setSandboxInput("");
     setSandboxOutput("");
@@ -232,6 +250,44 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
           >
             Meet <b>Agent Rez</b>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and unlimited AI usage available for signed-in users.
           </motion.p>
+
+          {/* Founding Member Counter Banner */}
+          {foundingCount !== null && foundingCount < FOUNDING_LIMIT && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="mb-8 max-w-lg mx-auto"
+            >
+              <div className="relative bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300/70 rounded-2xl p-4 shadow-md overflow-hidden">
+                {/* Animated shimmer */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" style={{ animation: 'shimmer 2.5s infinite' }} />
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🔥</span>
+                      <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">Founding Member Offer</span>
+                    </div>
+                    <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                      {FOUNDING_LIMIT - foundingCount} spots left
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden">
+                    <motion.div
+                      className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, (foundingCount / FOUNDING_LIMIT) * 100)}%` }}
+                      transition={{ duration: 1.2, ease: 'easeOut', delay: 0.5 }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-amber-800 font-semibold leading-snug">
+                    <span className="font-black text-amber-900">{foundingCount}</span> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">Premium tier free for life</span> 🎁
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Core Call to Actions */}
           <motion.div 
