@@ -45,6 +45,8 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Share2,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -828,12 +830,13 @@ const SectionRenderer = memo(({
                                           <span className="text-[var(--ink-soft)] font-mono text-[10px] no-print">{level}%</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                          <div className="flex-1 bg-gray-200/55 rounded-full h-1.5 overflow-hidden relative">
+                                          <div className="flex-1 bg-gray-200/60 rounded-full h-2 overflow-hidden relative shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] border border-gray-300/30">
                                             <div 
-                                              className="h-full rounded-full transition-all duration-300"
+                                              className="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-[var(--accent)] to-[var(--accent)]"
                                               style={{ 
                                                 width: `${level}%`,
-                                                backgroundColor: "var(--accent)"
+                                                opacity: 0.95,
+                                                boxShadow: "0 1px 3px rgba(0,0,0,0.12)"
                                               }}
                                             />
                                           </div>
@@ -857,7 +860,7 @@ const SectionRenderer = memo(({
                                                 return x;
                                               }));
                                             }}
-                                            className="w-16 h-4 accent-[var(--accent)] cursor-pointer no-print opacity-60 hover:opacity-100 transition-opacity"
+                                            className="w-16 h-3.5 accent-[var(--accent)] cursor-pointer no-print opacity-50 hover:opacity-100 transition-opacity"
                                           />
                                         </div>
                                       </div>
@@ -1945,6 +1948,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [myResumes, setMyResumes] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [saveResumeName, setSaveResumeName] = useState("My Resume");
   const [saveOverwriteId, setSaveOverwriteId] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(null);
@@ -2012,10 +2016,18 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [aiInput, setAiInput] = useState("");
   const [aiOutput, setAiOutput] = useState("");
   const [aiIsGenerating, setAiIsGenerating] = useState(false);
-  const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom" | "parser">("summary");
+  const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom" | "parser" | "linkedin">("summary");
+  
+  // Custom states for document parser and cover letter generator
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [coverLetterJobDesc, setCoverLetterJobDesc] = useState("");
+  const [coverLetterCompany, setCoverLetterCompany] = useState("");
+  const [coverLetterRole, setCoverLetterRole] = useState("");
+  const [coverLetterOutput, setCoverLetterOutput] = useState("");
+  const [coverLetterIsGenerating, setCoverLetterIsGenerating] = useState(false);
 
   // Agentic Interactive Chat & Interview state
-  const [aiAgentTab, setAiAgentTab] = useState<"presets" | "agent">("agent");
+  const [aiAgentTab, setAiAgentTab] = useState<"presets" | "agent" | "coverletter">("agent");
   const [interviewStep, setInterviewStep] = useState<number>(-1); // -1 means inactive, 0 to 4 means active step
   const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
   const [agentChatInput, setAgentChatInput] = useState("");
@@ -2531,13 +2543,16 @@ Output:
       const token = session?.access_token;
       if (!token) throw new Error("Unauthorized");
 
-      const response = await fetch("/api/resume/parse", {
+      const apiUrl = aiPresetType === "linkedin" ? "/api/resume/parse-linkedin" : "/api/resume/parse";
+      const payload = aiPresetType === "linkedin" ? { input: rawText } : { rawText };
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ rawText })
+        body: JSON.stringify(payload)
       });
 
       const resData = await response.json();
@@ -2555,6 +2570,118 @@ Output:
       toast.error(err.message || "An error occurred");
     } finally {
       setAiIsGenerating(false);
+    }
+  };
+
+  const handleDocumentUpload = async (file: File) => {
+    if (!user) {
+      toast.error("Please log in to upload and parse resume files.");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    if (file.type === "text/plain" || file.name.endsWith(".txt")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAiInput(reader.result as string);
+        toast.success("Text resume loaded! Press 'Build Resume' to generate your draft. 🚀");
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    if (file.type === "application/pdf" || file.name.endsWith(".pdf") || file.name.endsWith(".docx")) {
+      const toastId = toast.loading("Uploading and parsing document with Gemini... ⚡");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Data = (reader.result as string).split(",")[1];
+            const response = await fetch("/api/resume/parse-doc", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({
+                base64Data,
+                mimeType: file.type || "application/pdf",
+                filename: file.name,
+              }),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || "Failed to parse document.");
+            }
+
+            applyParsedResumeToState(result.data);
+            setAiPresetType("summary"); // reset
+            toast.success("Resume imported and formatted successfully! 🎉", { id: toastId });
+          } catch (err: any) {
+            toast.error(err.message || "Could not parse document.", { id: toastId });
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (err: any) {
+        toast.error(err.message || "An error occurred.", { id: toastId });
+      }
+      return;
+    }
+
+    toast.error("Unsupported file type. Please upload a .pdf, .txt, or .docx file.");
+  };
+
+  const handleGenerateCoverLetter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error("Please log in to use AI cover letter generation.");
+      setAuthModalOpen(true);
+      return;
+    }
+
+    setCoverLetterIsGenerating(true);
+    const toastId = toast.loading("Generating your tailored cover letter... ✍️");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const resumeState = {
+        name,
+        contactLine,
+        summary,
+        experiences,
+        educations,
+        skills,
+      };
+
+      const response = await fetch("/api/cover-letter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          resumeState,
+          jobDescription: coverLetterJobDesc,
+          role: coverLetterRole,
+          company: coverLetterCompany,
+        }),
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success) throw new Error(resData.error || "Failed to generate cover letter.");
+
+      setCoverLetterOutput(resData.text);
+      toast.success("Cover letter generated! ✨", { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred", { id: toastId });
+    } finally {
+      setCoverLetterIsGenerating(false);
     }
   };
 
@@ -3674,7 +3801,7 @@ Output:
                 placeholder="e.g. Software Engineer Resume"
               />
             </div>
-
+            
             <div className="mb-6">
               <p className="text-sm font-medium text-gray-700 mb-2">Save Destination (Limit 3 active resumes)</p>
               <div className="space-y-2">
@@ -3683,41 +3810,75 @@ Output:
                     <input type="radio" name="save_dest" checked={saveOverwriteId === null} onChange={() => setSaveOverwriteId(null)} className="hidden" />
                     <div className="flex-1">
                       <div className="font-medium text-sm text-gray-900">Create New Resume</div>
-                      <div className="text-xs text-gray-500">{myResumes.length} / 3 slots used</div>
                     </div>
                   </label>
                 )}
-                {myResumes.map(r => (
-                  <label key={r.id} className={cn("flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all", saveOverwriteId === r.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300")}>
-                    <input type="radio" name="save_dest" checked={saveOverwriteId === r.id} onChange={() => setSaveOverwriteId(r.id)} className="hidden" />
+                {myResumes.map((resume) => (
+                  <label key={resume.id} className={cn("flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all", saveOverwriteId === resume.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300")}>
+                    <input type="radio" name="save_dest" checked={saveOverwriteId === resume.id} onChange={() => setSaveOverwriteId(resume.id)} className="hidden" />
                     <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-900">Overwrite "{r.content?.resumeName || r.content?.name || 'Untitled'}"</div>
-                      <div className="text-xs text-gray-500">Last updated: {new Date(r.updated_at).toLocaleDateString()}</div>
+                      <div className="font-medium text-sm text-gray-900">{resume.name || "Untitled Resume"}</div>
+                      <div className="text-[10px] text-gray-500">Updated: {new Date(resume.updated_at).toLocaleDateString()}</div>
                     </div>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setSaveModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeSaveToCloud}
-                disabled={isSaving || (myResumes.length >= 3 && saveOverwriteId === null)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {isSaving ? "Saving..." : "Save"}
-              </button>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setSaveModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-700 hover:text-gray-900">Cancel</button>
+              <button onClick={handleSaveToCloud} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Save</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Share Modal */}
+      {shareModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Share Resume</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              {resumeId ? "Anyone with this link can view your resume." : "Please save your resume to the cloud first to generate a shareable link."}
+            </p>
+            {resumeId ? (
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${window.location.origin}/share/${resumeId}`}
+                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono text-gray-600 focus:outline-none"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/share/${resumeId}`);
+                    toast.success("Link copied to clipboard! 📋");
+                  }}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
+                >
+                  Copy
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setShareModalOpen(false);
+                  setSaveModalOpen(true);
+                }}
+                className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
+              >
+                Save Resume Now
+              </button>
+            )}
+            <button
+              onClick={() => setShareModalOpen(false)}
+              className="w-full mt-2 px-3 py-2 text-gray-500 hover:text-gray-900 text-xs font-bold transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       {/* Format Bar */}
       {formatBar.visible && (
         <div
@@ -3853,7 +4014,7 @@ Output:
                     }}
                     className="rounded-lg px-4 py-2 text-sm font-semibold bg-gray-900 text-white hover:bg-black"
                   >
-                    Let&apos;s go
+                    Finish Tour
                   </button>
                 )}
               </div>
@@ -5538,32 +5699,45 @@ Output:
               </div>
 
               {/* Agent Mode Selector Tabs */}
-              <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0 mb-3">
+              <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0 mb-3 overflow-x-auto gap-0.5 scrollbar-thin">
                 <button
                   type="button"
                   onClick={() => setAiAgentTab("agent")}
                   className={cn(
-                    "flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
+                    "flex-1 py-1.5 px-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap",
                     aiAgentTab === "agent"
                       ? "bg-white text-blue-600 shadow-sm border border-gray-100"
                       : "text-gray-600 hover:text-gray-800"
                   )}
                 >
-                  <Bot size={14} />
+                  <Bot size={13} />
                   <span>AI Agent</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setAiAgentTab("presets")}
                   className={cn(
-                    "flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
+                    "flex-1 py-1.5 px-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap",
                     aiAgentTab === "presets"
                       ? "bg-white text-blue-600 shadow-sm border border-gray-100"
                       : "text-gray-600 hover:text-gray-800"
                   )}
                 >
-                  <Sparkles size={14} />
+                  <Sparkles size={13} />
                   <span>Quick Tools</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiAgentTab("coverletter")}
+                  className={cn(
+                    "flex-1 py-1.5 px-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap",
+                    aiAgentTab === "coverletter"
+                      ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                      : "text-gray-600 hover:text-gray-800"
+                  )}
+                >
+                  <FileText size={13} />
+                  <span>Cover Letter</span>
                 </button>
               </div>
 
@@ -5750,7 +5924,7 @@ Output:
                       )}
                     </form>
                   </div>
-                ) : (
+                ) : aiAgentTab === "presets" ? (
                   <div className="flex-1 flex flex-col min-h-0 space-y-3">
                     {/* Category select buttons */}
                     <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50/50 shrink-0">
@@ -5814,12 +5988,27 @@ Output:
                       >
                         Custom
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiPresetType("linkedin");
+                          setAiOutput("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer",
+                          aiPresetType === "linkedin"
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-600 hover:text-gray-800"
+                        )}
+                      >
+                        LinkedIn
+                      </button>
                     </div>
 
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
-                        if (aiPresetType === "parser") handleParseResume(aiInput);
+                        if (aiPresetType === "parser" || aiPresetType === "linkedin") handleParseResume(aiInput);
                         else handleGenerateAI(e);
                       }}
                       className="shrink-0 flex flex-col space-y-2"
@@ -5830,6 +6019,7 @@ Output:
                           {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
                           {aiPresetType === "parser" && "Build Resume from Prompt / Text"}
                           {aiPresetType === "custom" && "Custom AI Prompt / Query"}
+                          {aiPresetType === "linkedin" && "Import from LinkedIn"}
                         </label>
                         {aiPresetType === "summary" && (
                           <button
@@ -5845,6 +6035,49 @@ Output:
                         )}
                       </div>
 
+                      {aiPresetType === "parser" && (
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDraggingFile(true);
+                          }}
+                          onDragLeave={() => setIsDraggingFile(false)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setIsDraggingFile(false);
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                              handleDocumentUpload(e.dataTransfer.files[0]);
+                            }
+                          }}
+                          className={cn(
+                            "border-2 border-dashed rounded-xl p-3.5 text-center transition-all cursor-pointer",
+                            isDraggingFile
+                              ? "border-blue-500 bg-blue-50/50"
+                              : "border-gray-200 hover:border-blue-400 bg-white"
+                          )}
+                          onClick={() => {
+                            const input = document.createElement("input");
+                            input.type = "file";
+                            input.accept = ".pdf,.docx,.txt";
+                            input.onchange = (e) => {
+                              const files = (e.target as HTMLInputElement).files;
+                              if (files && files[0]) {
+                                handleDocumentUpload(files[0]);
+                              }
+                            };
+                            input.click();
+                          }}
+                        >
+                          <div className="flex flex-col items-center justify-center gap-1.5">
+                            <CloudUpload className={cn("h-6 w-6", isDraggingFile ? "text-blue-600 animate-bounce" : "text-gray-400")} />
+                            <div>
+                              <p className="text-[11px] font-bold text-gray-700">Import PDF, Word, or Text Resume</p>
+                              <p className="text-[9px] text-gray-500 mt-0.5">Drag & drop your file, or click to browse</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <textarea
                         value={aiInput}
                         onChange={(e) => setAiInput(e.target.value)}
@@ -5857,6 +6090,8 @@ Output:
                             ? "Paste experience bullet points to rewrite... (using STAR methodology)"
                             : aiPresetType === "parser"
                             ? "Describe your experience, paste an old resume, or provide unstructured notes..."
+                            : aiPresetType === "linkedin"
+                            ? "Paste your public LinkedIn Profile URL or LinkedIn Data Export JSON..."
                             : "How can the AI assistant help you today? (e.g. 'Suggest some high-demand technical keywords')"
                         }
                         rows={3}
@@ -5870,12 +6105,12 @@ Output:
                         {aiIsGenerating ? (
                           <>
                             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>{aiPresetType === "parser" ? "Building Resume..." : "Generating suggestions..."}</span>
+                            <span>{(aiPresetType === "parser" || aiPresetType === "linkedin") ? "Building Resume..." : "Generating suggestions..."}</span>
                           </>
                         ) : (
                           <>
                             <Sparkles size={14} />
-                            <span>{aiPresetType === "parser" ? "Build Resume" : "Generate AI suggestions"}</span>
+                            <span>{(aiPresetType === "parser" || aiPresetType === "linkedin") ? "Build Resume" : "Generate AI suggestions"}</span>
                           </>
                         )}
                       </button>
@@ -5965,6 +6200,137 @@ Output:
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                ) : (
+                  // Cover Letter Panel
+                  <div className="flex-1 flex flex-col min-h-0 space-y-3 overflow-y-auto pr-1">
+                    <div className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-3 text-left shrink-0">
+                      <h3 className="text-xs font-bold text-amber-800 flex items-center gap-1">
+                        <Sparkles size={13} className="animate-pulse" />
+                        AI Cover Letter Generator
+                      </h3>
+                      <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
+                        Instantly write a personalized, 100% tailored cover letter using the exact achievements, technical skills, and background loaded in your active resume.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleGenerateCoverLetter} className="space-y-3 shrink-0">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">
+                          Target Role / Title
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={coverLetterRole}
+                          onChange={(e) => setCoverLetterRole(e.target.value)}
+                          placeholder="e.g. Senior Frontend Engineer"
+                          className="w-full p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">
+                          Company Name
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={coverLetterCompany}
+                          onChange={(e) => setCoverLetterCompany(e.target.value)}
+                          placeholder="e.g. Vercel"
+                          className="w-full p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">
+                          Job Description / Target Keywords (Optional)
+                        </label>
+                        <textarea
+                          value={coverLetterJobDesc}
+                          onChange={(e) => setCoverLetterJobDesc(e.target.value)}
+                          placeholder="Paste details of the role here to auto-align target keywords..."
+                          className="w-full p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white resize-none"
+                          rows={3}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={coverLetterIsGenerating}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg py-2 text-xs font-bold hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {coverLetterIsGenerating ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Writing cover letter...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={13} />
+                            <span>Generate Cover Letter</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* Result Card */}
+                    <div className="flex-1 flex flex-col min-h-[160px] bg-gray-50 border border-gray-200 rounded-xl p-3 overflow-hidden">
+                      <div className="flex items-center justify-between mb-2 shrink-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600">
+                          Tailored Letter Draft
+                        </span>
+                        {coverLetterOutput && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(coverLetterOutput);
+                                toast.success("Copied cover letter to clipboard! 📋");
+                              }}
+                              className="p-1 hover:bg-gray-200 rounded text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                              title="Copy to Clipboard"
+                            >
+                              <Copy size={11} />
+                              <span>Copy</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const element = document.createElement("a");
+                                const file = new Blob([coverLetterOutput], { type: "text/plain" });
+                                element.href = URL.createObjectURL(file);
+                                element.download = `Cover_Letter_${coverLetterCompany.replace(/\s+/g, "_")}.txt`;
+                                document.body.appendChild(element);
+                                element.click();
+                                toast.success("Cover letter downloaded! 📥");
+                              }}
+                              className="p-1 hover:bg-gray-200 rounded text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                              title="Download Cover Letter"
+                            >
+                              <Download size={11} />
+                              <span>Download</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto text-[11px] text-gray-800 leading-relaxed font-mono whitespace-pre-wrap select-text pr-1 bg-white border border-gray-100 rounded-lg p-2.5">
+                        {coverLetterIsGenerating ? (
+                          <div className="h-full flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                          </div>
+                        ) : coverLetterOutput ? (
+                          coverLetterOutput
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 p-4">
+                            <FileText size={22} className="opacity-40 mb-1.5" />
+                            <p className="text-[10px]">Your matching cover letter will be generated here.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -6114,15 +6480,21 @@ Output:
             >
               <CloudUpload size={14} className="md:w-4 md:h-4" /> <span>{isSaving ? "Saving..." : "Save"}</span>
             </button>
-            <button
-              onClick={() => {
-                calcPages();
-                setTimeout(() => window.print(), 100);
-              }}
-              className="bg-blue-600 text-white border border-blue-600 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold inline-flex items-center gap-1 md:gap-1.5 transition-all hover:bg-blue-700 active:scale-95 shadow-sm"
-            >
-              <Printer size={14} className="md:w-4 md:h-4" /> <span>PDF</span>
-            </button>
+            <div className="relative group flex items-center">
+              <button
+                onClick={() => {
+                  calcPages();
+                  setTimeout(() => window.print(), 100);
+                }}
+                className="bg-blue-600 text-white border border-blue-600 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold inline-flex items-center gap-1 md:gap-1.5 transition-all hover:bg-blue-700 active:scale-95 shadow-sm"
+              >
+                <Printer size={14} className="md:w-4 md:h-4" /> <span>PDF</span>
+              </button>
+              <div className="absolute right-0 top-full mt-2 hidden group-hover:block w-48 bg-gray-900 text-white text-[11px] font-medium rounded-lg p-2 shadow-xl z-50 text-center pointer-events-none transition-all">
+                Opens print dialog — choose 'Save as PDF'
+                <div className="absolute -top-1 right-5 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+              </div>
+            </div>
             <div className="w-px h-5 bg-gray-200 mx-1 hidden md:block"></div>
             <button
               onClick={() => setActiveSidebarTab(activeSidebarTab === "account" ? null : "account")}
@@ -6273,6 +6645,7 @@ Output:
                 transform: `scale(${canvasZoom / 100})`,
                 transformOrigin: "top center",
                 minHeight: `calc(var(--page-height) * ${pageBreakElementIds.length + 1} + 32px * ${pageBreakElementIds.length})`,
+                padding: "var(--page-margin-y) var(--page-margin-x)",
               }}
             >
               {/* Absolute Page Background Sheets behind the content */}
@@ -6303,7 +6676,7 @@ Output:
                     zIndex: 40,
                   }}
                 >
-                  <div className="absolute top-1 left-2 text-[9px] font-sans font-extrabold tracking-wider text-blue-500/40 select-none uppercase">
+                  <div className="absolute -top-4 left-0 text-[9px] font-sans font-extrabold tracking-wider text-blue-400/60 select-none uppercase">
                     Print Safe Area
                   </div>
                 </div>
@@ -6547,6 +6920,16 @@ Output:
               />
             </button>
           </div>
+
+          <div className="w-px h-5 bg-gray-200" />
+          <button
+            type="button"
+            onClick={() => setShareModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+          >
+            <Share2 size={13} />
+            <span className="hidden sm:inline">Share</span>
+          </button>
         </div>
 
         {/* Mobile Bottom Navigation Bar */}

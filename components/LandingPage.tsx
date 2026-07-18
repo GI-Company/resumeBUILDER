@@ -21,7 +21,8 @@ import {
   Users, 
   CheckCircle,
   Clock,
-  Printer
+  Printer,
+  UploadCloud
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AuthModal from './AuthModal';
@@ -775,81 +776,107 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Feature 1 */}
-            <div className="bg-gray-50/50 border border-gray-200/80 p-6 rounded-2xl shadow-inner transition-all hover:border-gray-300">
-              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-5 border border-blue-100 shadow-xs">
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 border border-blue-100 shadow-xs">
                 <Bot size={20} />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2">
-                1. Conversational Career Agent (Agent Rez)
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                1. Conversational Agent
               </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
+              <p className="text-[11px] text-gray-600 leading-relaxed">
                 Directly chat with <b>Agent Rez</b> in the sidebar. Command him to write summaries, insert certifications, rewrite jobs using action verbs, or completely format sections. Witness edits populate the resume canvas in real-time.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-gray-50/50 border border-gray-200/80 p-6 rounded-2xl shadow-inner transition-all hover:border-gray-300">
-              <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-5 border border-indigo-100 shadow-xs">
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 border border-indigo-100 shadow-xs">
                 <Users size={20} />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2">
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
                 2. Guided Career Interview
               </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
+              <p className="text-[11px] text-gray-600 leading-relaxed">
                 Skip the blank page paralysis. Engage in a 5-step interactive voice or chat-driven interview. Agent Rez collects your background particulars step-by-step and automatically compiles an exceptional, ATS-ready resume.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-gray-50/50 border border-gray-200/80 p-6 rounded-2xl shadow-inner transition-all hover:border-gray-300">
-              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-5 border border-purple-100 shadow-xs">
-                <Sliders size={20} />
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-4 border border-teal-100 shadow-xs">
+                <FileText size={20} />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2">
-                3. Micro-Spacing & Style Engine
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                3. AI Cover Letter Generator
               </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Perfect spacing makes resumes look executive. Adjust line spacing, section dividers, margins, card paddings, and theme colors with robust sliders. Keep your layout uniform across single or multiple pages effortlessly.
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                Instantly write a personalized, 100% tailored cover letter using the exact achievements, technical skills, and background loaded in your active resume. Match keywords directly to any target job description.
               </p>
             </div>
 
             {/* Feature 4 */}
-            <div className="bg-gray-50/50 border border-gray-200/80 p-6 rounded-2xl shadow-inner transition-all hover:border-gray-300">
-              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-5 border border-emerald-100 shadow-xs">
-                <Layout size={20} />
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-4 border border-orange-100 shadow-xs">
+                <UploadCloud size={20} />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2">
-                4. 6 ATS-Compliant Layout Templates
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                4. LinkedIn, PDF & Word Import
               </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Switch instantly between industry layouts: Harvard Classic, Sidebar Executive, Modern Chic, and Traditional. All layouts compile semantic HTML tags matching the strict guidelines of modern applicant tracking algorithms.
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                Don't start from scratch. Paste a public LinkedIn URL or upload your existing resume as a PDF, Word document, or plain text file. Our AI engine accurately parses your history and formats it into our pristine templates in seconds.
               </p>
             </div>
 
             {/* Feature 5 */}
-            <div className="bg-gray-50/50 border border-gray-200/80 p-6 rounded-2xl shadow-inner transition-all hover:border-gray-300">
-              <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-5 border border-rose-100 shadow-xs">
-                <Cloud size={20} />
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4 border border-purple-100 shadow-xs">
+                <Sliders size={20} />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2">
-                5. Secure Cloud Dashboard & Autosaving
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                5. Micro-Spacing Engine
               </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Never lose an edit. Free registered users get instant auto-saving to secure Supabase Postgres DB, allowing you to manage, duplicate, rename, or restore multiple drafts across any desktop or mobile device.
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                Perfect spacing makes resumes look executive. Adjust line spacing, section dividers, margins, card paddings, and theme colors with robust sliders. Keep your layout uniform across multiple pages.
               </p>
             </div>
 
             {/* Feature 6 */}
-            <div className="bg-gray-50/50 border border-gray-200/80 p-6 rounded-2xl shadow-inner transition-all hover:border-gray-300">
-              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-5 border border-amber-100 shadow-xs">
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 border border-emerald-100 shadow-xs">
+                <Layout size={20} />
+              </div>
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                6. ATS-Compliant Layouts
+              </h3>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                Switch instantly between industry layouts: Harvard Classic, Sidebar Executive, Modern Chic, and Traditional. All layouts compile semantic HTML tags matching the strict guidelines of modern ATS algorithms.
+              </p>
+            </div>
+
+            {/* Feature 7 */}
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-4 border border-rose-100 shadow-xs">
+                <Cloud size={20} />
+              </div>
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                7. Secure Cloud Dashboard
+              </h3>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                Never lose an edit. Free registered users get instant saving to a secure Postgres database, allowing you to manage, duplicate, rename, or restore multiple drafts across any device. Also includes shareable links!
+              </p>
+            </div>
+
+            {/* Feature 8 */}
+            <div className="bg-gray-50/50 border border-gray-200/80 p-5 rounded-2xl shadow-inner transition-all hover:border-gray-300">
+              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4 border border-amber-100 shadow-xs">
                 <Printer size={20} />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 mb-2">
-                6. Precision PDF Native Prints
+              <h3 className="text-xs font-bold text-gray-900 mb-2">
+                8. Precision PDF Native Prints
               </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
+              <p className="text-[11px] text-gray-600 leading-relaxed">
                 No third-party rendering failures or formatting shifts. Our print system utilizes direct CSS print sheets, generating perfect vector PDFs right inside your browser window. Zero latency, 100% clean layouts.
               </p>
             </div>
