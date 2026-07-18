@@ -2994,8 +2994,9 @@ Output:
     const marginPx = design.pageMarginTopBottom ?? design.pageMargin;
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
+    const screenContainer = resume.querySelector(".block.print\\:hidden") ?? resume;
     const units = Array.from(
-      resume.querySelectorAll(
+      screenContainer.querySelectorAll(
         ".header, .section-heading, .summary, .bullet-list, .skills-grid, .exp-entry, .edu-entry",
       ),
     ) as HTMLElement[];
@@ -3007,7 +3008,7 @@ Output:
       return;
     }
 
-    const gaps = Array.from(resume.querySelectorAll(".page-break-gap")) as HTMLElement[];
+    const gaps = Array.from(screenContainer.querySelectorAll(".page-break-gap")) as HTMLElement[];
     const currentIds = pageBreakElementIdsRef.current;
 
     let shift = 0;
