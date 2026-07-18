@@ -46,7 +46,7 @@ import {
   ZoomOut,
   Maximize2,
   Share2,
-  Download,
+  Download, Settings2, Menu, X as CloseIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -1437,6 +1437,8 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [resumesListOpen, setResumesListOpen] = useState(false);
   const [myResumes, setMyResumes] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFormatBarMinimized, setIsFormatBarMinimized] = useState(false);
+  const [isTopMenuMinimized, setIsTopMenuMinimized] = useState(true);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [saveResumeName, setSaveResumeName] = useState("My Resume");
@@ -5879,43 +5881,56 @@ Output:
             </div>
           </div>
           
-          <div className="hidden md:flex flex-none items-center gap-1 bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0">
-            <button
-              onClick={() => setActiveSidebarTab(activeSidebarTab === "templates" ? null : "templates")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
-                activeSidebarTab === "templates" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
-              )}
-            >
-              <FileText size={16} /> Templates
-            </button>
-            <button
-              onClick={() => setActiveSidebarTab(activeSidebarTab === "design" ? null : "design")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
-                activeSidebarTab === "design" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
-              )}
-            >
-              <Palette size={16} /> Design
-            </button>
-            <button
-              onClick={() => setActiveSidebarTab(activeSidebarTab === "content" ? null : "content")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
-                activeSidebarTab === "content" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
-              )}
-            >
-              <Plus size={16} /> Add
-            </button>
-            <button
-              onClick={() => setActiveSidebarTab(activeSidebarTab === "ai" ? null : "ai")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
-                activeSidebarTab === "ai" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
-              )}
-            >
-              <Sparkles size={16} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} /> AI Tools
-            </button>
+          <div className={cn("hidden md:flex flex-none items-center bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0 transition-all duration-300", isTopMenuMinimized ? "w-auto" : "gap-1")}>
+            {isTopMenuMinimized ? (
+               <button onClick={() => setIsTopMenuMinimized(false)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white text-sm font-medium text-gray-600 transition-all cursor-pointer shadow-sm border border-transparent hover:border-gray-200">
+                 <Menu size={16} /> Menu
+               </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => setActiveSidebarTab(activeSidebarTab === "templates" ? null : "templates")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                    activeSidebarTab === "templates" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  <FileText size={16} /> Templates
+                </button>
+                <button
+                  onClick={() => setActiveSidebarTab(activeSidebarTab === "design" ? null : "design")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                    activeSidebarTab === "design" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  <Palette size={16} /> Design
+                </button>
+                <button
+                  onClick={() => setActiveSidebarTab(activeSidebarTab === "content" ? null : "content")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                    activeSidebarTab === "content" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  <Plus size={16} /> Add
+                </button>
+                <button
+                  onClick={() => setActiveSidebarTab(activeSidebarTab === "ai" ? null : "ai")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
+                    activeSidebarTab === "ai" ? "bg-white shadow-sm text-blue-600" : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  <Sparkles size={16} className={cn(activeSidebarTab === "ai" ? "text-blue-600" : "text-amber-500 animate-pulse")} /> AI Tools
+                </button>
+                
+                <div className="w-px h-5 bg-gray-200 mx-1" />
+                <button onClick={() => setIsTopMenuMinimized(true)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer" title="Collapse Menu">
+                  <CloseIcon size={16} />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-2 flex-1 justify-end min-w-0">
@@ -6315,111 +6330,124 @@ Output:
         </div>
 
         {/* Floating Canvas Controls (Zoom & Print Preview) */}
-        <div className="absolute bottom-20 right-4 md:bottom-6 md:right-6 z-40 flex items-center gap-1.5 md:gap-2 bg-white/95 backdrop-blur-md border border-gray-200 p-1.5 rounded-xl shadow-lg no-print transition-all duration-300">
-          <div className="flex items-center gap-0.5 border-r border-gray-100 pr-1.5 md:pr-2">
-            <button
-              type="button"
-              onClick={() => setCanvasZoom(prev => Math.max(50, prev - 10))}
-              className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
-              title="Zoom Out"
-            >
-              <ZoomOut size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasZoom(100)}
-              className="px-2 py-0.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
-              title="Reset Zoom to 100%"
-            >
-              {canvasZoom}%
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasZoom(prev => Math.min(150, prev + 10))}
-              className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
-              title="Zoom In"
-            >
-              <ZoomIn size={16} />
-            </button>
-          </div>
+        <div className={cn(
+          "absolute bottom-20 right-4 md:bottom-6 md:right-6 z-40 flex items-center bg-white/95 backdrop-blur-md border border-gray-200 shadow-lg no-print transition-all duration-300",
+          isFormatBarMinimized ? "p-2 rounded-full cursor-pointer hover:bg-gray-50 opacity-80 hover:opacity-100" : "gap-1.5 md:gap-2 p-1.5 rounded-xl"
+        )}>
+          {isFormatBarMinimized ? (
+            <div onClick={() => setIsFormatBarMinimized(false)} className="flex items-center justify-center w-6 h-6" title="Show Formatting Tools">
+              <Settings2 size={18} className="text-gray-500" />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-0.5 border-r border-gray-100 pr-1.5 md:pr-2">
+                <button
+                  type="button"
+                  onClick={() => setCanvasZoom(prev => Math.max(50, prev - 10))}
+                  className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
+                  title="Zoom Out"
+                >
+                  <ZoomOut size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCanvasZoom(100)}
+                  className="px-2 py-0.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                  title="Reset Zoom to 100%"
+                >
+                  {canvasZoom}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCanvasZoom(prev => Math.min(150, prev + 10))}
+                  className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
+                  title="Zoom In"
+                >
+                  <ZoomIn size={16} />
+                </button>
+              </div>
 
-          <button
-            type="button"
-            onClick={handleFitWidth}
-            className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 cursor-pointer text-xs font-semibold px-1.5"
-            title="Auto-Fit Page Width"
-          >
-            <Maximize2 size={14} />
-            <span className="hidden sm:inline">Fit Width</span>
-          </button>
+              <button
+                type="button"
+                onClick={handleFitWidth}
+                className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 cursor-pointer text-xs font-semibold px-1.5"
+                title="Auto-Fit Page Width"
+              >
+                <Maximize2 size={14} />
+                <span className="hidden sm:inline">Fit Width</span>
+              </button>
 
-          <div className="w-px h-5 bg-gray-200" />
+              <div className="w-px h-5 bg-gray-200" />
 
-          {/* Alignment Guides Toggle */}
-          <div className="flex items-center gap-2 pl-1" title="Toggle printable margin guidelines">
-            <span className="text-[11px] font-bold text-gray-500 hidden sm:inline font-sans">Guides</span>
-            <button
-              type="button"
-              onClick={() => {
-                setShowMarginGuides(!showMarginGuides);
-                toast.success(
-                  !showMarginGuides
-                    ? "Alignment guides active! 👁️"
-                    : "Alignment guides hidden! 🙈"
-                );
-              }}
-              className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                showMarginGuides ? "bg-blue-600" : "bg-gray-200"
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                  showMarginGuides ? "translate-x-4" : "translate-x-0"
-                )}
-              />
-            </button>
-          </div>
+              {/* Alignment Guides Toggle */}
+              <div className="flex items-center gap-2 pl-1" title="Toggle printable margin guidelines">
+                <span className="text-[11px] font-bold text-gray-500 hidden sm:inline font-sans">Guides</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMarginGuides(!showMarginGuides);
+                    toast.success(!showMarginGuides ? "Alignment guides active! 👁️" : "Alignment guides hidden! 🙈");
+                  }}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                    showMarginGuides ? "bg-blue-600" : "bg-gray-200"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      showMarginGuides ? "translate-x-4" : "translate-x-0"
+                    )}
+                  />
+                </button>
+              </div>
 
-          <div className="w-px h-5 bg-gray-200" />
+              <div className="w-px h-5 bg-gray-200" />
 
-          {/* Elegant Toggle Switch for Print Preview */}
-          <div className="flex items-center gap-2 pl-1">
-            <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">Print Preview</span>
-            <button
-              type="button"
-              onClick={() => {
-                setPrintPreviewMode(!printPreviewMode);
-                toast.success(
-                  !printPreviewMode
-                    ? "Print Preview Enabled! (Editor overlays hidden) 👁️"
-                    : "Print Preview Disabled! (Editor overlays restored) ✍️"
-                );
-              }}
-              className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                printPreviewMode ? "bg-blue-600" : "bg-gray-200"
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                  printPreviewMode ? "translate-x-4" : "translate-x-0"
-                )}
-              />
-            </button>
-          </div>
+              {/* Elegant Toggle Switch for Print Preview */}
+              <div className="flex items-center gap-2 pl-1">
+                <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">Print Preview</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrintPreviewMode(!printPreviewMode);
+                    toast.success(!printPreviewMode ? "Print Preview Enabled! 👁️" : "Print Preview Disabled! ✍️");
+                  }}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                    printPreviewMode ? "bg-blue-600" : "bg-gray-200"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      printPreviewMode ? "translate-x-4" : "translate-x-0"
+                    )}
+                  />
+                </button>
+              </div>
 
-          <div className="w-px h-5 bg-gray-200" />
-          <button
-            type="button"
-            onClick={() => setShareModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-          >
-            <Share2 size={13} />
-            <span className="hidden sm:inline">Share</span>
-          </button>
+              <div className="w-px h-5 bg-gray-200" />
+              <button
+                type="button"
+                onClick={() => setShareModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
+              >
+                <Share2 size={13} />
+                <span className="hidden sm:inline">Share</span>
+              </button>
+
+              <div className="w-px h-5 bg-gray-200" />
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setIsFormatBarMinimized(true); }}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer"
+                title="Minimize Toolbar"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile Bottom Navigation Bar */}
