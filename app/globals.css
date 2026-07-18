@@ -7,14 +7,46 @@
 }
 
 @media print {
-  body { background: #fff !important; }
-  .no-print, .toolbar, .design-panel, .format-bar, .page-drawer, .overlay-scrim { display: none !important; }
-  .canvas-wrap { padding: 0 !important; }
-  .page { box-shadow: none !important; margin: 0 !important; width: 100% !important; padding: 0 !important; }
-  .manual-break { page-break-before: always; }
-  .print-avoid-break { break-inside: avoid; }
+  body, html { 
+    background: #fff !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    height: auto !important; 
+  }
+  .no-print, .toolbar, .design-panel, .format-bar, .page-drawer, .overlay-scrim { 
+    display: none !important; 
+  }
+  .canvas-wrap { 
+    padding: 0 !important; 
+    overflow: visible !important; 
+    display: block !important;
+    height: auto !important;
+  }
+  .canvas-wrap > div {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    transform: none !important;
+  }
+  .page { 
+    box-shadow: none !important; 
+    margin: 0 !important; 
+    width: 100% !important; 
+    padding: var(--page-margin-y) var(--page-margin-x) !important;
+    transform: none !important; /* CRITICAL: prevents scaling clipping */
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .page-sheet { display: none !important; }
+  .manual-break { page-break-before: always; break-before: page; }
+  .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
   .print-break-after-avoid { break-after: avoid-page; page-break-after: avoid; }
   [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent !important; box-shadow: none !important; }
+  
+  @page {
+    margin: 0;
+  }
 }
 
 ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
