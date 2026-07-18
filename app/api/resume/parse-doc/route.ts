@@ -1,112 +1,149 @@
-import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+// ============================================================
+//  app/api/resume/parse-doc/route.ts — Document Resume Parser
+//  Accepts a base64-encoded PDF/DOCX, sends it as text context
+//  to Groq for structured JSON extraction. Migrated from Gemini.
+//
+//  NOTE: Groq doesn't support inline binary file uploads like
+//  Gemini Vision. We first decode the base64 to extract any
+//  embedded text (for text-based PDFs/DOCX) and send it as
+//  the user message. For scanned images, we tell the user to
+//  copy-paste their text instead.
+// ============================================================
+import { NextRequest, NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { parseDocSchema } from '@/lib/validations';
+import { env } from '@/lib/env';
+
+const MODEL_CHAIN = [
+  'groq/compound',
+  'llama-3.3-70b-versatile',
+  'openai/gpt-oss-120b',
+  'llama-3.1-8b-instant',
+];
+
+const SYSTEM_PROMPT = `You are an elite resume parsing expert. The user will provide raw extracted text from a resume document.
+Your task: parse it into a perfectly structured JSON resume object.
+
+Return ONLY a valid, raw, minified JSON object with EXACTLY this structure:
+{
+  "name": "Full Name",
+  "contactLine": "City, ST | Phone | Email | LinkedIn",
+  "summary": "Professional summary...",
+  "experiences": [
+    {
+      "id": "exp-1",
+      "title": "Job Title | Company Name – City, ST",
+      "date": "Mon Year – Mon Year",
+      "bullets": [{ "id": "b-1", "text": "Achievement-focused bullet..." }],
+      "meta": "Stack or technologies used"
+    }
+  ],
+  "educations": [
+    {
+      "id": "edu-1",
+      "degree": "Degree, Major | University Name",
+      "date": "Year",
+      "bullets": [{ "id": "b-e1", "text": "GPA or honors..." }]
+    }
+  ],
+  "skills": [
+    { "id": "sk-1", "title": "Category", "items": "Skill1, Skill2, Skill3" }
+  ]
+}
+
+CRITICAL: No markdown, no code blocks, no commentary. Raw valid JSON only.`;
 
 export async function POST(req: NextRequest) {
   try {
     const { errorResponse } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: "Gemini API Key (GEMINI_API_KEY) is not configured on the server." },
-        { status: 500 }
-      );
-    }
-
     const body = await req.json();
-    const parsedBody = parseDocSchema.safeParse(body);
+    const parsed = parseDocSchema.safeParse(body);
 
-    if (!parsedBody.success) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: parsedBody.error.issues[0].message },
+        { success: false, error: parsed.error.issues[0].message },
         { status: 400 }
       );
     }
 
-    const { base64Data, mimeType, filename } = parsedBody.data;
+    const { base64Data, mimeType, filename } = parsed.data;
 
-    const ai = new GoogleGenAI({ apiKey });
-
-    // Format system prompt to extract perfect structured resume JSON
-    const systemInstruction = `You are an elite, world-class resume-writing expert and parser. 
-    Analyze the provided document (which is an old resume or career document) and parse it into a structured, professionally polished resume JSON.
-    
-    You MUST return a JSON object with EXACTLY the following format:
-    {
-      "name": "Candidate Name",
-      "contactLine": "City, ST | Phone | Email | LinkedIn",
-      "summary": "Professional summary paragraph...",
-      "experiences": [
-        {
-          "title": "Job Title | Company Name",
-          "date": "Month Year - Month Year",
-          "bullets": [
-            { "text": "Accomplished X as measured by Y by doing Z..." },
-            { "text": "Designed and deployed..." }
-          ],
-          "meta": "Core Stack / Tech / Skills used"
-        }
-      ],
-      "educations": [
-        {
-          "degree": "Degree/Major | University Name",
-          "bullets": [
-            { "text": "GPA, Honors, Activities, or coursework..." }
-          ]
-        }
-      ],
-      "skills": [
-        {
-          "title": "Category (e.g. Languages)",
-          "items": "Skill1, Skill2, Skill3"
-        }
-      ]
-    }
-    
-    CRITICAL INSTRUCTION: Return ONLY the raw, valid, minified JSON block matching the above schema. Do not include any pre-text, conversational introductions, markdown code blocks, or follow-up suggestions. Output raw, valid JSON only.`;
-
-    const docPart = {
-      inlineData: {
-        mimeType: mimeType,
-        data: base64Data,
-      },
-    };
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: [
-        docPart,
-        systemInstruction,
-      ],
-    });
-
-    const responseText = response.text || "";
-    let cleanJson = responseText.trim();
-    
-    if (cleanJson.startsWith("```")) {
-      cleanJson = cleanJson.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
-    }
-    cleanJson = cleanJson.trim();
-
+    // Attempt to extract text from the base64 data
+    // For text-based PDFs and DOCX, the base64 often contains readable ASCII
+    let extractedText = '';
     try {
-      const parsedData = JSON.parse(cleanJson);
-      return NextResponse.json({ success: true, data: parsedData, model: "gemini-3.5-flash" });
-    } catch (parseErr: any) {
-      console.error("Failed to parse JSON response from Gemini:", responseText);
-      return NextResponse.json({ 
-        success: false, 
-        error: "AI did not return valid JSON from document analysis. Please try again with a cleaner document or paste your resume text.",
-        rawText: responseText 
-      }, { status: 500 });
+      const decoded = atob(base64Data);
+      // Extract printable ASCII characters (crude but effective for text-based docs)
+      extractedText = decoded.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n').trim();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Could not decode the uploaded file. Please try copy-pasting your resume text instead.' },
+        { status: 400 }
+      );
     }
-  } catch (err: any) {
-    console.error("Error in parse-doc route:", err);
+
+    if (extractedText.length < 100) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'This file appears to be a scanned image or is not text-readable. Please copy and paste your resume text directly into the text field.',
+        },
+        { status: 422 }
+      );
+    }
+
+    const userPrompt = `Parse this resume document (${filename ?? mimeType}) into the required JSON structure:\n\n${extractedText.slice(0, 12000)}`;
+
+    let lastError: Error | null = null;
+
+    for (const model of MODEL_CHAIN) {
+      try {
+        console.log(`[parse-doc] Attempting model: ${model}`);
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${env.GROQ}`,
+          },
+          body: JSON.stringify({
+            model,
+            temperature: 0.1,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: userPrompt },
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          lastError = new Error(`Model ${model} returned ${res.status}`);
+          continue;
+        }
+
+        const data = await res.json();
+        let raw: string = data.choices?.[0]?.message?.content ?? '';
+        raw = raw.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+
+        const parsedData = JSON.parse(raw);
+        return NextResponse.json({ success: true, data: parsedData, model });
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error(`[parse-doc] Exception with model ${model}:`, lastError.message);
+      }
+    }
+
     return NextResponse.json(
-      { success: false, error: err.message || "Internal Server Error" },
-      { status: 500 }
+      {
+        success: false,
+        error: `AI could not parse the document. Last error: ${lastError?.message ?? 'Unknown'}. Try copy-pasting your resume text instead.`,
+      },
+      { status: 502 }
     );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    console.error('[parse-doc] Unhandled error:', message);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

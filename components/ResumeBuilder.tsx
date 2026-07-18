@@ -1718,7 +1718,8 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
             body: JSON.stringify({
               prompt: compilePrompt,
               systemPrompt,
-              temperature: 0.3
+              temperature: 0.3,
+              aiAction: "general"
             })
           });
 
@@ -1820,7 +1821,8 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         body: JSON.stringify({
           prompt: rawInput,
           systemPrompt,
-          temperature: 0.4
+          temperature: 0.4,
+          aiAction: "general"
         })
       });
 
@@ -1988,32 +1990,65 @@ Output:
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      // Determine aiAction from the current preset type
+      const aiActionForMode = aiPresetType === "bullets" ? "rewrite_bullet" as const
+        : aiPresetType === "summary" ? "generate_summary" as const
+        : aiPresetType === "custom" ? "general" as const
+        : "general" as const;
+
       const response = await fetch("/api/groq", {
         method: "POST",
         headers,
         body: JSON.stringify({
           prompt: aiInput,
           systemPrompt,
-          temperature: 0.4
+          temperature: 0.4,
+          aiAction: aiActionForMode
         })
       });
 
-      const resData = await response.json();
-      
-      if (resData.remaining !== undefined) {
-        setAiRemaining(resData.remaining);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error((errData as any).error || "Failed to generate text from Groq API.");
       }
 
-      if (!response.ok || !resData.success) {
-        throw new Error(resData.error || "Failed to generate text from Groq API.");
+      // Consume the SSE stream for real-time word-by-word output
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      if (!reader) throw new Error("No response stream received.");
+
+      setAiOutput(""); // Clear previous output
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        // Parse SSE lines: "data: {...}" or ": meta {...}"
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith(": meta ")) {
+            try {
+              const meta = JSON.parse(line.slice(7));
+              if (meta.remaining !== undefined) setAiRemaining(meta.remaining);
+            } catch { /* ignore parse errors */ }
+          } else if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              const token = parsed.choices?.[0]?.delta?.content ?? "";
+              if (token) {
+                accumulated += token;
+                setAiOutput(accumulated);
+              }
+            } catch { /* incomplete JSON chunk, skip */ }
+          }
+        }
       }
 
-      if (resData.text === undefined) {
-        throw new Error("API returned no text content.");
-      }
-      setAiOutput(resData.text);
-      console.log("Setting aiOutput to:", resData.text);
-      toast.success("AI suggestions generated! Click 'Apply' below to update. ✨");
+      if (!accumulated.trim()) throw new Error("AI returned an empty response.");
+      toast.success("AI suggestion ready! Click 'Apply' to update. ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred during AI generation");
     } finally {
