@@ -123,6 +123,14 @@ interface ProfilePhotoConfig {
 import { SectionWrapper } from "./resume/SectionWrapper";
 
 
+const SafeReorderGroup = ({ isPrint, as: Component = "div", children, ...props }: any) => {
+  if (isPrint) {
+    const { values, onReorder, ...rest } = props;
+    return <Component {...rest}>{children}</Component>;
+  }
+  return <Reorder.Group as={Component} {...props}>{children}</Reorder.Group>;
+};
+
 const SectionRenderer = memo(({
   section,
   summary, setSummary,
@@ -137,10 +145,11 @@ const SectionRenderer = memo(({
   manualBreaks, setManualBreaks,
   pageBreakElementIds,
   design, gapHeights,
-  spellcheckEnabled
+  spellcheckEnabled,
+  isPrint,
 }: any) => {
   return (
-    <SectionWrapper
+    <SectionWrapper isPrint={isPrint}
                   key={section.id}
                   id={section.id}
                   item={section}
@@ -191,7 +200,7 @@ const SectionRenderer = memo(({
                   {section.id === "licenses" && (
                     <>
                       <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
-                      <Reorder.Group
+                      <SafeReorderGroup isPrint={isPrint}
                         values={licenses}
                         onReorder={setLicenses}
                         as="ul"
@@ -208,7 +217,7 @@ const SectionRenderer = memo(({
                         }}
                       >
                         {licenses.map((lic: any) => (
-<SubItemWrapper
+<SubItemWrapper isPrint={isPrint}
                               key={lic.id}
                               value={lic}
                               id={lic.id}
@@ -243,7 +252,7 @@ const SectionRenderer = memo(({
 </>)}
 </SubItemWrapper>
 ))}
-                      </Reorder.Group>
+                      </SafeReorderGroup>
                     </>
                   )}
 
@@ -251,7 +260,7 @@ const SectionRenderer = memo(({
                   {section.id === "skills" && (
                     <>
                       <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
-                      <Reorder.Group
+                      <SafeReorderGroup isPrint={isPrint}
                         values={skills}
                         onReorder={setSkills}
                         className="skills-grid grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 rounded-[var(--radius)] p-5 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
@@ -267,7 +276,7 @@ const SectionRenderer = memo(({
                         }}
                       >
                         {skills.map((sk: any) => (
-                            <SubItemWrapper
+                            <SubItemWrapper isPrint={isPrint}
                               key={sk.id}
                               value={sk}
                               id={sk.id}
@@ -372,18 +381,18 @@ const SectionRenderer = memo(({
 </>)}
 </SubItemWrapper>
 ))}
-                      </Reorder.Group>
+                      </SafeReorderGroup>
                     </>
                   )}
 
                   {/* EXPERIENCE */}
                   {section.id === "experience" && (
-                    <Reorder.Group
+                    <SafeReorderGroup isPrint={isPrint}
                       values={experiences}
                       onReorder={setExperiences}
                     >
                       {experiences.map((exp: any) => (
-                            <SubItemWrapper
+                            <SubItemWrapper isPrint={isPrint}
                               key={exp.id}
                               value={exp}
                               id={`exp-${exp.id}`}
@@ -529,17 +538,17 @@ const SectionRenderer = memo(({
 </>)}
 </SubItemWrapper>
 ))}
-                    </Reorder.Group>
+                    </SafeReorderGroup>
                   )}
 
                   {/* EDUCATION */}
                   {section.id === "education" && (
-                    <Reorder.Group
+                    <SafeReorderGroup isPrint={isPrint}
                       values={educations}
                       onReorder={setEducations}
                     >
                       {educations.map((edu: any) => (
-                            <SubItemWrapper
+                            <SubItemWrapper isPrint={isPrint}
                               key={edu.id}
                               value={edu}
                               id={`edu-${edu.id}`}
@@ -651,17 +660,17 @@ const SectionRenderer = memo(({
 </>)}
 </SubItemWrapper>
 ))}
-                    </Reorder.Group>
+                    </SafeReorderGroup>
                   )}
 
                   {/* PROJECTS */}
                   {section.id === "projects" && (
-                    <Reorder.Group
+                    <SafeReorderGroup isPrint={isPrint}
                       values={projects}
                       onReorder={setProjects}
                     >
                       {projects?.map((proj: any) => (
-                            <SubItemWrapper
+                            <SubItemWrapper isPrint={isPrint}
                               key={proj.id}
                               value={proj}
                               id={`proj-${proj.id}`}
@@ -785,12 +794,12 @@ const SectionRenderer = memo(({
 </>)}
                             </SubItemWrapper>
                       ))}
-                    </Reorder.Group>
+                    </SafeReorderGroup>
                   )}
 
                   {/* PUBLICATIONS */}
                   {section.id === "publications" && (
-                    <Reorder.Group
+                    <SafeReorderGroup isPrint={isPrint}
                       values={publications}
                       onReorder={setPublications}
                       as="ul"
@@ -807,7 +816,7 @@ const SectionRenderer = memo(({
                       }}
                     >
                       {publications?.map((pub: any) => (
-                          <SubItemWrapper
+                          <SubItemWrapper isPrint={isPrint}
                             key={pub.id}
                             value={pub}
                             id={pub.id}
@@ -840,12 +849,12 @@ const SectionRenderer = memo(({
 </>)}
                           </SubItemWrapper>
                       ))}
-                    </Reorder.Group>
+                    </SafeReorderGroup>
                   )}
 
                   {/* AWARDS */}
                   {section.id === "awards" && (
-                    <Reorder.Group
+                    <SafeReorderGroup isPrint={isPrint}
                       values={awards}
                       onReorder={setAwards}
                       as="ul"
@@ -862,7 +871,7 @@ const SectionRenderer = memo(({
                       }}
                     >
                       {awards?.map((aw: any) => (
-                          <SubItemWrapper
+                          <SubItemWrapper isPrint={isPrint}
                             key={aw.id}
                             value={aw}
                             id={aw.id}
@@ -895,7 +904,7 @@ const SectionRenderer = memo(({
 </>)}
                           </SubItemWrapper>
                       ))}
-                    </Reorder.Group>
+                    </SafeReorderGroup>
                   )}
                 </SectionWrapper>
   );
@@ -6318,10 +6327,11 @@ Output:
 
             {/* Sections */}
             {(() => {
-              const renderSection = (section: any, keyPrefix: string = "") => (
+              const renderSection = (section: any, keyPrefix: string = "", isPrint: boolean = false) => (
                 <SectionRenderer
                   key={`${keyPrefix}${section.id}`}
                   section={section}
+                  isPrint={isPrint}
                   summary={summary}
                   setSummary={setSummary}
                   licenses={licenses}
@@ -6365,21 +6375,21 @@ Output:
                   <div className="hidden print:block w-full">
                     {design.layout === "sidebar" ? (
                       <div className="flex w-full gap-[1.1rem] items-start">
-                        <Reorder.Group values={sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id))} onReorder={() => {}} className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
+                        <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
                           {sections
                             .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
-                            .map((s: any) => renderSection(s, "print-"))}
-                        </Reorder.Group>
-                        <Reorder.Group values={sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id))} onReorder={() => {}} className="flex-1 flex flex-col min-w-0">
+                            .map((s: any) => renderSection(s, "print-", true))}
+                        </div>
+                        <div className="flex-1 flex flex-col min-w-0">
                           {sections
                             .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
-                            .map((s: any) => renderSection(s, "print-"))}
-                        </Reorder.Group>
+                            .map((s: any) => renderSection(s, "print-", true))}
+                        </div>
                       </div>
                     ) : (
-                      <Reorder.Group values={sections} onReorder={() => {}} className="flex flex-col w-full">
-                        {sections.map((s: any) => renderSection(s, "print-"))}
-                      </Reorder.Group>
+                      <div className="flex flex-col w-full">
+                        {sections.map((s: any) => renderSection(s, "print-", true))}
+                      </div>
                     )}
                   </div>
                 </>

@@ -31,21 +31,11 @@ export const SectionWrapper = memo(({
   setAwards,
   sectionHeaders,
   setSectionHeaders,
+  isPrint,
 }: any) => {
   const dragControls = useDragControls();
-  return (
-    <Reorder.Item
-      key={id}
-      value={item}
-      id={id}
-      dragListener={false}
-      dragControls={dragControls}
-      data-section={id}
-      className={cn(
-        "section mt-0 relative",
-        manualBreaks[id] && "manual-break",
-      )}
-    >
+  const content = (
+    <>
       <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
       <div
         className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
@@ -223,6 +213,39 @@ export const SectionWrapper = memo(({
         </div>
       </div>
       {children}
+    </>
+  );
+
+  if (isPrint) {
+    return (
+      <div
+        key={`print-wrap-${id}`}
+        id={`print-section-${id}`}
+        data-section={id}
+        className={cn(
+          "section mt-0 relative",
+          manualBreaks[id] && "manual-break",
+        )}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Reorder.Item
+      key={id}
+      value={item}
+      id={id}
+      dragListener={false}
+      dragControls={dragControls}
+      data-section={id}
+      className={cn(
+        "section mt-0 relative",
+        manualBreaks[id] && "manual-break",
+      )}
+    >
+      {content}
     </Reorder.Item>
   );
 });
