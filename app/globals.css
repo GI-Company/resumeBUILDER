@@ -48,6 +48,13 @@
     page-break-after: always !important;
     break-after: page !important;
   }
+  .physical-page-container:last-child,
+  .physical-page-container:last-of-type,
+  .page:last-child,
+  .page:last-of-type {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
   .manual-break { page-break-before: always !important; break-before: page !important; }
   .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
   .print-break-after-avoid { break-after: avoid-page !important; page-break-after: avoid !important; }
