@@ -3139,7 +3139,7 @@ Output:
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
     const units = Array.from(
-      resume.querySelectorAll(".physical-page-container [data-page-break-id], .block.print\\:hidden [data-page-break-id]"),
+      resume.querySelectorAll(".block.print\\:hidden [data-page-break-id]"),
     ) as HTMLElement[];
 
     if (units.length === 0) {
@@ -3150,7 +3150,7 @@ Output:
       return;
     }
 
-    const gaps = Array.from(resume.querySelectorAll(".physical-page-container .page-break-gap, .block.print\\:hidden .page-break-gap")) as HTMLElement[];
+    const gaps = Array.from(resume.querySelectorAll(".block.print\\:hidden .page-break-gap")) as HTMLElement[];
     const currentIds = pageBreakElementIdsRef.current;
 
     const shiftMap: Record<string, number> = { default: 0 };
