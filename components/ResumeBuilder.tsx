@@ -3139,7 +3139,7 @@ Output:
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
     const units = Array.from(
-      resume.querySelectorAll(".physical-page-container > [data-page-break-id], .block.print\\:hidden [data-page-break-id]"),
+      resume.querySelectorAll(".physical-page-container [data-page-break-id], .block.print\\:hidden [data-page-break-id]"),
     ) as HTMLElement[];
 
     if (units.length === 0) {
@@ -3150,7 +3150,7 @@ Output:
       return;
     }
 
-    const gaps = Array.from(resume.querySelectorAll(".physical-page-container > .page-break-gap, .block.print\\:hidden .page-break-gap")) as HTMLElement[];
+    const gaps = Array.from(resume.querySelectorAll(".physical-page-container .page-break-gap, .block.print\\:hidden .page-break-gap")) as HTMLElement[];
     const currentIds = pageBreakElementIdsRef.current;
 
     const shiftMap: Record<string, number> = { default: 0 };
@@ -3199,6 +3199,8 @@ Output:
 
     const pageStartYMap: Record<string, number | null> = {};
     const pageStartYInitialMap: Record<string, number> = {};
+    const currentPIdxTracker: Record<string, number> = {};
+    const prevItemPerCol: Record<string, typeof naturalCoords[0] | null> = {};
     const breakStarts: { el: HTMLElement; id: string | null; colKey: string; elTop: number; elBottom: number }[] = [];
 
     naturalCoords.forEach((item, i) => {
@@ -3207,6 +3209,8 @@ Output:
       if (pageStartYMap[colKey] === undefined || pageStartYMap[colKey] === null) {
         pageStartYMap[colKey] = elTop;
         pageStartYInitialMap[colKey] = elTop;
+        currentPIdxTracker[colKey] = 0;
+        prevItemPerCol[colKey] = item;
         return;
       }
 
@@ -3214,7 +3218,7 @@ Output:
       const isHeading = el.classList.contains("section-heading");
       const manualBreakHere =
         isHeading && section && section.classList.contains("manual-break");
-      const prevItem = i > 0 && naturalCoords[i - 1].colKey === colKey ? naturalCoords[i - 1] : null;
+      const prevItem = prevItemPerCol[colKey] ?? null;
       const coupledWithHeading =
         !isHeading &&
         prevItem &&
@@ -3222,10 +3226,14 @@ Output:
         prevItem.el.closest(".section") === section;
 
       const checkTop = coupledWithHeading ? prevItem.elTop : elTop;
-      const wouldOverflow = elBottom - pageStartYMap[colKey]! > contentHeightPx;
+      const maxSafeBottom = currentPIdxTracker[colKey] === 0
+        ? resumeRect.top + pageHeightPx - marginPx
+        : pageStartYMap[colKey]! + contentHeightPx;
+      const wouldOverflow = elBottom > maxSafeBottom;
 
       if ((manualBreakHere || wouldOverflow) && checkTop !== pageStartYMap[colKey]) {
         pageStartYMap[colKey] = checkTop;
+        currentPIdxTracker[colKey] = (currentPIdxTracker[colKey] || 0) + 1;
         const breakItem = coupledWithHeading ? prevItem : item;
         
         if (breakStarts.length === 0 || breakStarts[breakStarts.length - 1].el !== breakItem.el) {
@@ -3238,6 +3246,7 @@ Output:
           });
         }
       }
+      prevItemPerCol[colKey] = item;
     });
 
     const newBreakIds = breakStarts
