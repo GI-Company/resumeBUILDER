@@ -7,9 +7,11 @@ export interface PageBreakGapProps {
   pageMargin: number;
   pageMarginX?: number;
   pageMarginY?: number;
+  disabled?: boolean;
 }
 
-export const PageBreakGap = memo(({ id, pageBreakElementIds, gapHeights, pageMargin, pageMarginX, pageMarginY }: PageBreakGapProps) => {
+export const PageBreakGap = memo(({ id, pageBreakElementIds, gapHeights, pageMargin, pageMarginX, pageMarginY, disabled }: PageBreakGapProps) => {
+  if (disabled) return null;
   const isBreak = pageBreakElementIds.includes(id);
   if (!isBreak) return null;
 

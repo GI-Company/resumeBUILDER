@@ -131,6 +131,11 @@ const SafeReorderGroup = ({ isPrint, as: Component = "div", children, ...props }
   return <Reorder.Group as={Component} {...props}>{children}</Reorder.Group>;
 };
 
+const stripHtml = (htmlString?: string) => {
+  if (!htmlString) return "";
+  return htmlString.replace(/<[^>]*>?/gm, "").trim();
+};
+
 const SectionRenderer = memo(({
   section,
   summary, setSummary,
@@ -144,12 +149,77 @@ const SectionRenderer = memo(({
   sectionHeaders, setSectionHeaders,
   manualBreaks, setManualBreaks,
   pageBreakElementIds,
+  idToPageMap,
+  targetPageIndex,
   design, gapHeights,
   spellcheckEnabled,
   isPrint,
 }: any) => {
+  const getPageIndex = (id: string | null | undefined): number => {
+    if (!id) return 0;
+    return idToPageMap?.[id] ?? 0;
+  };
+
+  const headingPage = getPageIndex(`heading-${section.id}`);
+  const hideHeading = targetPageIndex !== undefined && headingPage !== targetPageIndex;
+
+  if (targetPageIndex !== undefined) {
+    if (section.id === "summary") {
+      const isOnPage = getPageIndex("summary-content") === targetPageIndex || headingPage === targetPageIndex;
+      if (!isOnPage) return null;
+    }
+    if (section.id === "licenses") {
+      const isOnPage = getPageIndex("lic-list") === targetPageIndex || headingPage === targetPageIndex;
+      if (!isOnPage) return null;
+    }
+    if (section.id === "skills") {
+      const isOnPage = getPageIndex("skills-grid") === targetPageIndex || headingPage === targetPageIndex;
+      if (!isOnPage) return null;
+    }
+    if (section.id === "publications") {
+      const isOnPage = getPageIndex("pub-list") === targetPageIndex || headingPage === targetPageIndex;
+      if (!isOnPage) return null;
+    }
+    if (section.id === "awards") {
+      const isOnPage = getPageIndex("award-list") === targetPageIndex || headingPage === targetPageIndex;
+      if (!isOnPage) return null;
+    }
+  }
+
+  const activeExperiences = targetPageIndex !== undefined
+    ? experiences.filter((exp: any) => {
+        const jobHeaderPage = getPageIndex(`exp-${exp.id}`);
+        const bulletsOnPage = (exp.bullets || []).some((b: any) => getPageIndex(`bullet-${b.id}`) === targetPageIndex);
+        const metaOnPage = exp.meta !== undefined && getPageIndex(`meta-${exp.id}`) === targetPageIndex;
+        return jobHeaderPage === targetPageIndex || bulletsOnPage || metaOnPage;
+      })
+    : experiences;
+
+  const activeEducations = targetPageIndex !== undefined
+    ? educations.filter((edu: any) => {
+        const eduHeaderPage = getPageIndex(`edu-${edu.id}`);
+        const bulletsOnPage = (edu.bullets || []).some((b: any) => getPageIndex(`edu-bullet-${b.id}`) === targetPageIndex);
+        return eduHeaderPage === targetPageIndex || bulletsOnPage;
+      })
+    : educations;
+
+  const activeProjects = targetPageIndex !== undefined
+    ? projects.filter((proj: any) => {
+        const projHeaderPage = getPageIndex(`proj-${proj.id}`);
+        const bulletsOnPage = (proj.bullets || []).some((b: any) => getPageIndex(`proj-bullet-${b.id}`) === targetPageIndex);
+        return projHeaderPage === targetPageIndex || bulletsOnPage;
+      })
+    : projects;
+
+  if (targetPageIndex !== undefined) {
+    if (section.id === "experience" && activeExperiences.length === 0 && headingPage !== targetPageIndex) return null;
+    if (section.id === "education" && activeEducations.length === 0 && headingPage !== targetPageIndex) return null;
+    if (section.id === "projects" && activeProjects.length === 0 && headingPage !== targetPageIndex) return null;
+  }
+
   return (
     <SectionWrapper isPrint={isPrint}
+                  hideHeading={hideHeading}
                   key={section.id}
                   id={section.id}
                   item={section}
@@ -178,7 +248,7 @@ const SectionRenderer = memo(({
                   {/* SUMMARY */}
                   {section.id === "summary" && (
                     <>
-                      <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                      <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                       <ContentEditableField tagName="div"
                         className="summary font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break outline-none print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
                         data-page-break-id="summary-content"
@@ -199,7 +269,7 @@ const SectionRenderer = memo(({
                   {/* LICENSES */}
                   {section.id === "licenses" && (
                     <>
-                      <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                      <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                       <SafeReorderGroup isPrint={isPrint}
                         values={licenses}
                         onReorder={setLicenses}
@@ -259,7 +329,7 @@ const SectionRenderer = memo(({
                   {/* SKILLS */}
                   {section.id === "skills" && (
                     <>
-                      <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                      <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                       <SafeReorderGroup isPrint={isPrint}
                         values={skills}
                         onReorder={setSkills}
@@ -388,10 +458,18 @@ const SectionRenderer = memo(({
                   {/* EXPERIENCE */}
                   {section.id === "experience" && (
                     <SafeReorderGroup isPrint={isPrint}
-                      values={experiences}
+                      values={activeExperiences}
                       onReorder={setExperiences}
                     >
-                      {experiences.map((exp: any) => (
+                      {activeExperiences.map((exp: any) => {
+                        const jobHeaderPage = getPageIndex(`exp-${exp.id}`);
+                        const isContinuation = targetPageIndex !== undefined && jobHeaderPage < targetPageIndex;
+                        const visibleBullets = targetPageIndex !== undefined
+                          ? (exp.bullets || []).filter((b: any) => getPageIndex(`bullet-${b.id}`) === targetPageIndex)
+                          : (exp.bullets || []);
+                        const showMeta = targetPageIndex === undefined || getPageIndex(`meta-${exp.id}`) === targetPageIndex;
+
+                        return (
                             <SubItemWrapper isPrint={isPrint}
                               key={exp.id}
                               value={exp}
@@ -409,7 +487,7 @@ const SectionRenderer = memo(({
                               }}
                             >
 {(dc: any) => (<>
-                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                              <PageBreakGap id={`exp-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
 
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
@@ -424,6 +502,13 @@ const SectionRenderer = memo(({
                               >
                                 <X size={12} /> remove
                               </button>
+                              {isContinuation ? (
+                                <div className="exp-header mb-2 pb-1 border-b border-gray-200/60 flex justify-between items-baseline">
+                                  <span className="font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)]">
+                                    {stripHtml(exp.title)} <span className="text-xs font-normal text-gray-500 italic">(Continued)</span>
+                                  </span>
+                                </div>
+                              ) : (
                               <div
                                 className={cn(
                                   "exp-header",
@@ -456,8 +541,9 @@ const SectionRenderer = memo(({
                                   spellCheck={spellcheckEnabled}
                                 />
                               </div>
+                              )}
                               <ul className="m-0 pl-5 exp-bullets mt-2">
-                                {exp.bullets.map((b: any) => (
+                                {visibleBullets.map((b: any) => (
                                   <li
                                     key={b.id}
                                     data-page-break-id={`bullet-${b.id}`}
@@ -466,7 +552,7 @@ const SectionRenderer = memo(({
                                       breakBefore: pageBreakElementIds.includes(`bullet-${b.id}`) ? "page" : "auto",
                                     }}
                                   >
-                                    <PageBreakGap id={`bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                                    <PageBreakGap id={`bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                                     <ContentEditableField tagName="span"
                                       className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
                                       html={b.text} onChange={(val) => { setExperiences((prev: any[]) =>
@@ -528,7 +614,7 @@ const SectionRenderer = memo(({
                               >
                                 + bullet
                               </button>
-                              {exp.meta !== undefined && (
+                              {exp.meta !== undefined && showMeta && (
                                 <div
                                   data-page-break-id={`meta-${exp.id}`}
                                   className="w-full"
@@ -536,7 +622,7 @@ const SectionRenderer = memo(({
                                     breakBefore: pageBreakElementIds.includes(`meta-${exp.id}`) ? "page" : "auto",
                                   }}
                                 >
-                                  <PageBreakGap id={`meta-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                                  <PageBreakGap id={`meta-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                                   <ContentEditableField tagName="div"
                                     className="exp-meta mt-3 pt-2 border-t border-[var(--hairline)] font-sans text-xs text-[var(--ink-soft)] font-medium leading-relaxed outline-none"
                                     html={exp.meta} onChange={(val) => { setExperiences((prev: any[]) =>
@@ -551,17 +637,24 @@ const SectionRenderer = memo(({
                             
 </>)}
 </SubItemWrapper>
-))}
+);
+})}
                     </SafeReorderGroup>
                   )}
-
                   {/* EDUCATION */}
                   {section.id === "education" && (
                     <SafeReorderGroup isPrint={isPrint}
-                      values={educations}
+                      values={activeEducations}
                       onReorder={setEducations}
                     >
-                      {educations.map((edu: any) => (
+                      {activeEducations.map((edu: any) => {
+                        const eduHeaderPage = getPageIndex(`edu-${edu.id}`);
+                        const isContinuation = targetPageIndex !== undefined && eduHeaderPage < targetPageIndex;
+                        const visibleBullets = targetPageIndex !== undefined
+                          ? (edu.bullets || []).filter((b: any) => getPageIndex(`edu-bullet-${b.id}`) === targetPageIndex)
+                          : (edu.bullets || []);
+
+                        return (
                             <SubItemWrapper isPrint={isPrint}
                               key={edu.id}
                               value={edu}
@@ -579,7 +672,7 @@ const SectionRenderer = memo(({
                               }}
                             >
 {(dc: any) => (<>
-                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                              <PageBreakGap id={`edu-${edu.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
 
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
@@ -594,6 +687,13 @@ const SectionRenderer = memo(({
                               >
                                 <X size={12} /> remove
                               </button>
+                              {isContinuation ? (
+                                <div className="edu-header mb-2 pb-1 border-b border-gray-200/60 flex justify-between items-baseline">
+                                  <span className="font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)]">
+                                    {stripHtml(edu.degree)} <span className="text-xs font-normal text-gray-500 italic">(Continued)</span>
+                                  </span>
+                                </div>
+                              ) : (
                               <ContentEditableField tagName="div"
                                 className="edu-degree font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none"
                                 html={edu.degree} onChange={(val) => { setEducations((prev: any[]) =>
@@ -603,8 +703,9 @@ const SectionRenderer = memo(({
                                   ); }}
                                 spellCheck={spellcheckEnabled}
                               />
+                              )}
                               <ul className="m-0 pl-5 edu-bullets mt-1">
-                                {edu.bullets.map((b: any) => (
+                                {visibleBullets.map((b: any) => (
                                   <li
                                     key={b.id}
                                     data-page-break-id={`edu-bullet-${b.id}`}
@@ -613,7 +714,7 @@ const SectionRenderer = memo(({
                                       breakBefore: pageBreakElementIds.includes(`edu-bullet-${b.id}`) ? "page" : "auto",
                                     }}
                                   >
-                                    <PageBreakGap id={`edu-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                                    <PageBreakGap id={`edu-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                                     <ContentEditableField tagName="span"
                                       className="font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
                                       html={b.text} onChange={(val) => { setEducations((prev: any[]) =>
@@ -678,17 +779,25 @@ const SectionRenderer = memo(({
                             
 </>)}
 </SubItemWrapper>
-))}
+);
+})}
                     </SafeReorderGroup>
                   )}
 
                   {/* PROJECTS */}
                   {section.id === "projects" && (
                     <SafeReorderGroup isPrint={isPrint}
-                      values={projects}
+                      values={activeProjects}
                       onReorder={setProjects}
                     >
-                      {projects?.map((proj: any) => (
+                      {activeProjects?.map((proj: any) => {
+                        const projHeaderPage = getPageIndex(`proj-${proj.id}`);
+                        const isContinuation = targetPageIndex !== undefined && projHeaderPage < targetPageIndex;
+                        const visibleBullets = targetPageIndex !== undefined
+                          ? (proj.bullets || []).filter((b: any) => getPageIndex(`proj-bullet-${b.id}`) === targetPageIndex)
+                          : (proj.bullets || []);
+
+                        return (
                             <SubItemWrapper isPrint={isPrint}
                               key={proj.id}
                               value={proj}
@@ -705,7 +814,7 @@ const SectionRenderer = memo(({
                               }}
                             >
 {(dc: any) => (<>
-                              <PageBreakGap id={`proj-${proj.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                              <PageBreakGap id={`proj-${proj.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
 
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
@@ -720,7 +829,13 @@ const SectionRenderer = memo(({
                               >
                                 <X size={12} /> remove
                               </button>
-                              
+                              {isContinuation ? (
+                                <div className="proj-header mb-2 pb-1 border-b border-gray-200/60 flex justify-between items-baseline">
+                                  <span className="font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)]">
+                                    {stripHtml(proj.title || "Project")} <span className="text-xs font-normal text-gray-500 italic">(Continued)</span>
+                                  </span>
+                                </div>
+                              ) : (
                               <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1 mb-1">
                                 <ContentEditableField tagName="div"
                                   className="proj-title font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)] outline-none flex-1"
@@ -741,9 +856,10 @@ const SectionRenderer = memo(({
                                   spellCheck={spellcheckEnabled}
                                 />
                               </div>
+                              )}
 
                               <ul className="m-0 pl-5 proj-bullets mt-1">
-                                {proj.bullets?.map((b: any) => (
+                                {visibleBullets?.map((b: any) => (
                                   <li
                                     key={b.id}
                                     data-page-break-id={`proj-bullet-${b.id}`}
@@ -752,7 +868,7 @@ const SectionRenderer = memo(({
                                       breakBefore: pageBreakElementIds.includes(`proj-bullet-${b.id}`) ? "page" : "auto",
                                     }}
                                   >
-                                    <PageBreakGap id={`proj-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+                                    <PageBreakGap id={`proj-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                                     <ContentEditableField tagName="span"
                                       className="font-[family:var(--font-body)] text-sm text-[var(--ink-soft)] leading-[var(--line-height)] block outline-none"
                                       html={b.text} onChange={(val) => { setProjects((prev: any[]) =>
@@ -817,7 +933,8 @@ const SectionRenderer = memo(({
                             
 </>)}
                             </SubItemWrapper>
-                      ))}
+);
+})}
                     </SafeReorderGroup>
                   )}
 
@@ -933,6 +1050,8 @@ const SectionRenderer = memo(({
                 </SectionWrapper>
   );
 }, (prev, next) => {
+  if (prev.targetPageIndex !== next.targetPageIndex) return false;
+  if (prev.idToPageMap !== next.idToPageMap) return false;
   if (prev.section !== next.section) return false;
   if (prev.design !== next.design) return false;
   if (prev.gapHeights !== next.gapHeights) return false;
@@ -3001,6 +3120,7 @@ Output:
 
   // --- Page Breaks Calculation ---
   const [gapHeights, setGapHeights] = useState<Record<string, { total: number; top: number }>>({});
+  const [idToPageMap, setIdToPageMap] = useState<Record<string, number>>({});
   const [pageBreaks, setPageBreaks] = useState<number[]>([]);
   const [pageBreakElementIds, setPageBreakElementIds] = useState<string[]>([]);
   const pageBreakElementIdsRef = useRef<string[]>([]);
@@ -3018,56 +3138,75 @@ Output:
     const marginPx = design.pageMarginTopBottom ?? design.pageMargin;
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
-    const screenContainer = resume.querySelector(".block.print\\:hidden") ?? resume;
     const units = Array.from(
-      screenContainer.querySelectorAll("[data-page-break-id]"),
+      resume.querySelectorAll(".physical-page-container > [data-page-break-id], .block.print\\:hidden [data-page-break-id]"),
     ) as HTMLElement[];
 
     if (units.length === 0) {
       setPageBreaks([]);
       setPageBreakElementIds([]);
+      setIdToPageMap({});
       setGapHeights({});
       return;
     }
 
-    const gaps = Array.from(screenContainer.querySelectorAll(".page-break-gap")) as HTMLElement[];
+    const gaps = Array.from(resume.querySelectorAll(".physical-page-container > .page-break-gap, .block.print\\:hidden .page-break-gap")) as HTMLElement[];
     const currentIds = pageBreakElementIdsRef.current;
 
-    let shift = 0;
+    const shiftMap: Record<string, number> = { default: 0 };
+    const prevElMap: Record<string, HTMLElement | null> = { default: null };
     let gapIdx = 0;
 
-    const naturalCoords = units.map((el) => {
+    const naturalCoords = units.map((el, i) => {
+      const colKey = el.closest("[data-column]")?.getAttribute("data-column") || "default";
+      if (!(colKey in shiftMap)) {
+        shiftMap[colKey] = 0;
+        prevElMap[colKey] = null;
+      }
+      const prevEl = prevElMap[colKey];
+      const currentPageIdxAttr = el.closest(".physical-page-container")?.getAttribute("data-page-index");
+      const prevPageIdxAttr = prevEl?.closest(".physical-page-container")?.getAttribute("data-page-index") ?? null;
+
+      if (prevEl && currentPageIdxAttr !== prevPageIdxAttr && currentPageIdxAttr !== null && prevPageIdxAttr !== null) {
+        const gap = el.getBoundingClientRect().top - prevEl.getBoundingClientRect().bottom;
+        shiftMap[colKey] += Math.max(0, gap);
+      }
+
       const id = el.getAttribute("data-page-break-id");
       if (id && currentIds.includes(id)) {
         const gapEl = gaps[gapIdx];
         const height = gapEl ? gapEl.getBoundingClientRect().height : (2 * marginPx + 32);
-        shift += height;
+        if (currentPageIdxAttr === prevPageIdxAttr || !currentPageIdxAttr) {
+          shiftMap[colKey] += height;
+        }
         gapIdx++;
       }
 
       const rect = el.getBoundingClientRect();
-      const elTop = rect.top - shift;
-      const elBottom = rect.bottom - shift;
+      const elTop = rect.top - shiftMap[colKey];
+      const elBottom = rect.bottom - shiftMap[colKey];
+      prevElMap[colKey] = el;
 
       return {
         el,
         id,
+        colKey,
         rect,
         elTop,
         elBottom,
       };
     });
 
-    let pageStartY: number | null = null;
-    let pageStartY_initial: number | null = null;
-    const breakStarts: { el: HTMLElement; id: string | null; elTop: number; elBottom: number }[] = [];
+    const pageStartYMap: Record<string, number | null> = {};
+    const pageStartYInitialMap: Record<string, number> = {};
+    const breakStarts: { el: HTMLElement; id: string | null; colKey: string; elTop: number; elBottom: number }[] = [];
 
     naturalCoords.forEach((item, i) => {
-      const { el, id, elTop, elBottom } = item;
+      const { el, id, colKey, elTop, elBottom } = item;
 
-      if (pageStartY === null) {
-        pageStartY = elTop;
-        pageStartY_initial = elTop;
+      if (pageStartYMap[colKey] === undefined || pageStartYMap[colKey] === null) {
+        pageStartYMap[colKey] = elTop;
+        pageStartYInitialMap[colKey] = elTop;
         return;
       }
 
@@ -3075,7 +3214,7 @@ Output:
       const isHeading = el.classList.contains("section-heading");
       const manualBreakHere =
         isHeading && section && section.classList.contains("manual-break");
-      const prevItem = naturalCoords[i - 1];
+      const prevItem = i > 0 && naturalCoords[i - 1].colKey === colKey ? naturalCoords[i - 1] : null;
       const coupledWithHeading =
         !isHeading &&
         prevItem &&
@@ -3083,16 +3222,17 @@ Output:
         prevItem.el.closest(".section") === section;
 
       const checkTop = coupledWithHeading ? prevItem.elTop : elTop;
-      const wouldOverflow = elBottom - pageStartY > contentHeightPx;
+      const wouldOverflow = elBottom - pageStartYMap[colKey]! > contentHeightPx;
 
-      if ((manualBreakHere || wouldOverflow) && checkTop !== pageStartY) {
-        pageStartY = checkTop;
+      if ((manualBreakHere || wouldOverflow) && checkTop !== pageStartYMap[colKey]) {
+        pageStartYMap[colKey] = checkTop;
         const breakItem = coupledWithHeading ? prevItem : item;
         
         if (breakStarts.length === 0 || breakStarts[breakStarts.length - 1].el !== breakItem.el) {
           breakStarts.push({
             el: breakItem.el,
             id: breakItem.id,
+            colKey: breakItem.colKey,
             elTop: breakItem.elTop,
             elBottom: breakItem.elBottom,
           });
@@ -3103,6 +3243,29 @@ Output:
     const newBreakIds = breakStarts
       .map((item) => item.id)
       .filter(Boolean) as string[];
+
+    const newIdToPageMap: Record<string, number> = {};
+    const currentPIdxMap: Record<string, number> = {};
+    units.forEach((el) => {
+      const colKey = el.closest("[data-column]")?.getAttribute("data-column") || "default";
+      if (currentPIdxMap[colKey] === undefined) {
+        currentPIdxMap[colKey] = 0;
+      }
+      const id = el.getAttribute("data-page-break-id");
+      if (!id) return;
+      if (newBreakIds.includes(id)) {
+        currentPIdxMap[colKey]++;
+      }
+      newIdToPageMap[id] = currentPIdxMap[colKey];
+    });
+
+    setIdToPageMap((prev) => {
+      const keys = Object.keys(newIdToPageMap);
+      const prevKeys = Object.keys(prev);
+      if (keys.length !== prevKeys.length) return newIdToPageMap;
+      if (keys.some((k) => prev[k] !== newIdToPageMap[k])) return newIdToPageMap;
+      return prev;
+    });
 
     const newGapHeights: Record<string, { total: number; top: number }> = {};
     breakStarts.forEach((br, idx) => {
@@ -3124,7 +3287,7 @@ Output:
     });
 
     const newBreaks = breakStarts.map((item) => {
-      return Math.round(item.elTop - (pageStartY_initial ?? 0));
+      return Math.round(item.elTop - (pageStartYInitialMap[item.colKey ?? "default"] ?? 0));
     });
 
     setPageBreaks((prev) => {
@@ -3254,7 +3417,9 @@ Output:
 
   const pageWidthPx = design.pageSize === "letter" ? 816 : 794;
   const pageHeightPx = design.pageSize === "letter" ? 1056 : 1123;
-  const totalHeightPx = pageHeightPx * (pageBreakElementIds.length + 1) + 32 * pageBreakElementIds.length;
+  const maxPageFromMap = Object.values(idToPageMap || {}).length > 0 ? Math.max(...Object.values(idToPageMap || {})) : 0;
+  const totalPages = Math.max(pageBreakElementIds.length + 1, maxPageFromMap + 1, 1);
+  const totalHeightPx = pageHeightPx * totalPages + 32 * Math.max(0, totalPages - 1);
 
   const pageStyles = {
     "--ink": "#232025",
@@ -6209,222 +6374,254 @@ Output:
             <div
               ref={resumeRef}
               className={cn(
-                "page relative origin-top transition-all duration-200",
+                "resume-canvas-container relative origin-top transition-all duration-200 flex flex-col items-center gap-8 print:!gap-0 print:!block",
                 printPreviewMode && "print-preview-active"
               )}
               style={{
                 width: `${pageWidthPx}px`,
                 transform: `scale(${canvasZoom / 100})`,
                 transformOrigin: "top center",
-                minHeight: `calc(var(--page-height) * ${pageBreakElementIds.length + 1} + 32px * ${pageBreakElementIds.length})`,
-                padding: "var(--page-margin-y) var(--page-margin-x)",
               }}
             >
-              {/* Absolute Page Background Sheets behind the content */}
-              {Array.from({ length: pageBreakElementIds.length + 1 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="absolute left-0 right-0 shadow-[0_10px_35px_rgba(0,0,0,0.12)] border border-gray-200/50 rounded-[4px] pointer-events-none no-print page-sheet transition-all duration-300"
-                style={{
-                  top: `calc(${idx} * (var(--page-height) + 32px))`,
-                  height: "var(--page-height)",
-                  backgroundColor: "var(--paper)",
-                  zIndex: -1,
-                }}
-              />
-            ))}
+              {Array.from({ length: totalPages }).map((_, pageIndex) => {
+                const renderSection = (section: any, keyPrefix: string = "", isPrint: boolean = false) => (
+                  <SectionRenderer
+                    key={`${keyPrefix}${section.id}-page-${pageIndex}`}
+                    section={section}
+                    isPrint={isPrint}
+                    targetPageIndex={pageIndex}
+                    idToPageMap={idToPageMap}
+                    summary={summary}
+                    setSummary={setSummary}
+                    licenses={licenses}
+                    setLicenses={setLicenses}
+                    skills={skills}
+                    setSkills={setSkills}
+                    experiences={experiences}
+                    setExperiences={setExperiences}
+                    educations={educations}
+                    setEducations={setEducations}
+                    projects={projects}
+                    setProjects={setProjects}
+                    publications={publications}
+                    setPublications={setPublications}
+                    awards={awards}
+                    setAwards={setAwards}
+                    sectionHeaders={sectionHeaders}
+                    setSectionHeaders={setSectionHeaders}
+                    manualBreaks={manualBreaks}
+                    setManualBreaks={setManualBreaks}
+                    pageBreakElementIds={pageBreakElementIds}
+                    spellcheckEnabled={spellcheckEnabled}
+                    design={design}
+                    gapHeights={gapHeights}
+                  />
+                );
 
-            {/* Visual Margin Alignment Guides (Dashed safe area border) */}
-            {showMarginGuides && !printPreviewMode && (
-              Array.from({ length: pageBreakElementIds.length + 1 }).map((_, idx) => (
-                <div
-                  key={`margin-guide-${idx}`}
-                  className="absolute border border-dashed border-blue-400/35 pointer-events-none no-print transition-all duration-300 rounded"
-                  style={{
-                    top: `calc(${idx} * (var(--page-height) + 32px) + var(--page-margin-y))`,
-                    left: "var(--page-margin-x)",
-                    right: "var(--page-margin-x)",
-                    height: `calc(var(--page-height) - 2 * var(--page-margin-y))`,
-                    zIndex: 40,
-                  }}
-                >
-                  <div className="absolute -top-4 left-0 text-[9px] font-sans font-extrabold tracking-wider text-blue-400/60 select-none uppercase">
-                    Print Safe Area
-                  </div>
-                </div>
-              ))
-            )}
-            {/* Header */}
-            <PageBreakGap id="header" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
-            <div
-              className={cn(
-                "header rounded-[var(--radius)] py-6 px-6 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300",
-                `text-${design.headerAlign}`,
-              )}
-              data-page-break-id="header"
-              style={{
-                backgroundColor: "var(--panel-rgba)",
-                border: "var(--box-border)",
-                boxShadow: "var(--box-shadow)",
-                backdropFilter: "blur(var(--backdrop-blur))",
-                WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                breakBefore: pageBreakElementIds.includes("header") ? "page" : "auto",
-              }}
-            >
-              <div className={cn(
-                "flex gap-4 md:gap-6",
-                design.headerAlign === "center"
-                  ? "flex-col text-center justify-center items-center"
-                  : "flex-col sm:flex-row text-center sm:text-left justify-start items-center sm:items-start"
-              )}>
-                {profilePhoto.enabled && (
+                return (
                   <div
-                    className={cn(
-                      "relative group shrink-0",
-                      profilePhoto.animation === "wobble" && "animate-photo-wobble",
-                      profilePhoto.animation === "flicker" && "animate-photo-flicker",
-                      profilePhoto.animation === "barndoor" && "animate-photo-barndoor",
-                      profilePhoto.animation === "circle" && "animate-photo-circle",
-                      profilePhoto.animation === "fade" && "animate-photo-fade"
-                    )}
+                    key={`page-${pageIndex}`}
+                    data-page-index={pageIndex}
+                    className="physical-page-container page relative shadow-[0_10px_35px_rgba(0,0,0,0.12)] border border-gray-200/50 rounded-[4px] page-sheet transition-all duration-300 print:!shadow-none print:!border-none print:!m-0 print:!p-[var(--page-margin-y)_var(--page-margin-x)] print:break-after-page"
                     style={{
-                      transform: `translate(${profilePhoto.xOffset}px, ${profilePhoto.yOffset}px)`,
+                      width: `${pageWidthPx}px`,
+                      height: "var(--page-height)",
+                      backgroundColor: "var(--paper)",
+                      padding: "var(--page-margin-y) var(--page-margin-x)",
+                      overflow: "hidden",
                     }}
                   >
-                    <div
-                      className="overflow-hidden transition-all duration-300"
-                      style={{
-                        width: `${110 * (profilePhoto.scale / 100)}px`,
-                        height: `${110 * (profilePhoto.scale / 100) * (profilePhoto.aspectRatio === "3:4" ? 4/3 : profilePhoto.aspectRatio === "4:3" ? 3/4 : 1)}px`,
-                        borderRadius: `${profilePhoto.radius}%`,
-                        opacity: profilePhoto.opacity / 100,
-                        border: `${profilePhoto.borderWidth}px solid ${profilePhoto.borderColor}`,
-                        boxShadow: "var(--box-shadow)",
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={profilePhoto.url}
-                        alt="Profile"
-                        className="w-full h-full object-cover select-none pointer-events-none"
+                    {/* Visual Margin Alignment Guides (Dashed safe area border) */}
+                    {showMarginGuides && !printPreviewMode && (
+                      <div
+                        className="absolute border border-dashed border-blue-400/35 pointer-events-none no-print transition-all duration-300 rounded"
                         style={{
-                          filter: getCSSFilterString(
-                            profilePhoto.filter,
-                            profilePhoto.tone,
-                            profilePhoto.brightness,
-                            profilePhoto.contrast,
-                            profilePhoto.saturation,
-                            profilePhoto.blur,
-                            profilePhoto.hueRotate,
-                            profilePhoto.sepia
-                          ),
+                          top: "var(--page-margin-y)",
+                          left: "var(--page-margin-x)",
+                          right: "var(--page-margin-x)",
+                          bottom: "var(--page-margin-y)",
+                          zIndex: 40,
                         }}
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    {/* Hover Click overlay */}
-                    <button
-                      onClick={() => setActiveSidebarTab("photo")}
-                      className="absolute inset-0 bg-black/40 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold font-sans no-print"
-                      style={{ borderRadius: `${profilePhoto.radius}%` }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                )}
-                
-                <div className="flex-1 min-w-0">
-                  <ContentEditableField tagName="div"
-                    className="name font-[family:var(--font-heading)] font-bold text-3xl text-[var(--ink)] m-0 mb-1.5 tracking-wide outline-none"
-                    html={name} onChange={(val) => { setName(val); }}
-                    spellCheck={spellcheckEnabled}
-                  />
-                  <ContentEditableField tagName="div"
-                    className="contact-line font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] outline-none"
-                    html={contactLine} onChange={(val) => { setContactLine(val); }}
-                    spellCheck={spellcheckEnabled}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Sections */}
-            {(() => {
-              const renderSection = (section: any, keyPrefix: string = "", isPrint: boolean = false) => (
-                <SectionRenderer
-                  key={`${keyPrefix}${section.id}`}
-                  section={section}
-                  isPrint={isPrint}
-                  summary={summary}
-                  setSummary={setSummary}
-                  licenses={licenses}
-                  setLicenses={setLicenses}
-                  skills={skills}
-                  setSkills={setSkills}
-                  experiences={experiences}
-                  setExperiences={setExperiences}
-                  educations={educations}
-                  setEducations={setEducations}
-                  projects={projects}
-                  setProjects={setProjects}
-                  publications={publications}
-                  setPublications={setPublications}
-                  awards={awards}
-                  setAwards={setAwards}
-                  sectionHeaders={sectionHeaders}
-                  setSectionHeaders={setSectionHeaders}
-                  manualBreaks={manualBreaks}
-                  setManualBreaks={setManualBreaks}
-                  pageBreakElementIds={pageBreakElementIds}
-                  spellcheckEnabled={spellcheckEnabled}
-                  design={design}
-                  gapHeights={gapHeights}
-                />
-              );
-              
-              return (
-                <>
-                  <div className="block print:hidden w-full">
-                    <Reorder.Group
-                      values={sections}
-                      onReorder={setSections}
-                      id="sections-container"
-                      className="w-full"
-                    >
-                      {sections.map((section: any) => renderSection(section))}
-                    </Reorder.Group>
-                  </div>
-                  
-                  <div className="hidden print:block w-full">
-                    {design.layout === "sidebar" ? (
-                      <div className="flex w-full gap-[1.1rem] items-start">
-                        <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
-                          {sections
-                            .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
-                            .map((s: any) => renderSection(s, "print-", true))}
+                      >
+                        <div className="absolute -top-4 left-0 text-[9px] font-sans font-extrabold tracking-wider text-blue-400/60 select-none uppercase">
+                          Print Safe Area (Page {pageIndex + 1})
                         </div>
-                        <div className="flex-1 flex flex-col min-w-0">
-                          {sections
-                            .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
-                            .map((s: any) => renderSection(s, "print-", true))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col w-full">
-                        {sections.map((s: any) => renderSection(s, "print-", true))}
                       </div>
                     )}
-                  </div>
-                </>
-              );
-            })()}
 
-            <ContentEditableField tagName="div"
-              className="page-footer text-center font-sans text-[11px] text-[#a19b9d] mt-4 outline-none"
-              html={footer} onChange={(val) => { setFooter(val); }}
-              spellCheck={spellcheckEnabled}
-            />
-          </div>
+                    {/* Header (Only on designated page, typically page 0) */}
+                    {(idToPageMap?.["header"] ?? 0) === pageIndex && (
+                      <div
+                        className={cn(
+                          "header rounded-[var(--radius)] py-6 px-6 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300",
+                          `text-${design.headerAlign}`,
+                        )}
+                        data-page-break-id="header"
+                        style={{
+                          backgroundColor: "var(--panel-rgba)",
+                          border: "var(--box-border)",
+                          boxShadow: "var(--box-shadow)",
+                          backdropFilter: "blur(var(--backdrop-blur))",
+                          WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+                        }}
+                      >
+                        <div className={cn(
+                          "flex gap-4 md:gap-6",
+                          design.headerAlign === "center"
+                            ? "flex-col text-center justify-center items-center"
+                            : "flex-col sm:flex-row text-center sm:text-left justify-start items-center sm:items-start"
+                        )}>
+                          {profilePhoto.enabled && (
+                            <div
+                              className={cn(
+                                "relative group shrink-0",
+                                profilePhoto.animation === "wobble" && "animate-photo-wobble",
+                                profilePhoto.animation === "flicker" && "animate-photo-flicker",
+                                profilePhoto.animation === "barndoor" && "animate-photo-barndoor",
+                                profilePhoto.animation === "circle" && "animate-photo-circle",
+                                profilePhoto.animation === "fade" && "animate-photo-fade"
+                              )}
+                              style={{
+                                transform: `translate(${profilePhoto.xOffset}px, ${profilePhoto.yOffset}px)`,
+                              }}
+                            >
+                              <div
+                                className="overflow-hidden transition-all duration-300"
+                                style={{
+                                  width: `${110 * (profilePhoto.scale / 100)}px`,
+                                  height: `${110 * (profilePhoto.scale / 100) * (profilePhoto.aspectRatio === "3:4" ? 4/3 : profilePhoto.aspectRatio === "4:3" ? 3/4 : 1)}px`,
+                                  borderRadius: `${profilePhoto.radius}%`,
+                                  opacity: profilePhoto.opacity / 100,
+                                  border: `${profilePhoto.borderWidth}px solid ${profilePhoto.borderColor}`,
+                                  boxShadow: "var(--box-shadow)",
+                                }}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={profilePhoto.url}
+                                  alt="Profile"
+                                  className="w-full h-full object-cover select-none pointer-events-none"
+                                  style={{
+                                    filter: getCSSFilterString(
+                                      profilePhoto.filter,
+                                      profilePhoto.tone,
+                                      profilePhoto.brightness,
+                                      profilePhoto.contrast,
+                                      profilePhoto.saturation,
+                                      profilePhoto.blur,
+                                      profilePhoto.hueRotate,
+                                      profilePhoto.sepia
+                                    ),
+                                  }}
+                                  referrerPolicy="no-referrer"
+                                />
+                              </div>
+                              {/* Hover Click overlay */}
+                              <button
+                                onClick={() => setActiveSidebarTab("photo")}
+                                className="absolute inset-0 bg-black/40 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold font-sans no-print"
+                                style={{ borderRadius: `${profilePhoto.radius}%` }}
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <ContentEditableField tagName="div"
+                              className="name font-[family:var(--font-heading)] font-bold text-3xl text-[var(--ink)] m-0 mb-1.5 tracking-wide outline-none"
+                              html={name} onChange={(val) => { setName(val); }}
+                              spellCheck={spellcheckEnabled}
+                            />
+                            <ContentEditableField tagName="div"
+                              className="contact-line font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] outline-none"
+                              html={contactLine} onChange={(val) => { setContactLine(val); }}
+                              spellCheck={spellcheckEnabled}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sections */}
+                    <div className="block print:hidden w-full">
+                      {design.layout === "sidebar" ? (
+                        <div className="flex w-full gap-[1.1rem] items-start">
+                          <div data-column="sidebar" className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
+                            <Reorder.Group
+                              values={sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id))}
+                              onReorder={(newOrder) => {
+                                const mainSecs = sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id));
+                                setSections([...newOrder, ...mainSecs]);
+                              }}
+                              id={`sections-sidebar-${pageIndex}`}
+                              className="w-full flex flex-col"
+                            >
+                              {sections
+                                .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
+                                .map((s: any) => renderSection(s, "screen-sidebar-"))}
+                            </Reorder.Group>
+                          </div>
+                          <div data-column="main" className="flex-1 flex flex-col min-w-0">
+                            <Reorder.Group
+                              values={sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id))}
+                              onReorder={(newOrder) => {
+                                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id));
+                                setSections([...sidebarSecs, ...newOrder]);
+                              }}
+                              id={`sections-main-${pageIndex}`}
+                              className="w-full flex flex-col"
+                            >
+                              {sections
+                                .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
+                                .map((s: any) => renderSection(s, "screen-main-"))}
+                            </Reorder.Group>
+                          </div>
+                        </div>
+                      ) : (
+                        <Reorder.Group
+                          values={sections}
+                          onReorder={setSections}
+                          id={`sections-container-${pageIndex}`}
+                          className="w-full"
+                        >
+                          {sections.map((section: any) => renderSection(section))}
+                        </Reorder.Group>
+                      )}
+                    </div>
+                    
+                    <div className="hidden print:block w-full">
+                      {design.layout === "sidebar" ? (
+                        <div className="flex w-full gap-[1.1rem] items-start">
+                          <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
+                            {sections
+                              .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
+                              .map((s: any) => renderSection(s, "print-", true))}
+                          </div>
+                          <div className="flex-1 flex flex-col min-w-0">
+                            {sections
+                              .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
+                              .map((s: any) => renderSection(s, "print-", true))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col w-full">
+                          {sections.map((s: any) => renderSection(s, "print-", true))}
+                        </div>
+                      )}
+                    </div>
+
+                    {pageIndex === totalPages - 1 && (
+                      <ContentEditableField tagName="div"
+                        className="page-footer text-center font-sans text-[11px] text-[#a19b9d] mt-4 outline-none"
+                        html={footer} onChange={(val) => { setFooter(val); }}
+                        spellCheck={spellcheckEnabled}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 

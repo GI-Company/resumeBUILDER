@@ -32,14 +32,17 @@ export const SectionWrapper = memo(({
   sectionHeaders,
   setSectionHeaders,
   isPrint,
+  hideHeading,
 }: any) => {
   const dragControls = useDragControls();
   const content = (
     <>
-      <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
-      <div
-        className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
-        data-page-break-id={`heading-${id}`}
+      {!hideHeading && (
+        <>
+          <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
+          <div
+            className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
+            data-page-break-id={`heading-${id}`}
         style={{
           backgroundColor: "var(--panel-dark-rgba)",
           border: "var(--box-border)",
@@ -212,6 +215,8 @@ export const SectionWrapper = memo(({
           )}
         </div>
       </div>
+      </>
+      )}
       {children}
     </>
   );
@@ -227,33 +232,35 @@ export const SectionWrapper = memo(({
           manualBreaks[id] && "manual-break",
         )}
       >
-        <div
-          className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
-          data-page-break-id={`heading-${id}`}
-          style={{
-            backgroundColor: "var(--panel-dark-rgba)",
-            border: "var(--box-border)",
-            boxShadow: "var(--box-shadow)",
-            backdropFilter: "blur(var(--backdrop-blur))",
-            WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-            breakBefore: manualBreaks[id] ? "page" : "auto",
-          }}
-        >
-          <div className="heading-left flex items-center gap-2">
-            <span className="font-bold">
-              {sectionHeaders?.[id] || (
-                id === "summary" ? "Professional Summary" :
-                id === "licenses" ? "Certifications & Licenses" :
-                id === "skills" ? "Skills" :
-                id === "experience" ? "Professional Experience" :
-                id === "education" ? "Education" :
-                id === "projects" ? "Projects" :
-                id === "publications" ? "Publications" :
-                id === "awards" ? "Awards & Honors" : id
-              )}
-            </span>
+        {!hideHeading && (
+          <div
+            className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print:!shadow-none print:!border-none print:!bg-transparent print-break-after-avoid transition-all duration-300"
+            data-page-break-id={`heading-${id}`}
+            style={{
+              backgroundColor: "var(--panel-dark-rgba)",
+              border: "var(--box-border)",
+              boxShadow: "var(--box-shadow)",
+              backdropFilter: "blur(var(--backdrop-blur))",
+              WebkitBackdropFilter: "blur(var(--backdrop-blur))",
+              breakBefore: manualBreaks[id] ? "page" : "auto",
+            }}
+          >
+            <div className="heading-left flex items-center gap-2">
+              <span className="font-bold">
+                {sectionHeaders?.[id] || (
+                  id === "summary" ? "Professional Summary" :
+                  id === "licenses" ? "Certifications & Licenses" :
+                  id === "skills" ? "Skills" :
+                  id === "experience" ? "Professional Experience" :
+                  id === "education" ? "Education" :
+                  id === "projects" ? "Projects" :
+                  id === "publications" ? "Publications" :
+                  id === "awards" ? "Awards & Honors" : id
+                )}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
         {children}
       </div>
     );

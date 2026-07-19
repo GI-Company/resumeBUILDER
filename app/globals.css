@@ -35,19 +35,19 @@
     margin: 0 auto !important;
     position: static !important;
   }
-  .page { 
+  .physical-page-container, .page { 
     box-shadow: none !important; 
+    border: none !important;
     margin: 0 auto !important; 
     padding: var(--page-margin-y) var(--page-margin-x) !important;
     transform: none !important; /* CRITICAL: prevents scaling clipping */
-    min-height: 0 !important;
-    height: auto !important;
-    overflow: visible !important;
-    position: static !important;
-    page-break-inside: avoid;
-    break-inside: auto;
+    height: var(--page-height) !important;
+    max-height: var(--page-height) !important;
+    overflow: hidden !important;
+    position: relative !important;
+    page-break-after: always !important;
+    break-after: page !important;
   }
-  .page-sheet { display: none !important; }
   .manual-break { page-break-before: always !important; break-before: page !important; }
   .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
   .print-break-after-avoid { break-after: avoid-page !important; page-break-after: avoid !important; }
