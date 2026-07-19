@@ -476,7 +476,7 @@ const SectionRenderer = memo(({
                               id={`exp-${exp.id}`}
                               
                               className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                              data-page-break-id={`exp-${exp.id}`}
+                              data-page-break-id={isContinuation ? undefined : `exp-${exp.id}`}
                               style={{
                                 backgroundColor: "var(--panel-rgba)",
                                 border: "var(--box-border)",
@@ -661,7 +661,7 @@ const SectionRenderer = memo(({
                               id={`edu-${edu.id}`}
                               
                               className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                              data-page-break-id={`edu-${edu.id}`}
+                              data-page-break-id={isContinuation ? undefined : `edu-${edu.id}`}
                               style={{
                                 backgroundColor: "var(--panel-rgba)",
                                 border: "var(--box-border)",
@@ -803,7 +803,7 @@ const SectionRenderer = memo(({
                               value={proj}
                               id={`proj-${proj.id}`}
                               className="proj-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
-                              data-page-break-id={`proj-${proj.id}`}
+                              data-page-break-id={isContinuation ? undefined : `proj-${proj.id}`}
                               style={{
                                 backgroundColor: "var(--panel-rgba)",
                                 border: "var(--box-border)",
@@ -3265,7 +3265,9 @@ Output:
       if (newBreakIds.includes(id)) {
         currentPIdxMap[colKey]++;
       }
-      newIdToPageMap[id] = currentPIdxMap[colKey];
+      if (newIdToPageMap[id] === undefined) {
+        newIdToPageMap[id] = currentPIdxMap[colKey];
+      }
     });
 
     setIdToPageMap((prev) => {
