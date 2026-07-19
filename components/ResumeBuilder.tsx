@@ -462,6 +462,9 @@ const SectionRenderer = memo(({
                                     key={b.id}
                                     data-page-break-id={`bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1.5"
+                                    style={{
+                                      breakBefore: pageBreakElementIds.includes(`bullet-${b.id}`) ? "page" : "auto",
+                                    }}
                                   >
                                     <PageBreakGap id={`bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                     <ContentEditableField tagName="span"
@@ -526,7 +529,13 @@ const SectionRenderer = memo(({
                                 + bullet
                               </button>
                               {exp.meta !== undefined && (
-                                <div data-page-break-id={`meta-${exp.id}`} className="w-full">
+                                <div
+                                  data-page-break-id={`meta-${exp.id}`}
+                                  className="w-full"
+                                  style={{
+                                    breakBefore: pageBreakElementIds.includes(`meta-${exp.id}`) ? "page" : "auto",
+                                  }}
+                                >
                                   <PageBreakGap id={`meta-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                   <ContentEditableField tagName="div"
                                     className="exp-meta mt-3 pt-2 border-t border-[var(--hairline)] font-sans text-xs text-[var(--ink-soft)] font-medium leading-relaxed outline-none"
@@ -600,6 +609,9 @@ const SectionRenderer = memo(({
                                     key={b.id}
                                     data-page-break-id={`edu-bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1"
+                                    style={{
+                                      breakBefore: pageBreakElementIds.includes(`edu-bullet-${b.id}`) ? "page" : "auto",
+                                    }}
                                   >
                                     <PageBreakGap id={`edu-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                     <ContentEditableField tagName="span"
@@ -736,6 +748,9 @@ const SectionRenderer = memo(({
                                     key={b.id}
                                     data-page-break-id={`proj-bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1"
+                                    style={{
+                                      breakBefore: pageBreakElementIds.includes(`proj-bullet-${b.id}`) ? "page" : "auto",
+                                    }}
                                   >
                                     <PageBreakGap id={`proj-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
                                     <ContentEditableField tagName="span"
