@@ -3005,9 +3005,7 @@ Output:
     const resumeRect = resume.getBoundingClientRect();
     const screenContainer = resume.querySelector(".block.print\\:hidden") ?? resume;
     const units = Array.from(
-      screenContainer.querySelectorAll(
-        ".header, .section-heading, .summary, .bullet-list, .skills-grid, .exp-entry, .exp-bullets li, .exp-meta, .edu-entry, .edu-bullets li, .proj-entry, .proj-bullets li",
-      ),
+      screenContainer.querySelectorAll("[data-page-break-id]"),
     ) as HTMLElement[];
 
     if (units.length === 0) {
