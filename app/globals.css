@@ -51,6 +51,16 @@
   .manual-break { page-break-before: always !important; break-before: page !important; }
   .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
   .print-break-after-avoid { break-after: avoid-page !important; page-break-after: avoid !important; }
+  /* In Option B (Separate Physical Page Containers), calcPages() has pre-paginated exact items into each container.
+     To prevent Safari/Chrome print engines from inserting artificial internal page breaks and splitting a physical container across multiple printed sheets, we clear all break rules on descendants. */
+  .physical-page-container * {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    break-before: auto !important;
+    page-break-before: auto !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
   [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent !important; box-shadow: none !important; }
   
   /* Safari Print Bug Fix: 1fr grids squish to 0. Force percentages. */
