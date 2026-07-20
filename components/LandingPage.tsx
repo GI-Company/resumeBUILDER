@@ -463,7 +463,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             <div className="lg:col-span-7 bg-gray-50 border border-gray-200/80 rounded-2xl p-4 md:p-6 shadow-inner relative flex flex-col items-center justify-center min-h-[580px]">
               
               {/* Perfect PDF Document Mock (Matches actual output formatting) */}
-              <div className="w-full bg-white border border-gray-200 rounded-xl shadow-lg p-6 md:p-8 flex flex-col justify-between text-left text-gray-900 font-sans relative overflow-hidden aspect-[1/1.41] max-w-md mx-auto">
+              <div aria-hidden="true" className="w-full bg-white border border-gray-200 rounded-xl shadow-lg p-6 md:p-8 flex flex-col justify-between text-left text-gray-900 font-sans relative overflow-hidden aspect-[1/1.41] max-w-md mx-auto">
                 
                 {/* Simulated A4/Letter margin grid borders */}
                 <div className="absolute inset-0 border-[1px] border-dashed border-blue-200/25 pointer-events-none" />
@@ -848,10 +848,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 border border-blue-100 shadow-xs">
                 <Bot size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 1. Conversational Agent
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Directly chat with <strong>Agent Rez</strong> in the sidebar. Command him to write summaries, insert certifications, rewrite jobs using action verbs, or completely format sections. Witness edits populate the resume canvas in real-time.
               </p>
             </div>
@@ -861,10 +861,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 border border-indigo-100 shadow-xs">
                 <Users size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 2. Guided Career Interview
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Skip the blank page paralysis. Engage in a 5-step interactive voice or chat-driven interview. Agent Rez collects your background particulars step-by-step and automatically compiles an exceptional, ATS-ready resume.
               </p>
             </div>
@@ -874,10 +874,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-4 border border-teal-100 shadow-xs">
                 <FileText size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 3. AI Cover Letter Generator
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Instantly write a personalized, 100% tailored cover letter using the exact achievements, technical skills, and background loaded in your active resume. Match keywords directly to any target job description.
               </p>
             </div>
@@ -887,10 +887,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-4 border border-orange-100 shadow-xs">
                 <UploadCloud size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 4. LinkedIn, PDF & Word Import
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Don't start from scratch. Paste a public LinkedIn URL or upload your existing resume as a PDF, Word document, or plain text file. Our AI engine accurately parses your history and formats it into our pristine templates in seconds.
               </p>
             </div>
@@ -900,10 +900,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4 border border-purple-100 shadow-xs">
                 <Sliders size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 5. Micro-Spacing Engine
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Perfect spacing makes resumes look executive. Adjust line spacing, section dividers, margins, card paddings, and theme colors with robust sliders. Keep your layout uniform across multiple pages.
               </p>
             </div>
@@ -913,10 +913,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 border border-emerald-100 shadow-xs">
                 <Layout size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 6. ATS-Compliant Layouts
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Switch instantly between industry layouts: Harvard Classic, Sidebar Executive, Modern Chic, and Traditional. All layouts compile semantic HTML tags matching the strict guidelines of modern ATS algorithms.
               </p>
             </div>
@@ -926,10 +926,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-4 border border-rose-100 shadow-xs">
                 <Cloud size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 7. Secure Cloud Dashboard
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Never lose an edit. Free registered users get instant saving to a secure Postgres database, allowing you to manage, duplicate, rename, or restore multiple drafts across any device. Also includes shareable links!
               </p>
             </div>
@@ -939,10 +939,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4 border border-amber-100 shadow-xs">
                 <Printer size={20} />
               </div>
-              <h3 className="text-xs font-bold text-gray-900 mb-2">
+              <h3 className="text-sm font-bold text-gray-900 mb-2">
                 8. Precision PDF Native Prints
               </h3>
-              <p className="text-[11px] text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 No third-party rendering failures or formatting shifts. Our print system utilizes direct CSS print sheets, generating perfect vector PDFs right inside your browser window. Zero latency, 100% clean layouts.
               </p>
             </div>
@@ -1000,7 +1000,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </div>
             
             <div className="w-full md:w-2/3 bg-white border border-gray-200 rounded-2xl p-5 h-[230px] flex flex-col justify-between shadow-xs relative overflow-hidden">
-              <div className="flex-1 min-h-0 select-none overflow-hidden pr-1">
+              <div aria-hidden="true" className="flex-1 min-h-0 select-none overflow-hidden pr-1">
                 {TEMPLATES_INFO[activeTemplateIdx].id === "sidebar-executive" && (
                   <div className="grid grid-cols-3 gap-4 h-full font-sans text-left">
                     <div className="col-span-1 bg-blue-50/50 border-r border-blue-100 p-2 rounded-lg flex flex-col gap-2">
