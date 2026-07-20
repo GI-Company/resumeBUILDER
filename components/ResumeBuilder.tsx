@@ -3094,8 +3094,12 @@ Output:
             height: pageHeightPx,
             windowWidth: 1400,
             onclone: (clonedDoc: Document) => {
-              clonedDoc.querySelectorAll(".fixed, .sticky, [role='dialog'], [data-modal], .no-print").forEach((el) => {
+              clonedDoc.querySelectorAll(".fixed, .sticky, [role='dialog'], [data-modal], .no-print, [data-no-print], .margin-guide").forEach((el) => {
                 (el as HTMLElement).style.display = "none";
+              });
+              clonedDoc.querySelectorAll("[contenteditable]").forEach((el) => {
+                el.removeAttribute("contenteditable");
+                (el as HTMLElement).style.outline = "none";
               });
               const clonedContainer = clonedDoc.querySelector(".resume-canvas-container") as HTMLElement;
               if (clonedContainer) {
@@ -6591,6 +6595,9 @@ Output:
               overflow: "visible",
             }}
           >
+            <style dangerouslySetInnerHTML={{
+              __html: `@media print { @page { size: ${design.pageSize === "letter" ? "letter" : "A4"} portrait; margin: 0; } }`
+            }} />
             <div
               ref={resumeRef}
               className={cn(
