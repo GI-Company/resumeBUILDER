@@ -3025,7 +3025,6 @@ Output:
     try {
       setExportModalOpen(false);
       setIsExportingPdf(true);
-      calcPages();
       await new Promise((resolve) => setTimeout(resolve, 250));
 
       const html2canvas = (await import("html2canvas")).default;
@@ -3272,6 +3271,7 @@ Output:
     const marginPx = design.pageMarginTopBottom ?? design.pageMargin;
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
+    const scale = resumeRect.width / (design.pageSize === "letter" ? 816 : 794) || 1;
     const units = Array.from(
       resume.querySelectorAll(".block.print\\:hidden [data-page-break-id]"),
     ) as HTMLElement[];
@@ -3317,8 +3317,8 @@ Output:
       }
 
       const rect = el.getBoundingClientRect();
-      const elTop = rect.top - shiftMap[colKey];
-      const elBottom = rect.bottom - shiftMap[colKey];
+      const elTop = (rect.top - resumeRect.top - shiftMap[colKey]) / scale;
+      const elBottom = (rect.bottom - resumeRect.top - shiftMap[colKey]) / scale;
       prevElMap[colKey] = el;
 
       return {
@@ -3362,7 +3362,7 @@ Output:
       const breakItem = coupledWithHeading ? prevItem : item;
       const checkTop = coupledWithHeading ? prevItem.elTop : elTop;
       const maxSafeBottom = currentPIdxTracker[colKey] === 0
-        ? resumeRect.top + pageHeightPx - marginPx
+        ? pageHeightPx - marginPx
         : pageStartYMap[colKey]! + contentHeightPx;
         
       const isCurrentlyBroken = breakItem.id && currentIds.includes(breakItem.id);
@@ -3797,7 +3797,6 @@ Output:
 
               <button
                 onClick={() => {
-                  calcPages();
                   setExportModalOpen(false);
                   setTimeout(() => window.print(), 150);
                 }}
