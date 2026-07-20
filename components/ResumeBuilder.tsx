@@ -3048,37 +3048,85 @@ Output:
         format: [pageWidthPx, pageHeightPx],
       });
 
-      for (let i = 0; i < pageContainers.length; i++) {
-        const pageEl = pageContainers[i];
-        
-        const originalTransform = pageEl.style.transform;
-        const originalShadow = pageEl.style.boxShadow;
-        const originalBorder = pageEl.style.border;
-        
-        pageEl.style.transform = "none";
-        pageEl.style.boxShadow = "none";
-        pageEl.style.border = "none";
+      const resumeContainerEl = document.querySelector(".resume-canvas-container") as HTMLElement;
+      const zoomWrapperEl = resumeContainerEl?.parentElement as HTMLElement;
+      
+      const origResumeTransform = resumeContainerEl?.style.transform || "";
+      const origResumeWidth = resumeContainerEl?.style.width || "";
+      const origZoomWidth = zoomWrapperEl?.style.width || "";
+      const origZoomHeight = zoomWrapperEl?.style.height || "";
+      const origZoomMinWidth = zoomWrapperEl?.style.minWidth || "";
+      const origZoomMinHeight = zoomWrapperEl?.style.minHeight || "";
 
-        const canvas = await (html2canvas as any)(pageEl, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-          width: pageWidthPx,
-          height: pageHeightPx,
-          windowWidth: 1400,
-        });
+      if (resumeContainerEl) {
+        resumeContainerEl.style.transform = "none";
+        resumeContainerEl.style.width = `${pageWidthPx}px`;
+      }
+      if (zoomWrapperEl) {
+        zoomWrapperEl.style.width = `${pageWidthPx}px`;
+        zoomWrapperEl.style.height = "auto";
+        zoomWrapperEl.style.minWidth = `${pageWidthPx}px`;
+        zoomWrapperEl.style.minHeight = "auto";
+      }
 
-        pageEl.style.transform = originalTransform;
-        pageEl.style.boxShadow = originalShadow;
-        pageEl.style.border = originalBorder;
+      try {
+        for (let i = 0; i < pageContainers.length; i++) {
+          const pageEl = pageContainers[i];
+          
+          const originalTransform = pageEl.style.transform;
+          const originalShadow = pageEl.style.boxShadow;
+          const originalBorder = pageEl.style.border;
+          
+          pageEl.style.transform = "none";
+          pageEl.style.boxShadow = "none";
+          pageEl.style.border = "none";
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.98);
+          const canvas = await (html2canvas as any)(pageEl, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+            width: pageWidthPx,
+            height: pageHeightPx,
+            windowWidth: 1400,
+            onclone: (clonedDoc: Document) => {
+              const clonedContainer = clonedDoc.querySelector(".resume-canvas-container") as HTMLElement;
+              if (clonedContainer) {
+                clonedContainer.style.transform = "none";
+                clonedContainer.style.width = `${pageWidthPx}px`;
+              }
+              const clonedPage = clonedDoc.querySelectorAll(".physical-page-container")[i] as HTMLElement;
+              if (clonedPage) {
+                clonedPage.style.transform = "none";
+                clonedPage.style.boxShadow = "none";
+                clonedPage.style.border = "none";
+                clonedPage.style.margin = "0";
+              }
+            }
+          });
 
-        if (i > 0) {
-          pdf.addPage([pageWidthPx, pageHeightPx], "portrait");
+          pageEl.style.transform = originalTransform;
+          pageEl.style.boxShadow = originalShadow;
+          pageEl.style.border = originalBorder;
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+          if (i > 0) {
+            pdf.addPage([pageWidthPx, pageHeightPx], "portrait");
+          }
+          pdf.addImage(imgData, "JPEG", 0, 0, pageWidthPx, pageHeightPx);
         }
-        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthPx, pageHeightPx);
+      } finally {
+        if (resumeContainerEl) {
+          resumeContainerEl.style.transform = origResumeTransform;
+          resumeContainerEl.style.width = origResumeWidth;
+        }
+        if (zoomWrapperEl) {
+          zoomWrapperEl.style.width = origZoomWidth;
+          zoomWrapperEl.style.height = origZoomHeight;
+          zoomWrapperEl.style.minWidth = origZoomMinWidth;
+          zoomWrapperEl.style.minHeight = origZoomMinHeight;
+        }
       }
 
       const fileName = `${(name || "Resume").replace(/\s+/g, "_")}_Resume.pdf`;

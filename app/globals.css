@@ -28,12 +28,22 @@
     height: auto !important;
     position: static !important;
   }
-  .canvas-wrap > div {
+  .canvas-wrap,
+  .canvas-wrap > div,
+  .resume-canvas-container {
     height: auto !important;
     min-height: 0 !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
     transform: none !important;
     margin: 0 auto !important;
+    padding: 0 !important;
+    gap: 0 !important;
     position: static !important;
+    overflow: visible !important;
+    display: block !important;
   }
   .physical-page-container, .page { 
     box-shadow: none !important; 
