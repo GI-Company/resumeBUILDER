@@ -3026,6 +3026,9 @@ Output:
       setExportModalOpen(false);
       setIsExportingPdf(true);
 
+      // Await a short render tick so React fully unmounts the export modal and removes the dimmed backdrop from the DOM before querying the resume element
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
       const resumeElement = document.querySelector(".resume-canvas-container") as HTMLElement;
       if (!resumeElement) throw new Error("Resume element not found");
 
@@ -3749,7 +3752,7 @@ Output:
 
       {/* Export PDF Modal */}
       {exportModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4 no-print">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
