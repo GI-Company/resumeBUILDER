@@ -3295,6 +3295,7 @@ Output:
     const shiftMap: Record<string, number> = { default: 0 };
     const prevElMap: Record<string, HTMLElement | null> = { default: null };
     let gapIdx = 0;
+    const resumeTop = resumeRect.top / scale;
 
     const naturalCoords = units.map((el, i) => {
       const colKey = el.closest("[data-column]")?.getAttribute("data-column") || "default";
@@ -3307,14 +3308,14 @@ Output:
       const prevPageIdxAttr = prevEl?.closest(".physical-page-container")?.getAttribute("data-page-index") ?? null;
 
       if (prevEl && currentPageIdxAttr !== prevPageIdxAttr && currentPageIdxAttr !== null && prevPageIdxAttr !== null) {
-        const gap = el.getBoundingClientRect().top - prevEl.getBoundingClientRect().bottom;
+        const gap = (el.getBoundingClientRect().top - prevEl.getBoundingClientRect().bottom) / scale;
         shiftMap[colKey] += Math.max(0, gap);
       }
 
       const id = el.getAttribute("data-page-break-id");
       if (id && currentIds.includes(id)) {
         const gapEl = gaps[gapIdx];
-        const height = gapEl ? gapEl.getBoundingClientRect().height : (2 * marginPx + 32);
+        const height = gapEl ? gapEl.getBoundingClientRect().height / scale : (2 * marginPx + 32);
         if (currentPageIdxAttr === prevPageIdxAttr || !currentPageIdxAttr) {
           shiftMap[colKey] += height;
         }
@@ -3322,8 +3323,8 @@ Output:
       }
 
       const rect = el.getBoundingClientRect();
-      const elTop = (rect.top - resumeRect.top - shiftMap[colKey]) / scale;
-      const elBottom = (rect.bottom - resumeRect.top - shiftMap[colKey]) / scale;
+      const elTop = rect.top / scale - resumeTop - shiftMap[colKey];
+      const elBottom = rect.bottom / scale - resumeTop - shiftMap[colKey];
       prevElMap[colKey] = el;
 
       return {
@@ -3429,7 +3430,7 @@ Output:
       const prevItem = brIndex > 0 ? naturalCoords[brIndex - 1] : null;
 
       const prevActualBottomInPage = prevItem 
-        ? (prevItem.rect.bottom - resumeRect.top) 
+        ? (prevItem.rect.bottom / scale - resumeTop) 
         : marginPx;
 
       const sheetBottom = (idx + 1) * pageHeightPx + idx * 32;
