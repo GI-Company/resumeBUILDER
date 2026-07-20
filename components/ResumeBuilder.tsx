@@ -3025,132 +3025,91 @@ Output:
     try {
       setExportModalOpen(false);
       setIsExportingPdf(true);
-      await new Promise((resolve) => setTimeout(resolve, 250));
 
-      const html2canvas = (await import("html2canvas")).default;
-      const jsPDF = (await import("jspdf")).default || (await import("jspdf") as any).jsPDF;
+      const resumeElement = document.querySelector(".resume-canvas-container") as HTMLElement;
+      if (!resumeElement) throw new Error("Resume element not found");
 
-      const allPageContainers = Array.from(
-        document.querySelectorAll(".physical-page-container")
-      ) as HTMLElement[];
+      // Dynamically extract all existing styles from the document to ensure 1:1 rendering on the server
+      const styleNodes = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
+      const extractedStyles = styleNodes.map(node => node.outerHTML).join("\n");
 
-      const pageContainers = allPageContainers.filter((el) => {
-        return el.querySelectorAll("[data-page-break-id]").length > 0;
-      });
+      // Inject the exact inline CSS variables applied to the canvas wrapper
+      const pageStylesElement = document.querySelector(".canvas-wrap") as HTMLElement;
+      const inlineVars = pageStylesElement?.getAttribute("style") || "";
 
-      if (pageContainers.length === 0) {
-        toast.error("No pages found to export.");
-        return;
-      }
-
-      const pageWidthPx = design.pageSize === "letter" ? 816 : 794;
-      const pageHeightPx = design.pageSize === "letter" ? 1056 : 1123;
-
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: [pageWidthPx, pageHeightPx],
-      });
-
-      const resumeContainerEl = document.querySelector(".resume-canvas-container") as HTMLElement;
-      const zoomWrapperEl = resumeContainerEl?.parentElement as HTMLElement;
-      
-      const origResumeTransform = resumeContainerEl?.style.transform || "";
-      const origResumeWidth = resumeContainerEl?.style.width || "";
-      const origZoomWidth = zoomWrapperEl?.style.width || "";
-      const origZoomHeight = zoomWrapperEl?.style.height || "";
-      const origZoomMinWidth = zoomWrapperEl?.style.minWidth || "";
-      const origZoomMinHeight = zoomWrapperEl?.style.minHeight || "";
-
-      if (resumeContainerEl) {
-        resumeContainerEl.style.transform = "none";
-        resumeContainerEl.style.width = `${pageWidthPx}px`;
-      }
-      if (zoomWrapperEl) {
-        zoomWrapperEl.style.width = `${pageWidthPx}px`;
-        zoomWrapperEl.style.height = "auto";
-        zoomWrapperEl.style.minWidth = `${pageWidthPx}px`;
-        zoomWrapperEl.style.minHeight = "auto";
-      }
-
-      try {
-        for (let i = 0; i < pageContainers.length; i++) {
-          const pageEl = pageContainers[i];
-          
-          const originalTransform = pageEl.style.transform;
-          const originalShadow = pageEl.style.boxShadow;
-          const originalBorder = pageEl.style.border;
-          
-          pageEl.style.transform = "none";
-          pageEl.style.boxShadow = "none";
-          pageEl.style.border = "none";
-
-          const canvas = await (html2canvas as any)(pageEl, {
-            scale: 3,
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#ffffff",
-            width: pageWidthPx,
-            height: pageHeightPx,
-            windowWidth: 1400,
-            scrollX: 0,
-            scrollY: 0,
-            onclone: (clonedDoc: Document) => {
-              clonedDoc.querySelectorAll(".fixed, .sticky, [role='dialog'], [data-modal], .no-print, [data-no-print], .margin-guide").forEach((el) => {
-                (el as HTMLElement).style.display = "none";
-              });
-              clonedDoc.querySelectorAll("[contenteditable]").forEach((el) => {
-                el.removeAttribute("contenteditable");
-                (el as HTMLElement).style.outline = "none";
-              });
-              clonedDoc.querySelectorAll(".resume-canvas-container").forEach((el) => {
-                (el as HTMLElement).style.transform = "none";
-                (el as HTMLElement).style.width = `${pageWidthPx}px`;
-              });
-              const clonedPages = Array.from(clonedDoc.querySelectorAll(".physical-page-container")).filter((el) => {
-                return el.querySelectorAll("[data-page-break-id]").length > 0;
-              });
-              const clonedPage = clonedPages[i] as HTMLElement;
-              if (clonedPage) {
-                clonedPage.style.transform = "none";
-                clonedPage.style.boxShadow = "none";
-                clonedPage.style.border = "none";
-                clonedPage.style.margin = "0";
+      // Create the clean HTML payload
+      const cleanHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            ${extractedStyles}
+            <style>
+              :root {
+                ${inlineVars}
               }
-            }
-          });
+              @media print {
+                @page {
+                  size: ${design.pageSize === 'letter' ? 'letter' : 'A4'} portrait;
+                  margin: 0 !important;
+                }
+                body {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  background-color: transparent !important;
+                }
+                .no-print, .format-bar, .design-panel {
+                  display: none !important;
+                }
+                .resume-canvas-container {
+                  transform: none !important;
+                  width: 100% !important;
+                }
+                .physical-page-container {
+                  box-shadow: none !important;
+                  border: none !important;
+                  margin: 0 !important;
+                  page-break-after: always;
+                }
+              }
+            </style>
+          </head>
+          <body style="margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+            ${resumeElement.outerHTML}
+          </body>
+        </html>
+      `;
 
-          pageEl.style.transform = originalTransform;
-          pageEl.style.boxShadow = originalShadow;
-          pageEl.style.border = originalBorder;
+      const response = await fetch('/api/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          html: cleanHtml,
+          filename: `${(name || "Resume").replace(/[^a-z0-9]/gi, '_')}_Resume.pdf`,
+          pageSize: design.pageSize,
+        }),
+      });
 
-          const imgData = canvas.toDataURL("image/jpeg", 0.98);
-
-          if (i > 0) {
-            pdf.addPage([pageWidthPx, pageHeightPx], "portrait");
-          }
-          pdf.addImage(imgData, "JPEG", 0, 0, pageWidthPx, pageHeightPx);
-        }
-      } finally {
-        if (resumeContainerEl) {
-          resumeContainerEl.style.transform = origResumeTransform;
-          resumeContainerEl.style.width = origResumeWidth;
-        }
-        if (zoomWrapperEl) {
-          zoomWrapperEl.style.width = origZoomWidth;
-          zoomWrapperEl.style.height = origZoomHeight;
-          zoomWrapperEl.style.minWidth = origZoomMinWidth;
-          zoomWrapperEl.style.minHeight = origZoomMinHeight;
-        }
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF on the server');
       }
 
-      const fileName = `${(name || "Resume").replace(/\s+/g, "_")}_Resume.pdf`;
-      pdf.save(fileName);
-      toast.success("PDF exported successfully!");
-      setExportModalOpen(false);
-    } catch (err) {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(name || "Resume").replace(/[^a-z0-9]/gi, '_')}_Resume.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("High-quality PDF downloaded! 🎉");
+    } catch (err: any) {
       console.error("PDF export failed:", err);
-      toast.error("Failed to export PDF directly. Opening system print instead...");
+      toast.error("PDF export failed. Opening system print as fallback...");
+      // Fallback directly to the system print dialog if the server-side generation fails
       window.print();
     } finally {
       setIsExportingPdf(false);
@@ -3303,13 +3262,22 @@ Output:
         shiftMap[colKey] = 0;
         prevElMap[colKey] = null;
       }
-      const prevEl = prevElMap[colKey];
+      let prevEl = prevElMap[colKey];
+      if (!prevEl && colKey !== "default") {
+        prevEl = prevElMap["default"] || null;
+      }
       const currentPageIdxAttr = el.closest(".physical-page-container")?.getAttribute("data-page-index");
       const prevPageIdxAttr = prevEl?.closest(".physical-page-container")?.getAttribute("data-page-index") ?? null;
 
       if (prevEl && currentPageIdxAttr !== prevPageIdxAttr && currentPageIdxAttr !== null && prevPageIdxAttr !== null) {
         const gap = (el.getBoundingClientRect().top - prevEl.getBoundingClientRect().bottom) / scale;
         shiftMap[colKey] += Math.max(0, gap);
+      } else if (!prevEl && currentPageIdxAttr && currentPageIdxAttr !== "0") {
+        const containerEl = el.closest(".physical-page-container") as HTMLElement | null;
+        if (containerEl) {
+          const gapFromSheetTop = (el.getBoundingClientRect().top - containerEl.getBoundingClientRect().top) / scale;
+          shiftMap[colKey] += (el.getBoundingClientRect().top / scale - resumeTop) - gapFromSheetTop;
+        }
       }
 
       const id = el.getAttribute("data-page-break-id");
