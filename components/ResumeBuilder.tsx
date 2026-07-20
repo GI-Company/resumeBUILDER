@@ -3086,13 +3086,15 @@ Output:
           pageEl.style.border = "none";
 
           const canvas = await (html2canvas as any)(pageEl, {
-            scale: 2,
+            scale: 3,
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
             width: pageWidthPx,
             height: pageHeightPx,
             windowWidth: 1400,
+            scrollX: 0,
+            scrollY: 0,
             onclone: (clonedDoc: Document) => {
               clonedDoc.querySelectorAll(".fixed, .sticky, [role='dialog'], [data-modal], .no-print, [data-no-print], .margin-guide").forEach((el) => {
                 (el as HTMLElement).style.display = "none";
@@ -3101,11 +3103,10 @@ Output:
                 el.removeAttribute("contenteditable");
                 (el as HTMLElement).style.outline = "none";
               });
-              const clonedContainer = clonedDoc.querySelector(".resume-canvas-container") as HTMLElement;
-              if (clonedContainer) {
-                clonedContainer.style.transform = "none";
-                clonedContainer.style.width = `${pageWidthPx}px`;
-              }
+              clonedDoc.querySelectorAll(".resume-canvas-container").forEach((el) => {
+                (el as HTMLElement).style.transform = "none";
+                (el as HTMLElement).style.width = `${pageWidthPx}px`;
+              });
               const clonedPages = Array.from(clonedDoc.querySelectorAll(".physical-page-container")).filter((el) => {
                 return el.querySelectorAll("[data-page-break-id]").length > 0;
               });
