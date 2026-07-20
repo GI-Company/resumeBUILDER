@@ -58,12 +58,20 @@
     page-break-after: always !important;
     break-after: page !important;
   }
+  .physical-page-container:empty,
+  .physical-page-container:not(:has([data-page-break-id])) {
+    display: none !important;
+  }
   .physical-page-container:last-child,
   .physical-page-container:last-of-type,
   .page:last-child,
   .page:last-of-type {
     page-break-after: auto !important;
     break-after: auto !important;
+  }
+  [contenteditable] {
+    outline: none !important;
+    user-select: none;
   }
   .manual-break { page-break-before: always !important; break-before: page !important; }
   .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
