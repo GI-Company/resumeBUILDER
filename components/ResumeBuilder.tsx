@@ -3029,13 +3029,29 @@ Output:
       const resumeElement = document.querySelector(".resume-canvas-container") as HTMLElement;
       if (!resumeElement) throw new Error("Resume element not found");
 
-      // Dynamically extract all existing styles from the document to ensure 1:1 rendering on the server
-      const styleNodes = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
-      const extractedStyles = styleNodes.map(node => node.outerHTML).join("\n");
+      // Dynamically extract all CSS rules from active document stylesheets to ensure 1:1 rendering on the server
+      const allCssRules = Array.from(document.styleSheets)
+        .map((sheet) => {
+          try {
+            return Array.from(sheet.cssRules || [])
+              .map((rule) => rule.cssText)
+              .join("\n");
+          } catch (e) {
+            return "";
+          }
+        })
+        .join("\n");
+
+      // Also grab any existing inline <style> elements directly
+      const styleNodes = Array.from(document.querySelectorAll("style"));
+      const inlineStyleTags = styleNodes.map((node) => node.outerHTML).join("\n");
 
       // Inject the exact inline CSS variables applied to the canvas wrapper
       const pageStylesElement = document.querySelector(".canvas-wrap") as HTMLElement;
       const inlineVars = pageStylesElement?.getAttribute("style") || "";
+
+      // Ensure base URL points to current window origin so that all relative font faces and image paths resolve cleanly in headless Chrome
+      const baseOrigin = typeof window !== "undefined" ? window.location.origin : "";
 
       // Create the clean HTML payload
       const cleanHtml = `
@@ -3044,7 +3060,11 @@ Output:
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            ${extractedStyles}
+            ${baseOrigin ? `<base href="${baseOrigin}/">` : ""}
+            ${inlineStyleTags}
+            <style>
+              ${allCssRules}
+            </style>
             <style>
               :root {
                 ${inlineVars}
