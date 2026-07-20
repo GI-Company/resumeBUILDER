@@ -3026,48 +3026,26 @@ Output:
       setExportModalOpen(false);
       setIsExportingPdf(true);
 
-      // Await a short render tick so React fully unmounts the export modal and removes the dimmed backdrop from the DOM before querying the resume element
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
       const resumeElement = document.querySelector(".resume-canvas-container") as HTMLElement;
       if (!resumeElement) throw new Error("Resume element not found");
 
-      // Dynamically extract all CSS rules from active document stylesheets to ensure 1:1 rendering on the server
-      const allCssRules = Array.from(document.styleSheets)
-        .map((sheet) => {
-          try {
-            return Array.from(sheet.cssRules || [])
-              .map((rule) => rule.cssText)
-              .join("\n");
-          } catch (e) {
-            return "";
-          }
-        })
-        .join("\n");
-
-      // Also grab any existing inline <style> elements directly
-      const styleNodes = Array.from(document.querySelectorAll("style"));
-      const inlineStyleTags = styleNodes.map((node) => node.outerHTML).join("\n");
+      // Dynamically extract all existing styles from the document
+      const styleNodes = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
+      const extractedStyles = styleNodes.map(node => node.outerHTML).join("\n");
 
       // Inject the exact inline CSS variables applied to the canvas wrapper
       const pageStylesElement = document.querySelector(".canvas-wrap") as HTMLElement;
       const inlineVars = pageStylesElement?.getAttribute("style") || "";
 
-      // Ensure base URL points to current window origin so that all relative font faces and image paths resolve cleanly in headless Chrome
-      const baseOrigin = typeof window !== "undefined" ? window.location.origin : "";
-
-      // Create the clean HTML payload
+      // CRITICAL FIX: Adding <base href="..."> ensures Puppeteer fetches Tailwind CSS and web fonts properly
       const cleanHtml = `
         <!DOCTYPE html>
         <html lang="en">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            ${baseOrigin ? `<base href="${baseOrigin}/">` : ""}
-            ${inlineStyleTags}
-            <style>
-              ${allCssRules}
-            </style>
+            <base href="${window.location.origin}">
+            ${extractedStyles}
             <style>
               :root {
                 ${inlineVars}
@@ -3080,7 +3058,7 @@ Output:
                 body {
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
-                  background-color: transparent !important;
+                  background-color: white !important;
                 }
                 .no-print, .format-bar, .design-panel {
                   display: none !important;
@@ -3088,12 +3066,14 @@ Output:
                 .resume-canvas-container {
                   transform: none !important;
                   width: 100% !important;
+                  margin: 0 auto !important;
                 }
                 .physical-page-container {
                   box-shadow: none !important;
                   border: none !important;
                   margin: 0 !important;
                   page-break-after: always;
+                  page-break-inside: avoid;
                 }
               }
             </style>
