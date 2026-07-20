@@ -14,8 +14,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 const SITE_URL = 'https://resume-builder-pi-coral.vercel.app';
-const SITE_TITLE = 'Agent Rez AI — Free AI Resume Builder & ATS-Optimized Templates';
-const SITE_DESCRIPTION = 'Build professional, ATS-optimized resumes for free with Agent Rez AI. Features 6 premium templates, AI cover letter generator, STAR bullet optimizer, and cloud saving. No credit card required.';
+const SITE_TITLE = 'Agent Rez AI — Free Resume Builder & ATS Templates';
+const SITE_DESCRIPTION = 'Build professional, ATS-optimized resumes for free with Agent Rez AI. Features 6 premium templates, AI cover letter generator, and cloud saving.';
 
 export const metadata: Metadata = {
   // ── Core SEO ──────────────────────────────────────────────
