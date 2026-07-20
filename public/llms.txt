@@ -1,0 +1,31 @@
+# Agent Rez AI
+
+> AI-powered resume builder with ATS-optimized templates, conversational AI career agent, and professional PDF export.
+
+## What is Agent Rez AI?
+
+Agent Rez AI is a free, AI-powered resume builder that helps professionals create ATS-optimized resumes using conversational AI. Users can chat with an AI career agent to write summaries, rewrite bullet points using STAR methodology, generate tailored cover letters, and import existing resumes from LinkedIn, PDF, or Word documents.
+
+## Core Capabilities
+
+- **Conversational AI Agent**: Chat directly with Agent Rez to write, edit, and format resume sections in real-time
+- **Guided Career Interview**: A 5-step interactive interview that collects career details and compiles a professional resume automatically
+- **AI Cover Letter Generator**: Generates tailored cover letters matched to specific job descriptions using resume data
+- **LinkedIn, PDF & Word Import**: Parse existing resumes or LinkedIn profiles and auto-format into premium templates
+- **6 ATS-Compliant Templates**: Harvard Classic, Sidebar Executive, Modern Chic, Traditional Professional, Minimalist Slate, and Sidebar Fresh
+- **Micro-Spacing Engine**: Fine-tune line spacing, margins, section dividers, and theme colors
+- **Precision PDF Export**: Browser-native CSS print rendering for pixel-perfect PDF output
+- **Cloud Dashboard**: Secure saving, duplicate management, and shareable resume links
+
+## Pricing
+
+- **Guest Tier (Free)**: 5 daily AI requests, all 6 templates, unlimited PDF prints, local autosave
+- **Signed-Up Tier (Free)**: Unlimited AI usage, cloud saving, draft management, shareable links — no credit card required
+
+## Technology
+
+Built with Next.js 15, React 19, TypeScript, Supabase (PostgreSQL), and Groq AI APIs (Llama 3.3 70B, Llama 3.1 8B). Deployed on Vercel.
+
+## Contact
+
+Website: https://resume-builder-pi-coral.vercel.app

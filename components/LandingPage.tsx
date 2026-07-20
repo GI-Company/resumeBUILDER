@@ -169,6 +169,9 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-600 selection:text-white">
+      {/* Skip to main content link for keyboard/screen reader users */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">Skip to main content</a>
+
       {/* Main Header / Navigation */}
       <header className="border-b border-gray-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -181,14 +184,14 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </span>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-3">
+          <nav aria-label="Main navigation" className="flex items-center gap-1 sm:gap-3">
             <button 
               onClick={() => {
                 setActiveSandboxTab("bullets");
                 const el = document.getElementById("sandbox-section");
                 el?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors hidden md:block"
+              className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors hidden md:inline-block"
             >
               Try Sandbox
             </button>
@@ -197,7 +200,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                 const el = document.getElementById("features-section");
                 el?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors hidden md:block mr-4"
+              className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors hidden md:inline-block mr-4"
             >
               Explore Capabilities
             </button>
@@ -213,12 +216,13 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             >
               Create Free Account
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
+      <main id="main-content">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 md:py-24 bg-white border-b border-gray-200/70">
+      <section aria-labelledby="hero-heading" className="relative overflow-hidden py-16 md:py-24 bg-white border-b border-gray-200/70">
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 15 }} 
@@ -234,6 +238,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
+            id="hero-heading"
             className="text-4xl md:text-6xl font-extrabold tracking-tighter text-gray-900 leading-[1.1] mb-6"
           >
             The Ultimate AI-Agent <br />
@@ -248,7 +253,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            Meet <b>Agent Rez</b>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and unlimited AI usage available for signed-in users.
+            Meet <strong>Agent Rez</strong>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and unlimited AI usage available for signed-in users.
           </motion.p>
 
           {/* Founding Member Counter Banner */}
@@ -273,7 +278,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     </span>
                   </div>
                   {/* Progress bar */}
-                  <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden">
+                  <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={foundingCount} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${foundingCount} of ${FOUNDING_LIMIT} founding member spots claimed`}>
                     <motion.div
                       className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
                       initial={{ width: 0 }}
@@ -282,7 +287,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     />
                   </div>
                   <p className="text-[11px] text-amber-800 font-semibold leading-snug">
-                    <span className="font-black text-amber-900">{foundingCount}</span> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">Premium tier free for life</span> 🎁
+                    <strong className="font-black text-amber-900">{foundingCount}</strong> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">Premium tier free for life</span> <span aria-hidden="true">🎁</span>
                   </p>
                 </div>
               </div>
@@ -325,7 +330,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <Zap size={13} className="text-blue-500 animate-pulse shrink-0" />
               100% Free to Start
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:block" />
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:block" aria-hidden="true" />
             <span className="text-gray-500">Free daily limits; sign up for unlimited access.</span>
           </motion.div>
 
@@ -356,8 +361,8 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
         </div>
 
         {/* Ambient decorative blobs */}
-        <div className="absolute top-1/4 -left-36 w-72 h-72 bg-blue-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
-        <div className="absolute bottom-1/4 -right-36 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
+        <div className="absolute top-1/4 -left-36 w-72 h-72 bg-blue-100 rounded-full blur-3xl opacity-40 pointer-events-none" aria-hidden="true" />
+        <div className="absolute bottom-1/4 -right-36 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-40 pointer-events-none" aria-hidden="true" />
       </section>
 
       {/* NEW SECTION: Pristine PDF Export & ATS Proof Showcase (Aesthetic and Functional trust proof) */}
@@ -449,7 +454,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                 </div>
                 <p className="text-[11px] text-blue-900/80 leading-relaxed">
                   "The Harvard template bypassed the recruiter filters instantly and scaled perfectly onto one page. Got response back from top-tier tech firms within 48 hours." 
-                  <br /><b className="text-blue-950 font-bold block mt-1">— Alexander C., Senior Architect</b>
+                  <br /><strong className="text-blue-950 font-bold block mt-1">— Alexander C., Senior Architect</strong>
                 </p>
               </div>
             </div>
@@ -479,7 +484,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                         </p>
                       </div>
                       
-                      <div className="h-px bg-slate-900" />
+                      <div className="h-px bg-slate-900" aria-hidden="true" />
 
                       {/* Professional Summary */}
                       <div className="space-y-1">
@@ -493,7 +498,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       <div className="space-y-3">
                         <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
                           <span>Professional Experience</span>
-                          <span className="h-px bg-gray-200 flex-1 ml-3" />
+                          <span className="h-px bg-gray-200 flex-1 ml-3" aria-hidden="true" />
                         </h5>
                         
                         <div className="space-y-2">
@@ -503,7 +508,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                               <span className="text-gray-500 font-normal">2023 &ndash; Present</span>
                             </div>
                             <ul className="list-disc pl-4 text-[9.5px] text-gray-600 space-y-1 mt-1">
-                              <li>Led front-end performance rewrite, achieving a <b className="text-blue-600 font-semibold">34% reduction in checkout latency</b> and retaining $4.2M in annual cart recovery.</li>
+                              <li>Led front-end performance rewrite, achieving a <strong className="text-blue-600 font-semibold">34% reduction in checkout latency</strong> and retaining $4.2M in annual cart recovery.</li>
                               <li>Architected high-performance relative canvas layout engine used daily across 6 core product squads.</li>
                             </ul>
                           </div>
@@ -514,7 +519,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                               <span className="text-gray-500 font-normal">2021 &ndash; 2023</span>
                             </div>
                             <ul className="list-disc pl-4 text-[9.5px] text-gray-600 space-y-1 mt-1">
-                              <li>Authored reusable design library components, slashing engineering integration cycles by <b className="text-indigo-600 font-semibold">45 days</b>.</li>
+                              <li>Authored reusable design library components, slashing engineering integration cycles by <strong className="text-indigo-600 font-semibold">45 days</strong>.</li>
                               <li>Overhauled data tables with custom virtualization, rendering 50,000 active nodes without UI lag.</li>
                             </ul>
                           </div>
@@ -525,10 +530,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       <div className="space-y-1">
                         <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
                           <span>Education & Certifications</span>
-                          <span className="h-px bg-gray-200 flex-1 ml-3" />
+                          <span className="h-px bg-gray-200 flex-1 ml-3" aria-hidden="true" />
                         </h5>
                         <div className="flex justify-between text-[10px] text-slate-900">
-                          <span><b>B.S. in Computer Science</b> &mdash; Stanford University</span>
+                          <span><strong>B.S. in Computer Science</strong> &mdash; Stanford University</span>
                           <span className="text-gray-500">GPA 3.85</span>
                         </div>
                       </div>
@@ -579,7 +584,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                               <p className="text-[9.5px] font-bold text-slate-900 leading-none">Lead Product Manager &mdash; Airbnb</p>
                               <p className="text-[8.5px] text-gray-500 mt-0.5">2022 &ndash; Present | Seattle, WA</p>
                               <ul className="list-disc pl-3 text-[9px] text-gray-600 space-y-1 mt-1">
-                                <li>Optimized guest booking flow widgets, boosting overall <b className="text-blue-600 font-semibold">mobile checkout conversion by 4.2%</b>.</li>
+                                <li>Optimized guest booking flow widgets, boosting overall <strong className="text-blue-600 font-semibold">mobile checkout conversion by 4.2%</strong>.</li>
                                 <li>Orchestrated cross-border currency payment platform API, processing $18M in ARR.</li>
                               </ul>
                             </div>
@@ -641,7 +646,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                               <span className="text-gray-500 font-normal">2023 &ndash; Present</span>
                             </div>
                             <p className="text-[9px] text-gray-600 mt-1">
-                              Managed $8.5M paid acquisition budget; halved organic customer acquisition costs (CAC) while successfully <b className="text-amber-600 font-semibold">doubling incoming B2B product demo volume</b>.
+                              Managed $8.5M paid acquisition budget; halved organic customer acquisition costs (CAC) while successfully <strong className="text-amber-600 font-semibold">doubling incoming B2B product demo volume</strong>.
                             </p>
                           </div>
 
@@ -700,10 +705,14 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-3">
                   Select AI Sandbox Tool
                 </span>
-                <div className="space-y-2">
+                <div role="tablist" aria-label="AI Sandbox Tools" className="space-y-2">
                   {(Object.keys(SANDBOX_PRESETS) as Array<keyof typeof SANDBOX_PRESETS>).map((tab) => (
                     <button
                       key={tab}
+                      role="tab"
+                      id={`sandbox-tab-${tab}`}
+                      aria-selected={activeSandboxTab === tab}
+                      aria-controls="sandbox-tabpanel"
                       onClick={() => setActiveSandboxTab(tab)}
                       className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
                         activeSandboxTab === tab
@@ -749,13 +758,14 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </div>
 
             {/* Right Sandbox Playground */}
-            <div className="p-6 md:col-span-7 flex flex-col justify-between">
+            <div id="sandbox-tabpanel" role="tabpanel" aria-labelledby={`sandbox-tab-${activeSandboxTab}`} className="p-6 md:col-span-7 flex flex-col justify-between">
               <div className="space-y-4 flex-1 flex flex-col">
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                  <label htmlFor="sandbox-input" className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">
                     {SANDBOX_PRESETS[activeSandboxTab].label}
                   </label>
                   <textarea
+                    id="sandbox-input"
                     value={sandboxInput}
                     onChange={(e) => setSandboxInput(e.target.value)}
                     placeholder={SANDBOX_PRESETS[activeSandboxTab].placeholder}
@@ -781,10 +791,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       </button>
                     )}
                   </div>
-                  <div className="flex-1 border border-gray-200 rounded-xl bg-gray-50 p-3 text-xs leading-relaxed text-gray-800 font-sans select-text overflow-y-auto whitespace-pre-wrap max-h-[180px]">
+                  <div aria-live="polite" className="flex-1 border border-gray-200 rounded-xl bg-gray-50 p-3 text-xs leading-relaxed text-gray-800 font-sans select-text overflow-y-auto whitespace-pre-wrap max-h-[180px]">
                     {sandboxLoading ? (
                       <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 py-6">
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2" />
+                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2" role="status" aria-label="Loading AI response" />
                         <span className="text-[11px]">Compiling professional phrasing...</span>
                       </div>
                     ) : sandboxOutput ? (
@@ -842,7 +852,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                 1. Conversational Agent
               </h3>
               <p className="text-[11px] text-gray-600 leading-relaxed">
-                Directly chat with <b>Agent Rez</b> in the sidebar. Command him to write summaries, insert certifications, rewrite jobs using action verbs, or completely format sections. Witness edits populate the resume canvas in real-time.
+                Directly chat with <strong>Agent Rez</strong> in the sidebar. Command him to write summaries, insert certifications, rewrite jobs using action verbs, or completely format sections. Witness edits populate the resume canvas in real-time.
               </p>
             </div>
 
@@ -1007,11 +1017,11 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     <div className="col-span-2 flex flex-col justify-center">
                       <h5 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h5>
                       <span className="text-[10px] text-indigo-600 font-extrabold mt-0.5">Senior Product Manager</span>
-                      <div className="h-px bg-gray-200 my-1.5" />
+                      <div className="h-px bg-gray-200 my-1.5" aria-hidden="true" />
                       <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider block">Key Professional Accomplishments</span>
                       <ul className="text-[8.5px] text-gray-600 space-y-1 mt-1 leading-relaxed list-disc pl-3">
                         <li>Led 12 cross-functional teams to launch high-growth mobile applications.</li>
-                        <li>Scaled platform transaction volume by <b className="text-gray-900 font-semibold">145% YoY</b> using real-time telemetry.</li>
+                        <li>Scaled platform transaction volume by <strong className="text-gray-900 font-semibold">145% YoY</strong> using real-time telemetry.</li>
                       </ul>
                     </div>
                   </div>
@@ -1142,19 +1152,19 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </div>
                   <span className="text-xl font-black text-gray-900">FREE</span>
                 </div>
-                <div className="h-px bg-gray-200 my-4" />
+                <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
                 <ul className="space-y-3.5 text-xs text-gray-700">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><b>5 daily requests</b> for Sidebar AI Agent & quick tools</span>
+                    <span><strong>5 daily requests</strong> for Sidebar AI Agent & quick tools</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span>Access to all <b>6 premium templates</b></span>
+                    <span>Access to all <strong>6 premium templates</strong></span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><b>Unlimited PDF prints</b> with no watermarks</span>
+                    <span><strong>Unlimited PDF prints</strong> with no watermarks</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
@@ -1190,26 +1200,26 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     <span className="block text-[9px] text-gray-400 font-bold uppercase">No Card Required</span>
                   </div>
                 </div>
-                <div className="h-px bg-gray-200 my-4" />
+                <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
                 <ul className="space-y-3.5 text-xs text-gray-700">
                   <li className="flex items-start gap-2.5 font-semibold text-blue-900">
                     <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
                     <div>
-                      <span><b>AI Included ⚡</b></span>
+                      <span><strong>AI Included ⚡</strong></span>
                       <p className="text-[11px] text-gray-500 font-normal mt-0.5">Request capacity adjusts with demand to keep the service fast for everyone.</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span>Access to all <b>6 premium templates</b></span>
+                    <span>Access to all <strong>6 premium templates</strong></span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><b>Unlimited PDF prints</b> with no watermarks</span>
+                    <span><strong>Unlimited PDF prints</strong> with no watermarks</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><b>Secure Cloud Saving</b> for unlimited drafts</span>
+                    <span><strong>Secure Cloud Saving</strong> for unlimited drafts</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
@@ -1242,12 +1252,13 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
           <p className="text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
             High-speed, ATS-optimized executive resumes designed by professionals, built by artificial intelligence. Verified compliant with current industry guidelines.
           </p>
-          <div className="h-px bg-gray-800 max-w-sm mx-auto my-4" />
+          <div className="h-px bg-gray-800 max-w-sm mx-auto my-4" aria-hidden="true" />
           <p className="text-[10px] text-gray-600">
             &copy; {new Date().getFullYear()} Agent Rez AI. All rights reserved. Built using high-performance Groq AI APIs and secure Supabase cloud storage.
           </p>
         </div>
       </footer>
+      </main>
 
       {/* Authentication Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
