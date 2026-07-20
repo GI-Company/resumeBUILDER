@@ -3028,7 +3028,7 @@ Output:
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
+      const jsPDF = (await import("jspdf")).default || (await import("jspdf") as any).jsPDF;
 
       const pageContainers = Array.from(
         document.querySelectorAll(".physical-page-container")
@@ -3348,16 +3348,19 @@ Output:
         prevItem.el.classList.contains("section-heading") &&
         prevItem.el.closest(".section") === section;
 
+      const breakItem = coupledWithHeading ? prevItem : item;
       const checkTop = coupledWithHeading ? prevItem.elTop : elTop;
       const maxSafeBottom = currentPIdxTracker[colKey] === 0
         ? resumeRect.top + pageHeightPx - marginPx
         : pageStartYMap[colKey]! + contentHeightPx;
-      const wouldOverflow = elBottom > maxSafeBottom;
+        
+      const isCurrentlyBroken = breakItem.id && currentIds.includes(breakItem.id);
+      const hysteresisBuffer = isCurrentlyBroken ? 85 : 0;
+      const wouldOverflow = elBottom > (maxSafeBottom - hysteresisBuffer);
 
       if ((manualBreakHere || wouldOverflow) && checkTop !== pageStartYMap[colKey]) {
         pageStartYMap[colKey] = checkTop;
         currentPIdxTracker[colKey] = (currentPIdxTracker[colKey] || 0) + 1;
-        const breakItem = coupledWithHeading ? prevItem : item;
         
         if (breakStarts.length === 0 || breakStarts[breakStarts.length - 1].el !== breakItem.el) {
           breakStarts.push({
@@ -3427,7 +3430,7 @@ Output:
     setPageBreaks((prev) => {
       if (
         prev.length === newBreaks.length &&
-        prev.every((v, i) => v === newBreaks[i])
+        prev.every((v, i) => Math.abs(v - newBreaks[i]) <= 2)
       ) {
         return prev;
       }
@@ -3452,8 +3455,9 @@ Output:
       }
       const isDifferent = keys.some(
         (k) =>
-          prev[k]?.total !== newGapHeights[k]?.total ||
-          prev[k]?.top !== newGapHeights[k]?.top
+          prev[k] === undefined ||
+          Math.abs((prev[k]?.total ?? 0) - (newGapHeights[k]?.total ?? 0)) > 2 ||
+          Math.abs((prev[k]?.top ?? 0) - (newGapHeights[k]?.top ?? 0)) > 2
       );
       if (isDifferent) {
         return newGapHeights;
