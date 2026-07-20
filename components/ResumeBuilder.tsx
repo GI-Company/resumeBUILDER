@@ -3023,16 +3023,21 @@ Output:
 
   const handleDownloadPdf = async () => {
     try {
+      setExportModalOpen(false);
       setIsExportingPdf(true);
       calcPages();
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 250));
 
       const html2canvas = (await import("html2canvas")).default;
       const jsPDF = (await import("jspdf")).default || (await import("jspdf") as any).jsPDF;
 
-      const pageContainers = Array.from(
+      const allPageContainers = Array.from(
         document.querySelectorAll(".physical-page-container")
       ) as HTMLElement[];
+
+      const pageContainers = allPageContainers.filter((el) => {
+        return el.querySelectorAll("[data-page-break-id]").length > 0;
+      });
 
       if (pageContainers.length === 0) {
         toast.error("No pages found to export.");
@@ -3090,12 +3095,18 @@ Output:
             height: pageHeightPx,
             windowWidth: 1400,
             onclone: (clonedDoc: Document) => {
+              clonedDoc.querySelectorAll(".fixed, .sticky, [role='dialog'], [data-modal], .no-print").forEach((el) => {
+                (el as HTMLElement).style.display = "none";
+              });
               const clonedContainer = clonedDoc.querySelector(".resume-canvas-container") as HTMLElement;
               if (clonedContainer) {
                 clonedContainer.style.transform = "none";
                 clonedContainer.style.width = `${pageWidthPx}px`;
               }
-              const clonedPage = clonedDoc.querySelectorAll(".physical-page-container")[i] as HTMLElement;
+              const clonedPages = Array.from(clonedDoc.querySelectorAll(".physical-page-container")).filter((el) => {
+                return el.querySelectorAll("[data-page-break-id]").length > 0;
+              });
+              const clonedPage = clonedPages[i] as HTMLElement;
               if (clonedPage) {
                 clonedPage.style.transform = "none";
                 clonedPage.style.boxShadow = "none";
