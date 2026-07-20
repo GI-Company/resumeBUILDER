@@ -1602,7 +1602,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      return !params.has("id") && !initialTemplateId;
+      const hasLocalDraft = !!localStorage.getItem("resume_autosave_content");
+      
+      // If they have an ID, an initial template, OR a local draft, skip the onboarding wizard
+      return !params.has("id") && !initialTemplateId && !hasLocalDraft;
     }
     return true;
   });

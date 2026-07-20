@@ -20,9 +20,10 @@ export default function Page() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       
-      // Automatically show the builder on page load if an ID query parameter exists in the URL
+      // Automatically show the builder on page load if an ID query parameter OR a local draft exists
       const params = new URLSearchParams(window.location.search);
-      if (params.has('id')) {
+      const hasLocalDraft = typeof window !== 'undefined' && !!localStorage.getItem('resume_autosave_content');
+      if (params.has('id') || hasLocalDraft) {
         setShowBuilder(true);
       }
       
