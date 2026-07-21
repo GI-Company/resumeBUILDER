@@ -1601,6 +1601,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [sidebarWidth, setSidebarWidth] = useState<number>(320);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/editor')) {
+        return false;
+      }
       const params = new URLSearchParams(window.location.search);
       const hasLocalDraft = !!localStorage.getItem("resume_autosave_content");
       
