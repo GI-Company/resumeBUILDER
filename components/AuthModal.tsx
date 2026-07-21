@@ -223,7 +223,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition-colors p-1.5 rounded-lg hover:bg-gray-100">
+          <button onClick={onClose} aria-label="Close authentication modal" className="text-gray-400 hover:text-gray-900 transition-colors p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
             <X size={20} />
           </button>
         </div>

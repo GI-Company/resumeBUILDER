@@ -560,7 +560,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                         </div>
 
                         <div className="space-y-2">
-                          <h5 className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Expertise</h5>
+                          <h4 className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Expertise</h4>
                           <div className="flex flex-wrap gap-1">
                             <span className="text-[8px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Agile Scrums</span>
                             <span className="text-[8px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Roadmaps</span>
@@ -570,7 +570,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                         </div>
 
                         <div className="space-y-1">
-                          <h5 className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Contact</h5>
+                          <h4 className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Contact</h4>
                           <p className="text-[8px] text-gray-500 truncate">s.jenkins@example.com</p>
                           <p className="text-[8px] text-gray-500">Seattle, WA</p>
                         </div>
@@ -579,14 +579,14 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       {/* Right Main Canvas */}
                       <div className="col-span-8 pl-1 space-y-4">
                         <div className="space-y-1">
-                          <h5 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">Executive Summary</h5>
+                          <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">Executive Summary</h4>
                           <p className="text-[9.5px] text-gray-600 leading-relaxed">
                             Certified PMP product leader with 7+ years directing high-concurrency cloud software features. Highly skilled at engineering alignments, metric-driven roadmaps, and stakeholder consensus.
                           </p>
                         </div>
 
                         <div className="space-y-3">
-                          <h5 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">Career History</h5>
+                          <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">Career History</h4>
                           
                           <div className="space-y-2">
                             <div>
@@ -615,7 +615,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     <div className="space-y-4">
                       {/* Name & Title Block */}
                       <div className="flex justify-between items-baseline border-b border-gray-200 pb-2">
-                        <h4 className="text-base font-black text-slate-950 uppercase tracking-tight">Elena Rostova</h4>
+                        <h3 className="text-base font-black text-slate-950 uppercase tracking-tight">Elena Rostova</h3>
                         <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Director of Marketing</span>
                       </div>
 
@@ -624,7 +624,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       </p>
 
                       <div className="space-y-3.5">
-                        <h5 className="text-[10px] font-bold text-slate-950 uppercase tracking-wider">Key Expertise Fields</h5>
+                        <h4 className="text-[10px] font-bold text-slate-950 uppercase tracking-wider">Key Expertise Fields</h4>
                         <div className="grid grid-cols-2 gap-2 text-[9.5px] text-gray-700 font-medium">
                           <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
@@ -646,7 +646,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       </div>
 
                       <div className="space-y-3">
-                        <h5 className="text-[10px] font-bold text-slate-950 uppercase tracking-wider">Selected Highlights</h5>
+                        <h4 className="text-[10px] font-bold text-slate-950 uppercase tracking-wider">Selected Highlights</h4>
                         
                         <div className="space-y-2">
                           <div>
@@ -1024,7 +1024,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       </div>
                     </div>
                     <div className="col-span-2 flex flex-col justify-center">
-                      <h5 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h5>
+                      <h4 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h4>
                       <span className="text-[10px] text-indigo-600 font-extrabold mt-0.5">Senior Product Manager</span>
                       <div className="h-px bg-gray-200 my-1.5" aria-hidden="true" />
                       <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider block">Key Professional Accomplishments</span>
@@ -1039,7 +1039,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                 {TEMPLATES_INFO[activeTemplateIdx].id === "modern" && (
                   <div className="border-t-4 border-blue-600 pt-2 text-left font-sans flex flex-col h-full justify-center">
                     <div className="flex justify-between items-baseline">
-                      <h5 className="font-black text-sm text-gray-950 uppercase tracking-tight">Alex Morgan</h5>
+                      <h4 className="font-black text-sm text-gray-950 uppercase tracking-tight">Alex Morgan</h4>
                       <span className="text-[8px] text-gray-400 font-semibold">San Francisco, CA</span>
                     </div>
                     <span className="text-[10px] text-blue-600 font-black mt-0.5 uppercase tracking-wide">Lead Cloud Architect</span>
@@ -1053,7 +1053,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
 
                 {TEMPLATES_INFO[activeTemplateIdx].id === "classic" && (
                   <div className="text-center font-serif flex flex-col h-full justify-center">
-                    <h5 className="font-bold text-sm text-gray-900 tracking-wide uppercase">Alex Morgan</h5>
+                    <h4 className="font-bold text-sm text-gray-900 tracking-wide uppercase">Alex Morgan</h4>
                     <span className="text-[9px] text-gray-600 italic mt-0.5">Investment Banking Analyst • Morgan Stanley</span>
                     <div className="border-y border-gray-200 py-1 my-1.5 flex justify-center gap-3 text-[7.5px] text-gray-500 font-sans">
                       <span>New York, NY</span>
@@ -1071,7 +1071,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
 
                 {TEMPLATES_INFO[activeTemplateIdx].id === "traditional" && (
                   <div className="text-left font-sans flex flex-col h-full justify-center">
-                    <h5 className="font-extrabold text-sm text-slate-800">Alex Morgan</h5>
+                    <h4 className="font-extrabold text-sm text-slate-800">Alex Morgan</h4>
                     <span className="text-[10px] text-slate-600 font-semibold">Operations Director</span>
                     <div className="h-0.5 bg-slate-300 my-1.5" />
                     <div className="grid grid-cols-4 gap-2 pt-0.5">
@@ -1091,7 +1091,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
 
                 {TEMPLATES_INFO[activeTemplateIdx].id === "minimal" && (
                   <div className="text-left font-sans flex flex-col h-full justify-center">
-                    <h5 className="font-medium text-sm text-neutral-900 tracking-tight">Alex Morgan</h5>
+                    <h4 className="font-medium text-sm text-neutral-900 tracking-tight">Alex Morgan</h4>
                     <span className="text-[9px] text-neutral-500 mt-0.5">Freelance Developer & UI Designer</span>
                     <div className="my-1.5 h-px bg-neutral-200" />
                     <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-wider block mb-0.5">Core Contributions</span>
@@ -1116,7 +1116,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       </div>
                     </div>
                     <div className="col-span-2 flex flex-col justify-center">
-                      <h5 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h5>
+                      <h4 className="font-black text-sm text-gray-900 tracking-tight leading-none">Alex Morgan</h4>
                       <span className="text-[9.5px] text-emerald-600 font-bold mt-0.5">Developer Advocate</span>
                       <div className="h-px bg-gray-200 my-1.5" />
                       <p className="text-[8.5px] text-gray-600 leading-normal font-normal">
@@ -1160,7 +1160,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="text-base font-bold text-gray-900">Guest Tier</h4>
+                    <h3 className="text-base font-bold text-gray-900">Guest Tier</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Perfect for quick one-off edits</p>
                   </div>
                   <span className="text-xl font-black text-gray-900">FREE</span>
@@ -1209,7 +1209,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <div>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="text-base font-bold text-gray-900">Signed-Up Tier</h4>
+                    <h3 className="text-base font-bold text-gray-900">Signed-Up Tier</h3>
                     <p className="text-xs text-blue-600 font-semibold mt-0.5">Complete digital resume suite</p>
                   </div>
                   <div className="text-right">
@@ -1255,24 +1255,53 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
-        <div className="max-w-5xl mx-auto px-6 text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-1.5 rounded-lg text-white">
-              <Bot size={16} />
-            </div>
-            <span className="text-base font-bold tracking-tight text-white">
-              Agent Rez AI
-            </span>
+      {/* About & Trust Section (E-E-A-T Authority) */}
+      <section id="about" aria-labelledby="about-heading" className="py-14 bg-gray-50 border-t border-gray-200 text-center">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 id="about-heading" className="text-xl font-bold text-gray-900 mb-3">About Agent Rez AI</h2>
+          <p className="text-xs text-gray-600 leading-relaxed max-w-2xl mx-auto mb-6">
+            Agent Rez AI was engineered by executive recruiters and senior cloud architects to eliminate the opaque paywalls and formatting errors of traditional online resume tools. We combine mathematical ATS-layout precision with state-of-the-art Groq AI processing to help professionals present verified, highly competitive career achievements.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-gray-700">
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> ATS Parsing Verified</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> WCAG AA Accessible</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> Enterprise Cloud Security</span>
           </div>
-          <p className="text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
-            High-speed, ATS-optimized executive resumes designed by professionals, built by artificial intelligence. Verified compliant with current industry guidelines.
-          </p>
-          <div className="h-px bg-gray-800 max-w-sm mx-auto my-4" aria-hidden="true" />
-          <p className="text-[10px] text-gray-600">
-            &copy; {new Date().getFullYear()} Agent Rez AI. All rights reserved. Built using high-performance Groq AI APIs and secure Supabase cloud storage.
-          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer role="contentinfo" className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
+        <div className="max-w-5xl mx-auto px-6 space-y-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-1.5 rounded-lg text-white">
+                <Bot size={16} />
+              </div>
+              <span className="text-base font-bold tracking-tight text-white">
+                Agent Rez AI
+              </span>
+            </div>
+            
+            {/* E-E-A-T Navigation Links */}
+            <nav aria-label="Footer navigation" className="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-400 font-medium">
+              <Link href="#about" className="hover:text-white transition-colors">About</Link>
+              <Link href="mailto:support@agentrez.ai" id="contact" className="hover:text-white transition-colors">Contact</Link>
+              <Link href="/privacy" id="privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              <Link href="/terms" id="terms" className="hover:text-white transition-colors">Terms of Service</Link>
+              <Link href="/llms.txt" className="hover:text-white transition-colors">llms.txt</Link>
+              <Link href="/sitemap.xml" className="hover:text-white transition-colors">Sitemap</Link>
+            </nav>
+          </div>
+
+          <div className="text-center space-y-3">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-lg mx-auto">
+              High-speed, ATS-optimized executive resumes designed by professionals, built by artificial intelligence. Verified compliant with industry recruiting standards.
+            </p>
+            <p className="text-[10px] text-gray-600">
+              &copy; {new Date().getFullYear()} Agent Rez AI. All rights reserved. Built using high-performance Groq AI APIs and secure Supabase cloud storage.
+            </p>
+          </div>
         </div>
       </footer>
       </main>

@@ -79,6 +79,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon.svg',
   },
+  other: {
+    'llms-txt': '/llms.txt',
+  },
 };
 
 // ── Organization Schema.org JSON-LD ───────────────────────────
@@ -101,12 +104,10 @@ const jsonLd = {
     url: SITE_URL,
   },
   featureList: [
-    'AI-powered resume writing',
-    'ATS-optimized resume templates',
-    'AI cover letter generator',
-    'LinkedIn and PDF resume import',
-    'Conversational AI career agent',
-    'Professional PDF export',
+    'AI-powered bullet optimization',
+    '6 ATS-compliant layouts',
+    'Real-time live preview',
+    'PDF export with selectable font size and margins',
     'Cloud-based resume saving',
   ],
 };
@@ -115,6 +116,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
+        <link rel="llms-txt" href="/llms.txt" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
