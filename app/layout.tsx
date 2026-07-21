@@ -57,6 +57,14 @@ export const metadata: Metadata = {
     siteName: 'Agent Rez AI',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: '/icon.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Agent Rez AI — Free AI Resume Builder & ATS Templates',
+      },
+    ],
   },
 
   // ── X (Twitter) Cards ─────────────────────────────────────
@@ -64,6 +72,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+    images: ['/icon.svg'],
   },
 
   // ── Icons / Favicon ───────────────────────────────────────

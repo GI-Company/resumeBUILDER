@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, 
@@ -185,8 +186,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
           </div>
 
           <nav aria-label="Main navigation" className="flex items-center gap-1 sm:gap-3">
-            <button 
-              onClick={() => {
+            <Link 
+              href="#sandbox-section"
+              onClick={(e) => {
+                e.preventDefault();
                 setActiveSandboxTab("bullets");
                 const el = document.getElementById("sandbox-section");
                 el?.scrollIntoView({ behavior: "smooth" });
@@ -194,16 +197,18 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors hidden md:inline-block"
             >
               Try Sandbox
-            </button>
-            <button 
-              onClick={() => {
+            </Link>
+            <Link 
+              href="#features-section"
+              onClick={(e) => {
+                e.preventDefault();
                 const el = document.getElementById("features-section");
                 el?.scrollIntoView({ behavior: "smooth" });
               }}
               className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors hidden md:inline-block mr-4"
             >
               Explore Capabilities
-            </button>
+            </Link>
             <button 
               onClick={() => setAuthModalOpen(true)}
               className="text-xs font-bold text-gray-700 hover:text-gray-900 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
@@ -301,14 +306,18 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <button 
-              onClick={() => onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id)} 
+            <Link 
+              href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id);
+              }} 
               className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
               <Play size={16} />
               <span>Launch Builder as Guest</span>
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
 
             <button 
               onClick={() => setAuthModalOpen(true)} 
@@ -1117,13 +1126,17 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id)}
+              <Link
+                href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id);
+                }}
                 className="w-full sm:w-auto self-end bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
                 <span>Edit template now</span>
                 <ChevronRight size={13} />
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -1176,12 +1189,16 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </li>
                 </ul>
               </div>
-              <button 
-                onClick={() => onOpenResume("classic")}
-                className="w-full bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer shadow-xs"
+              <Link 
+                href="/editor?templateId=classic"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onOpenResume("classic");
+                }}
+                className="w-full bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer shadow-xs flex items-center justify-center"
               >
                 Start Editing Instantly (No signup)
-              </button>
+              </Link>
             </div>
 
             {/* Signed Up Plan */}

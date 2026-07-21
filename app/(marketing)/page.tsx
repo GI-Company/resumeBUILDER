@@ -7,14 +7,11 @@ import LandingPage from '@/components/LandingPage';
 
 export default function MarketingPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         router.replace('/dashboard');
-      } else {
-        setLoading(false);
       }
     });
 
@@ -34,10 +31,6 @@ export default function MarketingPage() {
       router.push('/editor?id=new');
     }
   };
-
-  if (loading) {
-    return <div className="h-screen w-full flex bg-gray-50 items-center justify-center text-gray-900 font-sans">Loading...</div>;
-  }
 
   return <LandingPage onOpenResume={handleOpenResume} />;
 }
