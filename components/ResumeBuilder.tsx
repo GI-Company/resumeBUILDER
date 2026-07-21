@@ -58,6 +58,7 @@ import { User } from "@supabase/supabase-js";
 import { hexToRgb, shadeColor, getCookie, setCookie } from "@/lib/resume-utils";
 import { PRESET_AVATARS, TEMPLATES, TUTORIAL_STEPS } from "@/lib/resume-constants";
 import { PageBreakGap } from "./resume/PageBreakGap";
+import { exportResumeToPdf } from "@/lib/pdf-engine";
 // --- Subcomponents ---
 import { DragHandle } from "./resume/DragHandle";
 import { SubItemWrapper } from "./resume/SubItemWrapper";
@@ -3036,90 +3037,24 @@ Output:
       const resumeElement = document.querySelector(".resume-canvas-container") as HTMLElement;
       if (!resumeElement) throw new Error("Resume element not found");
 
-      // Dynamically extract all existing styles from the document
-      const styleNodes = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"));
-      const extractedStyles = styleNodes.map(node => node.outerHTML).join("\n");
+      const canvasWrapElement = document.querySelector(".canvas-wrap") as HTMLElement | null;
 
-      // Inject the exact inline CSS variables applied to the canvas wrapper
-      const pageStylesElement = document.querySelector(".canvas-wrap") as HTMLElement;
-      const inlineVars = pageStylesElement?.getAttribute("style") || "";
+      const toastId = toast.loading("Initializing high-fidelity PDF engine...");
 
-      // CRITICAL FIX: Adding <base href="..."> ensures Puppeteer fetches Tailwind CSS and web fonts properly
-      const cleanHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <base href="${window.location.origin}">
-            ${extractedStyles}
-            <style>
-              :root {
-                ${inlineVars}
-              }
-              @media print {
-                @page {
-                  size: ${design.pageSize === 'letter' ? 'letter' : 'A4'} portrait;
-                  margin: 0 !important;
-                }
-                body {
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                  background-color: white !important;
-                }
-                .no-print, .format-bar, .design-panel {
-                  display: none !important;
-                }
-                .resume-canvas-container {
-                  transform: none !important;
-                  width: 100% !important;
-                  margin: 0 auto !important;
-                }
-                .physical-page-container {
-                  box-shadow: none !important;
-                  border: none !important;
-                  margin: 0 !important;
-                  page-break-after: always;
-                  page-break-inside: avoid;
-                }
-              }
-            </style>
-          </head>
-          <body style="margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-            ${resumeElement.outerHTML}
-          </body>
-        </html>
-      `;
-
-      const response = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          html: cleanHtml,
-          filename: `${(name || "Resume").replace(/[^a-z0-9]/gi, '_')}_Resume.pdf`,
-          pageSize: design.pageSize,
-        }),
+      await exportResumeToPdf({
+        resumeElement,
+        canvasWrapElement,
+        filename: name || "Resume",
+        pageSize: design.pageSize === "a4" ? "a4" : "letter",
+        onProgress: (stage, message) => {
+          toast.loading(message, { id: toastId });
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF on the server');
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(name || "Resume").replace(/[^a-z0-9]/gi, '_')}_Resume.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast.success("High-quality PDF downloaded! 🎉");
+      toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
     } catch (err: any) {
       console.error("PDF export failed:", err);
       toast.error("PDF export failed. Opening system print as fallback...");
-      // Fallback directly to the system print dialog if the server-side generation fails
       window.print();
     } finally {
       setIsExportingPdf(false);
