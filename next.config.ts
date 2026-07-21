@@ -1,6 +1,10 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium-min", "@sparticuz/chromium"],
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./assets/fonts/**/*"],
+  },
   distDir: process.env.NODE_ENV === 'production' ? '.next' : '.next-dev',
   poweredByHeader: false,
   reactStrictMode: true,

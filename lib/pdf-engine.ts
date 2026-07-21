@@ -153,19 +153,34 @@ export function buildSelfContainedHtml(
 
       .physical-page-container {
         width: ${widthMm} !important;
-        height: ${heightMm} !important;
-        max-height: ${heightMm} !important;
+        height: auto !important;
+        min-height: ${heightMm} !important;
+        max-height: none !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
         background: white !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         position: relative !important;
         page-break-after: always !important;
         page-break-inside: avoid !important;
         break-after: page !important;
+      }
+
+      /* Since calcPages() has pre-paginated exact items into each container, clear all break rules on descendants so Chromium never inserts artificial internal breaks right after headers or section headings */
+      .physical-page-container * {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+        break-before: auto !important;
+        page-break-before: auto !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+      }
+      .physical-page-container :is(ul, .skills-grid, .exp-entry, .edu-entry, .proj-entry) {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
 
       /* Remove page break after the very last page */
@@ -217,27 +232,75 @@ export async function runClientSideRetinaFallback(
   const pageWidth = pageSize === 'letter' ? 215.9 : 210;
   const pageHeight = pageSize === 'letter' ? 279.4 : 297;
 
-  for (let i = 0; i < targetElements.length; i++) {
-    const pageEl = targetElements[i];
-    onProgress?.(`Rendering high-DPI page ${i + 1} of ${targetElements.length}...`);
+  // Temporarily hide any toast notifications, floating UI, or print-hidden controls from DOM
+  const hiddenElements = Array.from(
+    document.querySelectorAll('.react-hot-toast, #toast-container, [role="status"], toaster, .no-print, [data-toaster]')
+  ) as HTMLElement[];
+  const originalDisplays = hiddenElements.map((el) => el.style.display);
+  hiddenElements.forEach((el) => {
+    el.style.display = 'none';
+  });
 
-    // Capture at 3x scale for ultra-crisp typography and graphics
-    const canvas = await html2canvas(pageEl, {
-      scale: 3,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      windowWidth: pageEl.scrollWidth || 1400,
-    } as any);
+  try {
+    for (let i = 0; i < targetElements.length; i++) {
+      const pageEl = targetElements[i];
+      onProgress?.(`Rendering high-DPI page ${i + 1} of ${targetElements.length}...`);
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      // Allow small DOM update for toast state while keeping actual toast UI hidden during capture
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-    if (i > 0) {
-      pdf.addPage(format, orientation);
+      // Re-hide any newly created toast nodes or portals that spawned during the 50ms progress update
+      document.querySelectorAll('.react-hot-toast, #toast-container, [role="status"], [id^="toast"], [class*="toaster"], .no-print, [data-toaster]').forEach((el) => {
+        if (el instanceof HTMLElement) el.style.display = 'none';
+      });
+
+      const origHeight = pageEl.style.height;
+      const origMaxHeight = pageEl.style.maxHeight;
+      const origOverflow = pageEl.style.overflow;
+
+      // Temporarily unlock overflow and height to prevent text slicing across bottom border
+      pageEl.style.height = 'auto';
+      pageEl.style.maxHeight = 'none';
+      pageEl.style.overflow = 'visible';
+
+      // Capture at 3x scale for ultra-crisp typography and graphics
+      const canvas = await html2canvas(pageEl, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: pageEl.scrollWidth || 1400,
+        ignoreElements: (element: Element) => {
+          return (
+            element.classList.contains('react-hot-toast') ||
+            element.closest('[role="status"]') !== null ||
+            element.closest('[id^="toast"]') !== null ||
+            element.closest('[class*="toaster"]') !== null ||
+            element.tagName.toLowerCase() === 'toaster' ||
+            element.classList.contains('no-print')
+          );
+        },
+      } as any);
+
+      // Restore original container styles
+      pageEl.style.height = origHeight;
+      pageEl.style.maxHeight = origMaxHeight;
+      pageEl.style.overflow = origOverflow;
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+      if (i > 0) {
+        pdf.addPage(format, orientation);
+      }
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
     }
-
-    pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
+  } finally {
+    // Restore floating UI & toasts
+    hiddenElements.forEach((el, idx) => {
+      el.style.display = originalDisplays[idx];
+    });
   }
 
   const cleanFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
@@ -267,15 +330,24 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
 
     onProgress?.('server_rendering', 'Generating enterprise vector PDF via serverless Chromium...');
     
-    const response = await fetch('/api/export-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        html: selfContainedHtml,
-        filename: cleanFilename,
-        pageSize,
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 9500); // Trigger fallback before Vercel Hobby plan limit (10s)
+
+    let response: Response;
+    try {
+      response = await fetch('/api/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          html: selfContainedHtml,
+          filename: cleanFilename,
+          pageSize,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => ({ error: 'Unknown server error' }));

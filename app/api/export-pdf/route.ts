@@ -1,85 +1,115 @@
-import { NextRequest, NextResponse } from 'next/server';
-import puppeteerCore from 'puppeteer-core';
-import chromium from '@sparticuz/chromium-min';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import puppeteerCore from "puppeteer-core";
+import chromium from "@sparticuz/chromium-min";
 
-// Maximize Vercel timeout for the function to allow Puppeteer to spin up and render
 export const maxDuration = 60;
+
+let cachedExecutablePath: string | null = null;
+let downloadPromise: Promise<string> | null = null;
+
+const CHROMIUM_PACK_URL =
+  process.env.CHROMIUM_PACK_URL ||
+  "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
+
+async function getChromiumExecutable(): Promise<string> {
+  const isLocal = process.env.NODE_ENV === "development";
+  if (isLocal) {
+    return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  }
+
+  if (cachedExecutablePath) {
+    return cachedExecutablePath;
+  }
+
+  if (!downloadPromise) {
+    downloadPromise = chromium
+      .executablePath(CHROMIUM_PACK_URL)
+      .then((path) => {
+        cachedExecutablePath = path;
+        return path;
+      })
+      .catch((err) => {
+        downloadPromise = null;
+        throw err;
+      });
+  }
+
+  return downloadPromise;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { html, filename = 'resume.pdf', pageSize = 'letter' } = await request.json();
+    const body = await request.json();
+    const { html, viewport } = body;
 
-    if (!html) {
-      return NextResponse.json({ error: 'HTML content required' }, { status: 400 });
+    if (!html || typeof html !== "string") {
+      return NextResponse.json(
+        { error: "Missing or invalid 'html' payload in request body." },
+        { status: 400 }
+      );
     }
 
-    // Determine if running locally or on Vercel
-    const isLocal = process.env.NODE_ENV === 'development';
-
-    const getResolvedArgs = async (): Promise<string[]> => {
-      if (isLocal) {
-        const res = puppeteerCore.defaultArgs();
-        return Array.isArray(res) ? res : await (res as any);
-      } else {
-        const res = chromium.args;
-        return Array.isArray(res) ? res : await (res as any);
-      }
-    };
-    const args: string[] = await getResolvedArgs();
-
-    const getResolvedPath = async (): Promise<string> => {
-      if (isLocal) {
-        return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-      } else {
-        const res = chromium.executablePath();
-        return typeof res === 'string' ? res : await (res as any);
-      }
-    };
-    const executablePath: string = await getResolvedPath();
+    const isProduction =
+      process.env.NODE_ENV === "production" ||
+      process.env.VERCEL_ENV === "production";
+    const executablePath = await getChromiumExecutable();
+    const args = isProduction
+      ? [
+          ...chromium.args,
+          "--hide-scrollbars",
+          "--disable-web-security",
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--font-render-hinting=none",
+        ]
+      : ["--no-sandbox", "--disable-setuid-sandbox"];
 
     const browser = await puppeteerCore.launch({
       args,
       defaultViewport: (chromium as any).defaultViewport || { width: 1400, height: 1800 },
       executablePath,
-      headless: true,
+      headless: (chromium as any).headless ?? true,
     });
 
     const page = await browser.newPage();
 
-    // Load the HTML and wait until all network requests (fonts, images) are finished
-    await page.setContent(html, {
-      waitUntil: ['domcontentloaded', 'networkidle0'] as any,
-    });
+    if (viewport) {
+      await page.setViewport({
+        width: viewport.width || 1200,
+        height: viewport.height || 800,
+        deviceScaleFactor: viewport.scale || 2,
+      });
+    }
 
-    // Explicitly wait for web fonts to finish applying
-    await page.evaluate(() => document.fonts.ready);
+    await page.setContent(html, { waitUntil: ["domcontentloaded", "networkidle0"] as any });
 
     const pdfBuffer = await page.pdf({
-      format: pageSize === 'a4' ? 'A4' : 'Letter',
+      format: "letter",
       printBackground: true,
-      margin: {
-        top: '0in',
-        bottom: '0in',
-        left: '0in',
-        right: '0in',
-      },
       preferCSSPageSize: true,
     });
 
-    await browser.close();
+    const pages = await browser.pages();
+    for (const openPage of pages) {
+      await openPage.close().catch(() => {});
+    }
+    await browser.close().catch(() => {});
 
     return new NextResponse(pdfBuffer as any, {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'attachment; filename="export.pdf"',
       },
     });
-  } catch (error) {
-    console.error('PDF Generation Error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to generate PDF',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+  } catch (error: any) {
+    console.error("[PDF Export Error]:", error);
+    return NextResponse.json(
+      { error: error?.message || "Internal server error rendering PDF." },
+      { status: 500 }
+    );
   }
 }
