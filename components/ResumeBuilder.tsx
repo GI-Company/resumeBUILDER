@@ -1120,30 +1120,36 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   // --- Design State ---
   const [design, setDesign] = useState<DesignConfig>(() => {
     const initialTemplate = initialTemplateId ? TEMPLATES.find(t => t.id === initialTemplateId) : null;
-    return initialTemplate ?? localDraft?.design ?? {
-    template: "classic",
-    fontHeading: "'Kalam',cursive",
-    fontBody: "'Lora',serif",
-    accent: "#3a353a",
-    panel: "#ffffff",
-    paper: "#ffffff",
-    layout: "classic",
-    scale: 100,
-    radius: 10,
-    lineHeight: 1.55,
-    gap: 14,
-    headingStyle: "bar",
-    italic: true,
-    pageSize: "letter",
-    headerAlign: "left",
-    listStyle: "disc",
-    pageMargin: 38,
-    itemSpacing: 16,
-    jobLayout: "stacked",
-    boxOpacity: 95,
-    boxShadow: "none",
-    borderStyle: "none",
-    backdropBlur: 4,
+    const baseDesign = (initialTemplate ?? localDraft?.design ?? {}) as any;
+    const defaults = {
+      template: "classic",
+      fontHeading: "'Kalam',cursive",
+      fontBody: "'Lora',serif",
+      accent: "#3a353a",
+      panel: "#ffffff",
+      paper: "#ffffff",
+      layout: "classic",
+      scale: 100,
+      radius: 10,
+      lineHeight: 1.55,
+      gap: 14,
+      headingStyle: "bar",
+      italic: true,
+      pageSize: "letter",
+      headerAlign: "left",
+      listStyle: "disc",
+      pageMargin: 38,
+      itemSpacing: 16,
+      jobLayout: "stacked",
+      boxOpacity: 95,
+      boxShadow: "none",
+      borderStyle: "none",
+      backdropBlur: 4,
+    };
+    return {
+      ...defaults,
+      ...baseDesign,
+      pageSize: baseDesign?.pageSize || defaults.pageSize,
     };
   });
 
@@ -6861,7 +6867,7 @@ Output:
                             <span>Print Safe Area · Page {pageIndex + 1}</span>
                           </div>
                           <div className="absolute -top-3.5 right-0 text-[8px] font-mono font-bold text-blue-500/80 bg-blue-50/90 px-1.5 py-0.5 rounded border border-blue-200/50 select-none">
-                            Letter ({design.pageSize.toUpperCase()}) · Margins: {design.pageMarginTopBottom ?? design.pageMargin}pxY / {design.pageMarginLeftRight ?? design.pageMargin}pxX
+                            Letter ({(design?.pageSize || "letter").toUpperCase()}) · Margins: {design?.pageMarginTopBottom ?? design?.pageMargin ?? 38}pxY / {design?.pageMarginLeftRight ?? design?.pageMargin ?? 38}pxX
                           </div>
                         </div>
 
