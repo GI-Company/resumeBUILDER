@@ -163,12 +163,15 @@ export function buildSelfContainedHtml(
         background: white !important;
         overflow: hidden !important;
         position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
         page-break-after: always !important;
         page-break-inside: avoid !important;
         break-after: page !important;
       }
 
-      /* Since calcPages() has pre-paginated exact items into each container, clear all break rules on descendants so Chromium never inserts artificial internal breaks right after headers or section headings */
+      /* Clear internal break rules on descendants so Chromium never inserts artificial internal breaks */
       .physical-page-container * {
         break-inside: auto !important;
         page-break-inside: auto !important;
@@ -177,7 +180,9 @@ export function buildSelfContainedHtml(
         break-after: auto !important;
         page-break-after: auto !important;
       }
-      .physical-page-container :is(ul, .skills-grid, .exp-entry, .edu-entry, .proj-entry) {
+
+      /* Prevent individual section entries from splitting awkwardly */
+      .physical-page-container :is(ul, .skills-grid, .exp-entry, .edu-entry, .proj-entry, .section) {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
