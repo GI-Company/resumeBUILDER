@@ -153,8 +153,9 @@ export function buildSelfContainedHtml(
 
       .physical-page-container {
         width: ${widthMm} !important;
-        min-height: ${heightMm} !important;
         height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
@@ -169,14 +170,10 @@ export function buildSelfContainedHtml(
         break-after: page !important;
       }
 
-      /* Clear internal break rules on descendants so Chromium never inserts artificial internal breaks */
-      .physical-page-container * {
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-        break-before: auto !important;
-        page-break-before: auto !important;
-        break-after: auto !important;
-        page-break-after: auto !important;
+      /* Protect atomic section blocks from splitting mid-element */
+      .physical-page-container :is(.exp-entry, .edu-entry, .proj-entry, .skills-grid, .lic-list, .section, ul, li) {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
 
       /* Prevent individual section entries from splitting awkwardly */
