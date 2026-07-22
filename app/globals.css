@@ -11,7 +11,16 @@ html {
   100% { transform: translateX(200%); }
 }
 
+@page {
+  size: letter;
+  margin: 0;
+}
+
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body, html, #__next, main, .h-screen, .h-full, .overflow-hidden { 
     background: #fff !important; 
     margin: 0 !important; 
@@ -23,7 +32,7 @@ html {
     display: block !important;
     position: static !important;
   }
-  .no-print, .toolbar, .design-panel, .format-bar, .page-drawer, .overlay-scrim { 
+  .no-print, .toolbar, .design-panel, .format-bar, .page-drawer, .overlay-scrim, button, nav { 
     display: none !important; 
   }
   .canvas-wrap { 
