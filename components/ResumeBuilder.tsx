@@ -6809,6 +6809,33 @@ Output:
                   />
                 );
 
+                const hasHeaderOnPage = (idToPageMap?.["header"] ?? 0) === pageIndex;
+                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id));
+                const mainSecs = sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id));
+
+                const isSidebarSecOnPage = (s: any) => {
+                  const hp = idToPageMap?.[`heading-${s.id}`];
+                  if (s.id === "licenses") return (idToPageMap?.["lic-list"] ?? hp ?? 0) === pageIndex;
+                  if (s.id === "skills") return (idToPageMap?.["skills-grid"] ?? hp ?? 0) === pageIndex;
+                  if (s.id === "education") return (idToPageMap?.["edu-1"] ?? hp ?? 0) === pageIndex;
+                  return (hp ?? 0) === pageIndex;
+                };
+
+                const isMainSecOnPage = (s: any) => {
+                  const hp = idToPageMap?.[`heading-${s.id}`];
+                  if (s.id === "summary") return (idToPageMap?.["summary-content"] ?? hp ?? 0) === pageIndex;
+                  if (s.id === "experience") return (idToPageMap?.["exp-1"] ?? hp ?? 0) === pageIndex;
+                  if (s.id === "projects") return (idToPageMap?.["proj-1"] ?? hp ?? 0) === pageIndex;
+                  return (hp ?? 0) === pageIndex;
+                };
+
+                const hasSidebarOnPage = sidebarSecs.some(isSidebarSecOnPage);
+                const hasMainOnPage = mainSecs.some(isMainSecOnPage);
+
+                if (pageIndex > 0 && !hasHeaderOnPage && !hasSidebarOnPage && !hasMainOnPage) {
+                  return null;
+                }
+
                 return (
                   <div
                     key={`page-${pageIndex}`}
@@ -7057,7 +7084,7 @@ Output:
                     </div>
                     
                     <div className="hidden print:block w-full">
-                      {design.layout === "sidebar" ? (
+                      {design.layout === "sidebar" && hasSidebarOnPage && hasMainOnPage ? (
                         <div className="flex w-full gap-[1.1rem] items-start">
                           <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
                             {sections

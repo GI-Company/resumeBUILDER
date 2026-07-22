@@ -69,10 +69,10 @@ export function extractActiveBrowserStyles(): string {
   }).join('\n');
 
   return `
-    /* --- Redundant DOM Stylesheets & Font Links --- */
+    <!-- Redundant DOM Stylesheets & Font Links -->
     ${rawNodeStyles}
 
-    /* --- Nuclear CSSOM Memory Rules --- */
+    <!-- Nuclear CSSOM Memory Rules -->
     <style>
       ${extractedStyles}
     </style>
@@ -181,6 +181,11 @@ export function buildSelfContainedHtml(
       .physical-page-container :is(ul, .skills-grid, .exp-entry, .edu-entry, .proj-entry) {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+      }
+
+      .physical-page-container:empty,
+      .physical-page-container:not(:has([data-page-break-id])) {
+        display: none !important;
       }
 
       /* Remove page break after the very last page */
