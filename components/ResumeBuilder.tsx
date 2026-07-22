@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
+import { StructuralParser, GazeProfiler, LayoutRebalancer } from "@/lib/agent-rez";
 import { ContentEditableField } from "./ContentEditableField";
 import { Reorder, useDragControls, motion } from "motion/react";
 import {
@@ -1835,6 +1836,67 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       }
     ]);
     toast.success("Guided Interview started! 🎙️");
+  };
+
+  const handleActionVerbBooster = () => {
+    isHistoryActionRef.current = true;
+    const verbReplacements: Record<string, string> = {
+      "worked on": "engineered",
+      "did": "executed",
+      "helped": "spearheaded",
+      "helped with": "collaborated to engineer",
+      "built": "architected and deployed",
+      "made": "designed and developed",
+      "created": "pioneered",
+      "managed": "orchestrated",
+      "improved": "optimized",
+      "added": "integrated",
+    };
+
+    let count = 0;
+    setExperiences((prev: any[]) =>
+      prev.map((exp) => ({
+        ...exp,
+        bullets: (exp.bullets || []).map((b: any) => {
+          let text = b.text || "";
+          Object.keys(verbReplacements).forEach((weak) => {
+            const regex = new RegExp(`\\b${weak}\\b`, "gi");
+            if (regex.test(text)) {
+              text = text.replace(regex, verbReplacements[weak]);
+              count++;
+            }
+          });
+          return { ...b, text };
+        }),
+      }))
+    );
+
+    const msg = count > 0
+      ? `⚡ **ATS Action-Verb Booster Complete!** Successfully upgraded **${count} passive verb(s)** across your work experience into high-impact ATS power verbs!`
+      : `⚡ **ATS Action-Verb Booster Complete!** Your experience bullets are already using strong high-impact ATS action verbs!`;
+
+    setAgentMessages(prev => [...prev, { role: "assistant", content: msg }]);
+    toast.success("ATS Action-Verb Booster applied! 🚀");
+  };
+
+  const handleAuditGazeFlow = () => {
+    const allText = experiences.map((e: any) => (e.bullets || []).map((b: any) => b.text).join(' ')).join(' ');
+    const saliencyScore = StructuralParser.calculateSaliencyScore(allText);
+    const gazeDensity = GazeProfiler.calculateGazeDensity(20, 20);
+    const layout = LayoutRebalancer.calculateOptimalLayout(allText.length, design.pageSize === "letter" ? 1056 : 1123);
+
+    const report = `📊 **Agent Rez Cognitive Audit Report**:\n
+• **ATS Action-Verb Saliency**: **${saliencyScore}/5.0** (High impact verbs & metrics)
+• **Top-30% Recruiter Gaze Focus**: **${(gazeDensity * 100).toFixed(0)}% Visual Weight**
+• **Recommended Whitespace Density**: **${(layout.calculatedWhitespaceRatio * 100).toFixed(0)}%** (Optimal line height: ${layout.lineHeight})
+
+💡 **Agent Rez Recommendation**:
+• Toggle the eye icon to view the 6-Second Eye-Tracking Heatmap Overlay.
+• Use 1-Click ATS Verb Booster to maximize ATS parsing score!`;
+
+    setAgentMessages(prev => [...prev, { role: "assistant", content: report }]);
+    setShowHeatmapOverlay(true);
+    toast.success("Agent Rez Audit complete! 👁️");
   };
 
   const handleSendAgentMessage = async (textToSend?: string) => {
@@ -5954,6 +6016,36 @@ Output:
                             </p>
                           </button>
                           
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={handleActionVerbBooster}
+                              className="p-2.5 text-left bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200/80 rounded-xl transition-all cursor-pointer shadow-xs group"
+                            >
+                              <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900">
+                                <Sparkles size={13} className="text-amber-600" />
+                                <span>⚡ ATS Verb Booster</span>
+                              </div>
+                              <p className="text-[9px] text-amber-800/80 mt-0.5 leading-snug">
+                                Upgrade passive bullet verbs to ATS impact verbs.
+                              </p>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleAuditGazeFlow}
+                              className="p-2.5 text-left bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200/80 rounded-xl transition-all cursor-pointer shadow-xs group"
+                            >
+                              <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-900">
+                                <Eye size={13} className="text-purple-600" />
+                                <span>👁️ Gaze & ATS Audit</span>
+                              </div>
+                              <p className="text-[9px] text-purple-800/80 mt-0.5 leading-snug">
+                                Audit eye-tracking density & ATS saliency score.
+                              </p>
+                            </button>
+                          </div>
+
                           <button
                             type="button"
                             onClick={() => {
