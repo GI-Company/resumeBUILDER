@@ -153,16 +153,15 @@ export function buildSelfContainedHtml(
 
       .physical-page-container {
         width: ${widthMm} !important;
-        height: auto !important;
-        min-height: ${heightMm} !important;
-        max-height: none !important;
+        height: ${heightMm} !important;
+        max-height: ${heightMm} !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
         background: white !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         position: relative !important;
         page-break-after: always !important;
         page-break-inside: avoid !important;
