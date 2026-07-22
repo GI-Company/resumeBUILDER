@@ -7084,7 +7084,7 @@ Output:
                     </div>
                     
                     <div className="hidden print:block w-full">
-                      {design.layout === "sidebar" && hasSidebarOnPage && hasMainOnPage ? (
+                      {design.layout === "sidebar" ? (
                         <div className="flex w-full gap-[1.1rem] items-start">
                           <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
                             {sections
