@@ -257,18 +257,12 @@ export async function runClientSideRetinaFallback(
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Re-hide any newly created toast nodes or portals that spawned during the 50ms progress update
-      document.querySelectorAll('.react-hot-toast, #toast-container, [role="status"], [id^="toast"], [class*="toaster"], .no-print, [data-toaster]').forEach((el) => {
-        if (el instanceof HTMLElement) el.style.display = 'none';
+      document.querySelectorAll('.react-hot-toast, #toast-container, [role="status"], [id^="toast"], [class*="toaster"], .no-print, [data-toaster], [data-rht-toast]').forEach((el) => {
+        if (el instanceof HTMLElement) {
+          el.style.display = 'none';
+          el.style.visibility = 'hidden';
+        }
       });
-
-      const origHeight = pageEl.style.height;
-      const origMaxHeight = pageEl.style.maxHeight;
-      const origOverflow = pageEl.style.overflow;
-
-      // Temporarily unlock overflow and height to prevent text slicing across bottom border
-      pageEl.style.height = 'auto';
-      pageEl.style.maxHeight = 'none';
-      pageEl.style.overflow = 'visible';
 
       // Capture at 3x scale for ultra-crisp typography and graphics
       const canvas = await html2canvas(pageEl, {
@@ -277,23 +271,22 @@ export async function runClientSideRetinaFallback(
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
-        windowWidth: pageEl.scrollWidth || 1400,
+        windowWidth: pageEl.scrollWidth || 816,
         ignoreElements: (element: Element) => {
+          const txt = element.textContent || "";
           return (
             element.classList.contains('react-hot-toast') ||
             element.closest('[role="status"]') !== null ||
             element.closest('[id^="toast"]') !== null ||
             element.closest('[class*="toaster"]') !== null ||
+            element.closest('[data-rht-toast]') !== null ||
             element.tagName.toLowerCase() === 'toaster' ||
-            element.classList.contains('no-print')
+            element.classList.contains('no-print') ||
+            txt.includes('Rendering high-DPI') ||
+            txt.includes('Generating PDF')
           );
         },
       } as any);
-
-      // Restore original container styles
-      pageEl.style.height = origHeight;
-      pageEl.style.maxHeight = origMaxHeight;
-      pageEl.style.overflow = origOverflow;
 
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
 
