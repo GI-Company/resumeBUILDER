@@ -3263,51 +3263,21 @@ Output:
     }
 
     const gaps = Array.from(resume.querySelectorAll(".block.print\\:hidden .page-break-gap")) as HTMLElement[];
-    const currentIds = pageBreakElementIdsRef.current;
-
-    const shiftMap: Record<string, number> = { default: 0 };
-    const prevElMap: Record<string, HTMLElement | null> = { default: null };
-    let gapIdx = 0;
     const resumeTop = resumeRect.top / scale;
 
-    const naturalCoords = units.map((el, i) => {
+    const naturalCoords = units.map((el) => {
       const colKey = el.closest("[data-column]")?.getAttribute("data-column") || "default";
-      if (!(colKey in shiftMap)) {
-        shiftMap[colKey] = 0;
-        prevElMap[colKey] = null;
-      }
-      let prevEl = prevElMap[colKey];
-      if (!prevEl && colKey !== "default") {
-        prevEl = prevElMap["default"] || null;
-      }
-      const currentPageIdxAttr = el.closest(".physical-page-container")?.getAttribute("data-page-index");
-      const prevPageIdxAttr = prevEl?.closest(".physical-page-container")?.getAttribute("data-page-index") ?? null;
+      const containerEl = el.closest(".physical-page-container") as HTMLElement | null;
+      const containerPageIdx = parseInt(containerEl?.getAttribute("data-page-index") || "0", 10);
+      const rect = el.getBoundingClientRect();
+      const rawTop = rect.top / scale - resumeTop;
+      const rawBottom = rect.bottom / scale - resumeTop;
 
-      if (prevEl && currentPageIdxAttr !== prevPageIdxAttr && currentPageIdxAttr !== null && prevPageIdxAttr !== null) {
-        const gap = (el.getBoundingClientRect().top - prevEl.getBoundingClientRect().bottom) / scale;
-        shiftMap[colKey] += Math.max(0, gap);
-      } else if (!prevEl && currentPageIdxAttr && currentPageIdxAttr !== "0") {
-        const containerEl = el.closest(".physical-page-container") as HTMLElement | null;
-        if (containerEl) {
-          const gapFromSheetTop = (el.getBoundingClientRect().top - containerEl.getBoundingClientRect().top) / scale;
-          shiftMap[colKey] += (el.getBoundingClientRect().top / scale - resumeTop) - gapFromSheetTop;
-        }
-      }
+      const pageOffset = containerPageIdx * (pageHeightPx + 32);
+      const elTop = Math.max(0, rawTop - pageOffset);
+      const elBottom = Math.max(0, rawBottom - pageOffset);
 
       const id = el.getAttribute("data-page-break-id");
-      if (id && currentIds.includes(id)) {
-        const gapEl = gaps[gapIdx];
-        const height = gapEl ? gapEl.getBoundingClientRect().height / scale : (2 * marginPx + 32);
-        if (currentPageIdxAttr === prevPageIdxAttr || !currentPageIdxAttr) {
-          shiftMap[colKey] += height;
-        }
-        gapIdx++;
-      }
-
-      const rect = el.getBoundingClientRect();
-      const elTop = rect.top / scale - resumeTop - shiftMap[colKey];
-      const elBottom = rect.bottom / scale - resumeTop - shiftMap[colKey];
-      prevElMap[colKey] = el;
 
       return {
         el,
@@ -3323,8 +3293,8 @@ Output:
     const pageStartYInitialMap: Record<string, number> = {};
     const currentPIdxTracker: Record<string, number> = {};
     const prevItemPerCol: Record<string, typeof naturalCoords[0] | null> = {};
+    const currentIds = pageBreakElementIdsRef.current;
     const breakStarts: { el: HTMLElement; id: string | null; colKey: string; elTop: number; elBottom: number }[] = [];
-
     naturalCoords.forEach((item, i) => {
       const { el, id, colKey, elTop, elBottom } = item;
 
