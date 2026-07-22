@@ -3328,7 +3328,7 @@ Output:
     const resumeRect = resume.getBoundingClientRect();
     const scale = resumeRect.width / (design.pageSize === "letter" ? 816 : 794) || 1;
     const rawUnits = Array.from(
-      resume.querySelectorAll(".block.print\\:hidden [data-page-break-id]"),
+      resume.querySelectorAll("[data-page-break-id]"),
     ) as HTMLElement[];
 
     const seenIds = new Set<string>();
@@ -7130,8 +7130,8 @@ Output:
                       </div>
                     )}
 
-                    {/* Sections */}
-                    <div className="block print:hidden w-full">
+                    {/* Unified Single Sections Tree (100% Editor & PDF Parity) */}
+                    <div className="resume-sections-container w-full">
                       {design.layout === "sidebar" ? (
                         <div className="flex w-full gap-[1.1rem] items-start">
                           <div data-column="sidebar" className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
@@ -7146,7 +7146,7 @@ Output:
                             >
                               {sections
                                 .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
-                                .map((s: any) => renderSection(s, "screen-sidebar-"))}
+                                .map((s: any) => renderSection(s, "sidebar-"))}
                             </Reorder.Group>
                           </div>
                           <div data-column="main" className="flex-1 flex flex-col min-w-0">
@@ -7161,7 +7161,7 @@ Output:
                             >
                               {sections
                                 .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
-                                .map((s: any) => renderSection(s, "screen-main-"))}
+                                .map((s: any) => renderSection(s, "main-"))}
                             </Reorder.Group>
                           </div>
                         </div>
@@ -7174,27 +7174,6 @@ Output:
                         >
                           {sections.map((section: any) => renderSection(section))}
                         </Reorder.Group>
-                      )}
-                    </div>
-                    
-                    <div className="hidden print:block w-full">
-                      {design.layout === "sidebar" ? (
-                        <div className="flex w-full gap-[1.1rem] items-start">
-                          <div className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
-                            {sections
-                              .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
-                              .map((s: any) => renderSection(s, "print-", true))}
-                          </div>
-                          <div className="flex-1 flex flex-col min-w-0">
-                            {sections
-                              .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
-                              .map((s: any) => renderSection(s, "print-", true))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col w-full">
-                          {sections.map((s: any) => renderSection(s, "print-", true))}
-                        </div>
                       )}
                     </div>
 

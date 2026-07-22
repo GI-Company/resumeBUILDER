@@ -56,9 +56,9 @@ html {
     margin: 0 auto !important; 
     padding: var(--page-margin-y) var(--page-margin-x) !important;
     transform: none !important; /* CRITICAL: prevents scaling clipping */
-    height: var(--page-height) !important;
-    max-height: var(--page-height) !important;
-    overflow: hidden !important;
+    min-height: var(--page-height) !important;
+    height: auto !important;
+    overflow: visible !important;
     position: relative !important;
     page-break-after: always !important;
     break-after: page !important;
