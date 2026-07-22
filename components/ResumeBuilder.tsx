@@ -3265,9 +3265,18 @@ Output:
     const contentHeightPx = pageHeightPx - marginPx * 2;
     const resumeRect = resume.getBoundingClientRect();
     const scale = resumeRect.width / (design.pageSize === "letter" ? 816 : 794) || 1;
-    const units = Array.from(
+    const rawUnits = Array.from(
       resume.querySelectorAll(".block.print\\:hidden [data-page-break-id]"),
     ) as HTMLElement[];
+
+    const seenIds = new Set<string>();
+    const units = rawUnits.filter((el) => {
+      const id = el.getAttribute("data-page-break-id");
+      if (!id) return false;
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
 
     if (units.length === 0) {
       setPageBreaks([]);
@@ -7011,7 +7020,12 @@ Output:
                           <div className="flex-1 min-w-0">
                             <ContentEditableField tagName="div"
                               className="name font-[family:var(--font-heading)] font-bold text-3xl text-[var(--ink)] m-0 mb-1.5 tracking-wide outline-none"
-                              html={name} onChange={(val) => { setName(val); }}
+                              html={name} onChange={(val) => {
+                                setName(val);
+                                if (val && !val.toUpperCase().includes("ALEX MORGAN") && contactLine.includes("alex.morgan@email.com")) {
+                                  setContactLine("San Francisco, CA <span class=\"text-[var(--hairline)] mx-2\">|</span> (415) 555-0199");
+                                }
+                              }}
                               spellCheck={spellcheckEnabled}
                             />
                             <ContentEditableField tagName="div"
