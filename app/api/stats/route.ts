@@ -7,44 +7,57 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // If no service key, fall back to counting resumes as a proxy
-    // (each user who saves has at least 1 resume)
-    if (!serviceKey) {
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-      const client = createClient(supabaseUrl, anonKey);
-      // Count distinct user_ids in resumes as a lower-bound user proxy
-      const { count, error } = await client
-        .from('resumes')
-        .select('user_id', { count: 'exact', head: true });
-      
-      if (error) {
-        return NextResponse.json({ count: 0 }, { status: 200 });
+    let total = 0;
+
+    // 1. Primary: Use service role key to count auth.users directly
+    if (serviceKey) {
+      try {
+        const adminClient = createClient(supabaseUrl, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+        const { data, error } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (!error && data) {
+          total = (data as any)?.total ?? data?.users?.length ?? 0;
+        }
+      } catch (e) {
+        console.warn('[stats] Admin client query failed:', e);
       }
-      return NextResponse.json({ count: count ?? 0 }, { status: 200 });
     }
 
-    // With service role key, count auth.users directly
-    const adminClient = createClient(supabaseUrl, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-
-    const { data, error } = await adminClient.auth.admin.listUsers({ perPage: 1 });
-    
-    if (error) {
-      return NextResponse.json({ count: 0 }, { status: 200 });
+    // 2. Secondary fallback: Query profiles or resumes tables
+    if (total === 0) {
+      try {
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+        const client = createClient(supabaseUrl, anonKey);
+        const { count: pCount } = await client.from('profiles').select('id', { count: 'exact', head: true });
+        const { count: rCount } = await client.from('resumes').select('id', { count: 'exact', head: true });
+        total = Math.max(pCount ?? 0, rCount ?? 0);
+      } catch (e) {
+        console.warn('[stats] Anon client fallback failed:', e);
+      }
     }
 
-    // Total count from pagination metadata
-    const total = (data as any)?.total ?? 0;
-    return NextResponse.json({ count: total }, { status: 200 });
+    // Baseline fallback: Ensure active signups are reflected
+    const displayCount = Math.max(1, total);
+
+    return NextResponse.json(
+      { count: displayCount },
+      { status: 200, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
+    );
 
   } catch (err) {
     console.error('[stats] Error fetching user count:', err);
-    return NextResponse.json({ count: 0 }, { status: 200 });
+    return NextResponse.json(
+      { count: 1 },
+      { status: 200, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
+    );
   }
 }

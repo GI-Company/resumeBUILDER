@@ -108,7 +108,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const res = await fetch('/api/stats');
+        const res = await fetch('/api/stats', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (typeof data.count === 'number') setFoundingCount(data.count);
