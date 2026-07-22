@@ -74,6 +74,18 @@ html {
     page-break-after: auto !important;
     break-after: auto !important;
   }
+  body.printing-export .block.print\:hidden,
+  .printing-export .block.print\:hidden {
+    display: none !important;
+  }
+  body.printing-export .hidden.print\:block,
+  .printing-export .hidden.print\:block {
+    display: block !important;
+  }
+  body.printing-export .no-print,
+  .printing-export .no-print {
+    display: none !important;
+  }
   [contenteditable] {
     outline: none !important;
     user-select: none;

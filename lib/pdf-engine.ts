@@ -248,6 +248,8 @@ export async function runClientSideRetinaFallback(
     el.style.display = 'none';
   });
 
+  document.body.classList.add('printing-export');
+
   try {
     for (let i = 0; i < targetElements.length; i++) {
       const pageEl = targetElements[i];
@@ -297,6 +299,7 @@ export async function runClientSideRetinaFallback(
       pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
     }
   } finally {
+    document.body.classList.remove('printing-export');
     // Restore floating UI & toasts
     hiddenElements.forEach((el, idx) => {
       el.style.display = originalDisplays[idx];
