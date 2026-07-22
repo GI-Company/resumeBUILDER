@@ -3285,12 +3285,15 @@ Output:
       const containerEl = el.closest(".physical-page-container") as HTMLElement | null;
       const containerPageIdx = parseInt(containerEl?.getAttribute("data-page-index") || "0", 10);
       const rect = el.getBoundingClientRect();
-      const rawTop = rect.top / scale - resumeTop;
-      const rawBottom = rect.bottom / scale - resumeTop;
+      const elHeight = rect.height / scale;
 
-      const pageOffset = containerPageIdx * (pageHeightPx + 32);
-      const elTop = Math.max(0, rawTop - pageOffset);
-      const elBottom = Math.max(0, rawBottom - pageOffset);
+      const containerRect = containerEl ? containerEl.getBoundingClientRect() : null;
+      const elPageTop = containerRect
+        ? (rect.top - containerRect.top) / scale - marginPx
+        : (rect.top - resumeRect.top) / scale - marginPx;
+
+      const elTop = Math.max(0, containerPageIdx * contentHeightPx + elPageTop);
+      const elBottom = elTop + elHeight;
 
       const id = el.getAttribute("data-page-break-id");
 
