@@ -163,8 +163,6 @@ export function buildSelfContainedHtml(
         background: white !important;
         overflow: hidden !important;
         position: relative !important;
-        display: flex !important;
-        flex-direction: column !important;
         box-sizing: border-box !important;
         page-break-after: always !important;
         page-break-inside: avoid !important;

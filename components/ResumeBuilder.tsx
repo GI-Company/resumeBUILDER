@@ -1766,7 +1766,22 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     isHistoryActionRef.current = true;
     
     if (data.name) setName(data.name);
-    if (data.contactLine) setContactLine(data.contactLine);
+    
+    let constructedContact = data.contactLine;
+    if (!constructedContact) {
+      const parts = [
+        data.location || data.cityState || data.address,
+        data.phone,
+        data.email,
+        data.linkedin,
+        data.website || data.portfolio,
+      ].filter(Boolean);
+      if (parts.length > 0) {
+        const pipe = ' <span class="text-[var(--hairline)] mx-2">|</span> ';
+        constructedContact = parts.join(pipe);
+      }
+    }
+    if (constructedContact) setContactLine(constructedContact);
     if (data.summary) setSummary(data.summary);
     
     if (data.experiences && Array.isArray(data.experiences)) {
