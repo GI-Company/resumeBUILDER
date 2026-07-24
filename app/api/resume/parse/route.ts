@@ -5,12 +5,8 @@ import { env } from '@/lib/env';
 
 // Canonical free-tier model chain (ordered by quality for parsing tasks)
 const MODEL_CHAIN = [
-  'groq/compound',
   'llama-3.3-70b-versatile',
-  'openai/gpt-oss-120b',
-  'openai/gpt-oss-20b',
-  'qwen/qwen3.6-27b',
-  'groq/compound-mini',
+  'llama3-70b-8192',
   'llama-3.1-8b-instant',
 ];
 const SYSTEM_PROMPT = `You are an elite, world-class resume-writing expert. Based on the user's input (which could be an old resume, a prompt describing their career, list of achievements, or unstructured text), write a high-impact, professional resume.

@@ -15,9 +15,8 @@ import { parseDocSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
 
 const MODEL_CHAIN = [
-  'groq/compound',
   'llama-3.3-70b-versatile',
-  'openai/gpt-oss-120b',
+  'llama3-70b-8192',
   'llama-3.1-8b-instant',
 ];
 
