@@ -89,57 +89,59 @@ export function buildSelfContainedHtml(
   inlineVars: string,
   pageSize: 'letter' | 'a4'
 ): string {
-  const isLetter = pageSize === 'letter';
-  const widthMm = isLetter ? '215.9mm' : '210mm';
-  const heightMm = isLetter ? '279.4mm' : '297mm';
+    const isLetter = pageSize !== 'a4';
+    const widthMm = isLetter ? '816px' : '794px';
+    const heightMm = isLetter ? '1056px' : '1123px';
 
-  return `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Export</title>
-    <!-- Preload comprehensive typography suites (Google Fonts) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Kalam:wght@400;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
-    
-    ${extractedStyles}
+    const selfContainedHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Resume Export</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Caveat:wght@500;700&family=Playfair+Display:wght@600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Poppins:wght@500;600;700&family=Source+Serif+4:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&family=Nunito+Sans:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet">
+      ${extractedStyles}
+      <style>
+        /* --- Root Dynamic Variables --- */
+        :root {
+          ${inlineVars}
+        }
 
-    <style>
-      /* --- Root Dynamic Variables --- */
-      :root {
-        ${inlineVars}
-      }
+        /* --- Global Document Reset for PDF Engine --- */
+        *, *::before, *::after {
+          box-sizing: border-box !important;
+          -webkit-font-smoothing: antialiased !important;
+          -moz-osx-font-smoothing: grayscale !important;
+        }
 
-      /* --- Global Document Reset for PDF Engine --- */
-      *, *::before, *::after {
-        box-sizing: border-box !important;
-        -webkit-font-smoothing: antialiased !important;
-        -moz-osx-font-smoothing: grayscale !important;
-      }
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          width: 100% !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
 
-      html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #ffffff !important;
-        color: #000000 !important;
-        width: 100% !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-
-      /* --- UI & Editing Cleanup --- */
-      .no-print,
-      .format-bar,
-      .design-panel,
-      [data-contenteditable],
-      .resizing-handle,
-      .hover-guide {
-        display: none !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
+        /* --- UI & Editing Cleanup --- */
+        .no-print,
+        .format-bar,
+        .design-panel,
+        [data-contenteditable],
+        .resizing-handle,
+        .hover-guide,
+        .react-hot-toast,
+        [role="status"],
+        [id^="toast"],
+        [class*="toaster"],
+        .animate-spin {
+          display: none !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
 
       /* --- Canvas Optimization --- */
       .resume-canvas-container {
@@ -153,16 +155,16 @@ export function buildSelfContainedHtml(
 
       .physical-page-container {
         width: ${widthMm} !important;
-        height: auto !important;
-        min-height: auto !important;
-        max-height: none !important;
+        height: ${heightMm} !important;
+        min-height: ${heightMm} !important;
+        max-height: ${heightMm} !important;
         margin: 0 !important;
-        padding: 0 !important;
+        /* DO NOT ZERO PADDING: keep inline padding for margins */
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
         background: white !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         position: relative !important;
         box-sizing: border-box !important;
         page-break-after: always !important;
@@ -170,14 +172,8 @@ export function buildSelfContainedHtml(
         break-after: page !important;
       }
 
-      /* Protect atomic section blocks from splitting mid-element */
-      .physical-page-container :is(.exp-entry, .edu-entry, .proj-entry, .skills-grid, .lic-list, .section, ul, li) {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-
-      /* Prevent individual section entries from splitting awkwardly */
-      .physical-page-container :is(ul, .skills-grid, .exp-entry, .edu-entry, .proj-entry, .section) {
+      /* Prevent default Chromium print breaks since React handles multi-page DOM manually */
+      .physical-page-container {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
@@ -211,6 +207,7 @@ export function buildSelfContainedHtml(
     ${resumeHtml}
   </body>
 </html>`;
+  return selfContainedHtml;
 }
 
 /**
@@ -272,7 +269,6 @@ export async function runClientSideRetinaFallback(
         logging: false,
         windowWidth: pageEl.scrollWidth || 816,
         ignoreElements: (element: Element) => {
-          const txt = element.textContent || "";
           return (
             element.classList.contains('react-hot-toast') ||
             element.closest('[role="status"]') !== null ||
@@ -280,9 +276,7 @@ export async function runClientSideRetinaFallback(
             element.closest('[class*="toaster"]') !== null ||
             element.closest('[data-rht-toast]') !== null ||
             element.tagName.toLowerCase() === 'toaster' ||
-            element.classList.contains('no-print') ||
-            txt.includes('Rendering high-DPI') ||
-            txt.includes('Generating PDF')
+            element.classList.contains('no-print')
           );
         },
       } as any);
@@ -321,8 +315,16 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
     const extractedStyles = extractActiveBrowserStyles();
     const inlineVars = canvasWrapElement?.getAttribute('style') || '';
     
+    // Clean up stray empty bullets before serialization
+    const clonedElement = resumeElement.cloneNode(true) as HTMLElement;
+    clonedElement.querySelectorAll('li').forEach(li => {
+      if (!li.textContent?.trim()) {
+        li.remove();
+      }
+    });
+    
     const selfContainedHtml = buildSelfContainedHtml(
-      resumeElement.outerHTML,
+      clonedElement.outerHTML,
       extractedStyles,
       inlineVars,
       pageSize
@@ -331,10 +333,21 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
     onProgress?.('server_rendering', 'Generating enterprise vector PDF via serverless Chromium...');
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9500); // Trigger fallback before Vercel Hobby plan limit (10s)
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s timeout (aligns with maxDuration=60)
 
     let response: Response;
     try {
+      await fetch('/api/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          html: selfContainedHtml,
+          filename: cleanFilename,
+          pageSize,
+          htmlOnly: true,
+        }),
+      }).catch(e => console.error(e));
+
       response = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -13,9 +13,10 @@ const CHROMIUM_PACK_URL =
   "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
 
 async function getChromiumExecutable(): Promise<string> {
-  const isLocal = process.env.NODE_ENV === "development";
+  const isLocal = process.env.NODE_ENV === "development" || process.platform === "darwin" || process.platform === "win32";
   if (isLocal) {
-    return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    const isMac = process.platform === "darwin";
+    return isMac ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe";
   }
 
   if (cachedExecutablePath) {
@@ -40,14 +41,23 @@ async function getChromiumExecutable(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[DEBUG export-pdf] Received POST request");
     const body = await request.json();
-    const { html, viewport } = body;
+    const { html, viewport, htmlOnly } = body;
 
     if (!html || typeof html !== "string") {
       return NextResponse.json(
-        { error: "Missing or invalid 'html' payload in request body." },
+        { error: "Valid HTML string is required" },
         { status: 400 }
       );
+    }
+
+    if (htmlOnly) {
+      const fs = require('fs');
+      fs.writeFileSync('/tmp/export.html', html);
+      return new NextResponse("Saved to /tmp/export.html", {
+        headers: { "Content-Type": "text/plain" },
+      });
     }
 
     const isProduction =
@@ -67,15 +77,27 @@ export async function POST(request: NextRequest) {
         ]
       : ["--no-sandbox", "--disable-setuid-sandbox"];
 
-    const browser = await puppeteerCore.launch({
-      args,
-      defaultViewport: (chromium as any).defaultViewport || { width: 1400, height: 1800 },
-      executablePath,
-      headless: (chromium as any).headless ?? true,
-    });
+    const isLocal = process.env.NODE_ENV === "development" || process.platform === "darwin" || process.platform === "win32";
 
+    const browser = await puppeteerCore.launch(
+      isLocal
+        ? {
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+            executablePath,
+            headless: true, // Native desktop Chrome headless mode
+          }
+        : {
+            args,
+            defaultViewport: (chromium as any).defaultViewport || { width: 1400, height: 1800 },
+            executablePath,
+            headless: (chromium as any).headless ?? true, // Sparticuz-specific headless string ("shell")
+          }
+    );
     const page = await browser.newPage();
 
+    console.log("[DEBUG export-pdf] HTML includes print-avoid-break?", html.includes("print-avoid-break"));
+    console.log("[DEBUG export-pdf] HTML includes manual-break?", html.includes("manual-break"));
+    
     if (viewport) {
       await page.setViewport({
         width: viewport.width || 1200,
@@ -84,7 +106,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await page.setContent(html, { waitUntil: ["domcontentloaded", "networkidle0"] as any });
+    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 60000 });
+
+    // Explicitly wait for images to load or error out (prevents blob: URL hangs)
+    await page.evaluate(async () => {
+      const images = Array.from(document.querySelectorAll("img"));
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return;
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve);
+            img.addEventListener("error", resolve);
+          });
+        })
+      );
+    });
+
+    // Explicitly wait for fonts to load with a 10-second fail-safe timeout
+    await page.evaluate(async () => {
+      await Promise.race([
+        document.fonts.ready,
+        new Promise((resolve) => setTimeout(resolve, 10000)),
+      ]);
+    });
 
     const pdfBuffer = await page.pdf({
       format: "letter",

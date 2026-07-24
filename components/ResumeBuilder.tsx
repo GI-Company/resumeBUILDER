@@ -253,7 +253,7 @@ const SectionRenderer = memo(({
                     <>
                       <PageBreakGap id="summary-content" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                       <ContentEditableField tagName="div"
-                        className="summary font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break outline-none print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                        className="summary font-[family:var(--font-body)] italic text-sm text-[var(--ink-soft)] leading-[var(--line-height)] rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] outline-none transition-all duration-300"
                         data-page-break-id="summary-content"
                         style={{
                           backgroundColor: "var(--panel-rgba)",
@@ -261,7 +261,6 @@ const SectionRenderer = memo(({
                           boxShadow: "var(--box-shadow)",
                           backdropFilter: "blur(var(--backdrop-blur))",
                           WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                          breakBefore: pageBreakElementIds.includes("summary-content") ? "page" : "auto",
                         }}
                         html={summary} onChange={(val) => { setSummary(val); }}
                         spellCheck={spellcheckEnabled}
@@ -277,7 +276,7 @@ const SectionRenderer = memo(({
                         values={licenses}
                         onReorder={setLicenses}
                         as="ul"
-                        className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                        className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300"
                         id="lic-list"
                         data-page-break-id="lic-list"
                         style={{
@@ -286,7 +285,6 @@ const SectionRenderer = memo(({
                           boxShadow: "var(--box-shadow)",
                           backdropFilter: "blur(var(--backdrop-blur))",
                           WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                          breakBefore: pageBreakElementIds.includes("lic-list") ? "page" : "auto",
                         }}
                       >
                         {licenses.map((lic: any) => (
@@ -336,7 +334,7 @@ const SectionRenderer = memo(({
                       <SafeReorderGroup isPrint={isPrint}
                         values={skills}
                         onReorder={setSkills}
-                        className="skills-grid grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 rounded-[var(--radius)] p-5 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                        className="skills-grid flex flex-wrap gap-x-6 gap-y-3 rounded-[var(--radius)] p-5 mb-[var(--section-gap)] transition-all duration-300 [&>*]:w-full [&>*]:md:w-[calc(50%-12px)]"
                         id="skills-grid"
                         data-page-break-id="skills-grid"
                         style={{
@@ -345,7 +343,6 @@ const SectionRenderer = memo(({
                           boxShadow: "var(--box-shadow)",
                           backdropFilter: "blur(var(--backdrop-blur))",
                           WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                          breakBefore: pageBreakElementIds.includes("skills-grid") ? "page" : "auto",
                         }}
                       >
                         {skills.map((sk: any) => (
@@ -478,7 +475,7 @@ const SectionRenderer = memo(({
                               value={exp}
                               id={`exp-${exp.id}`}
                               
-                              className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                              className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] pl-9 group transition-all duration-300"
                               data-page-break-id={isContinuation ? undefined : `exp-${exp.id}`}
                               style={{
                                 backgroundColor: "var(--panel-rgba)",
@@ -486,7 +483,6 @@ const SectionRenderer = memo(({
                                 boxShadow: "var(--box-shadow)",
                                 backdropFilter: "blur(var(--backdrop-blur))",
                                 WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                                breakBefore: pageBreakElementIds.includes(`exp-${exp.id}`) ? "page" : "auto",
                               }}
                             >
 {(dc: any) => (<>
@@ -552,7 +548,6 @@ const SectionRenderer = memo(({
                                     data-page-break-id={`bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1.5"
                                     style={{
-                                      breakBefore: pageBreakElementIds.includes(`bullet-${b.id}`) ? "page" : "auto",
                                     }}
                                   >
                                     <PageBreakGap id={`bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
@@ -622,7 +617,6 @@ const SectionRenderer = memo(({
                                   data-page-break-id={`meta-${exp.id}`}
                                   className="w-full"
                                   style={{
-                                    breakBefore: pageBreakElementIds.includes(`meta-${exp.id}`) ? "page" : "auto",
                                   }}
                                 >
                                   <PageBreakGap id={`meta-${exp.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
@@ -663,7 +657,7 @@ const SectionRenderer = memo(({
                               value={edu}
                               id={`edu-${edu.id}`}
                               
-                              className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                              className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 pl-9 group transition-all duration-300"
                               data-page-break-id={isContinuation ? undefined : `edu-${edu.id}`}
                               style={{
                                 backgroundColor: "var(--panel-rgba)",
@@ -671,7 +665,6 @@ const SectionRenderer = memo(({
                                 boxShadow: "var(--box-shadow)",
                                 backdropFilter: "blur(var(--backdrop-blur))",
                                 WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                                breakBefore: pageBreakElementIds.includes(`edu-${edu.id}`) ? "page" : "auto",
                               }}
                             >
 {(dc: any) => (<>
@@ -714,7 +707,6 @@ const SectionRenderer = memo(({
                                     data-page-break-id={`edu-bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1"
                                     style={{
-                                      breakBefore: pageBreakElementIds.includes(`edu-bullet-${b.id}`) ? "page" : "auto",
                                     }}
                                   >
                                     <PageBreakGap id={`edu-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
@@ -805,7 +797,7 @@ const SectionRenderer = memo(({
                               key={proj.id}
                               value={proj}
                               id={`proj-${proj.id}`}
-                              className="proj-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 print-avoid-break pl-9 group print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                              className="proj-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 pl-9 group transition-all duration-300"
                               data-page-break-id={isContinuation ? undefined : `proj-${proj.id}`}
                               style={{
                                 backgroundColor: "var(--panel-rgba)",
@@ -813,7 +805,6 @@ const SectionRenderer = memo(({
                                 boxShadow: "var(--box-shadow)",
                                 backdropFilter: "blur(var(--backdrop-blur))",
                                 WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                                breakBefore: pageBreakElementIds.includes(`proj-${proj.id}`) ? "page" : "auto",
                               }}
                             >
 {(dc: any) => (<>
@@ -868,7 +859,6 @@ const SectionRenderer = memo(({
                                     data-page-break-id={`proj-bullet-${b.id}`}
                                     className="relative group/bullet pl-1 mb-1"
                                     style={{
-                                      breakBefore: pageBreakElementIds.includes(`proj-bullet-${b.id}`) ? "page" : "auto",
                                     }}
                                   >
                                     <PageBreakGap id={`proj-bullet-${b.id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
@@ -947,7 +937,7 @@ const SectionRenderer = memo(({
                       values={publications}
                       onReorder={setPublications}
                       as="ul"
-                      className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                      className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300"
                       id="pub-list"
                       data-page-break-id="pub-list"
                       style={{
@@ -956,7 +946,6 @@ const SectionRenderer = memo(({
                         boxShadow: "var(--box-shadow)",
                         backdropFilter: "blur(var(--backdrop-blur))",
                         WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                        breakBefore: pageBreakElementIds.includes("pub-list") ? "page" : "auto",
                       }}
                     >
                       {publications?.map((pub: any) => (
@@ -1002,7 +991,7 @@ const SectionRenderer = memo(({
                       values={awards}
                       onReorder={setAwards}
                       as="ul"
-                      className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300"
+                      className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300"
                       id="award-list"
                       data-page-break-id="award-list"
                       style={{
@@ -1011,7 +1000,6 @@ const SectionRenderer = memo(({
                         boxShadow: "var(--box-shadow)",
                         backdropFilter: "blur(var(--backdrop-blur))",
                         WebkitBackdropFilter: "blur(var(--backdrop-blur))",
-                        breakBefore: pageBreakElementIds.includes("award-list") ? "page" : "auto",
                       }}
                     >
                       {awards?.map((aw: any) => (
@@ -1885,13 +1873,13 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     const gazeDensity = GazeProfiler.calculateGazeDensity(20, 20);
     const layout = LayoutRebalancer.calculateOptimalLayout(allText.length, design.pageSize === "letter" ? 1056 : 1123);
 
-    const report = `📊 **Agent Rez Cognitive Audit Report**:\n
+    const report = `📊 **Agent Rez Structural & Readability Audit**:\n
 • **ATS Action-Verb Saliency**: **${saliencyScore}/5.0** (High impact verbs & metrics)
-• **Top-30% Recruiter Gaze Focus**: **${(gazeDensity * 100).toFixed(0)}% Visual Weight**
+• **Top-Third Visual Weight**: **${(gazeDensity * 100).toFixed(0)}%** (F-Pattern Distribution)
 • **Recommended Whitespace Density**: **${(layout.calculatedWhitespaceRatio * 100).toFixed(0)}%** (Optimal line height: ${layout.lineHeight})
 
 💡 **Agent Rez Recommendation**:
-• Toggle the eye icon to view the 6-Second Eye-Tracking Heatmap Overlay.
+• Toggle the eye icon to view the F-Pattern Visual Hierarchy Overlay.
 • Use 1-Click ATS Verb Booster to maximize ATS parsing score!`;
 
     setAgentMessages(prev => [...prev, { role: "assistant", content: report }]);
@@ -2066,13 +2054,23 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       }
 
       // 2. Chat / Refinement Mode (Not in Interview)
+      const allText = experiences.map((e: any) => (e.bullets || []).map((b: any) => b.text).join(' ')).join(' ');
+      const saliencyScore = StructuralParser.calculateSaliencyScore(allText);
+      const gazeDensity = GazeProfiler.calculateGazeDensity(20, 20);
+      const layoutInfo = LayoutRebalancer.calculateOptimalLayout(allText.length, design.pageSize === "letter" ? 1056 : 1123);
+
       const systemPrompt = `You are Agent Rez, an elite AI Career Agent who has direct access to update the user's active resume draft in real-time.
       
       The user's current resume state is:
       ${JSON.stringify({ name, contactLine, summary, experiences, educations, skills })}
       
+      Current Live Cognitive & ATS Audit Metrics:
+      - ATS Action-Verb Saliency Score: ${saliencyScore}/5.0
+      - F-Pattern Visual Weight Density: ${(gazeDensity * 100).toFixed(0)}%
+      - Recommended Line Height & Whitespace: ${layoutInfo.lineHeight} (${(layoutInfo.calculatedWhitespaceRatio * 100).toFixed(0)}% whitespace ratio)
+      
       The user is talking to you or instructing you to make changes.
-      You must respond to the user in a friendly, professional, and encouraging tone.
+      You must respond to the user in a friendly, professional, and encouraging tone. When providing advice or feedback, reference these live metrics where relevant.
       
       CRITICAL DIRECTIVE: If the user asks you to edit, change, rewrite, add, or delete anything in their resume, you MUST embed a complete, updated resume JSON block within <UPDATE_RESUME> and </UPDATE_RESUME> XML tags in your response. 
       
@@ -4692,14 +4690,14 @@ Output:
                       </button>
                     </div>
 
-                    {/* Toggle Recruiter Gaze Eye-Tracking Heatmap Overlay */}
+                    {/* Toggle F-Pattern Visual Hierarchy Overlay */}
                     <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-gray-200/50">
-                      <span className="text-[10px] font-bold text-gray-600">6-Sec Recruiter Gaze Overlay</span>
+                      <span className="text-[10px] font-bold text-gray-600">F-Pattern Visual Hierarchy</span>
                       <button
                         type="button"
                         onClick={() => {
                           setShowHeatmapOverlay(!showHeatmapOverlay);
-                          toast.success(!showHeatmapOverlay ? "Recruiter Gaze Heatmap active! 🔥" : "Gaze Heatmap hidden! 🙈");
+                          toast.success(!showHeatmapOverlay ? "Visual Hierarchy Overlay active! 👁️" : "Visual Hierarchy hidden! 🙈");
                         }}
                         className={cn(
                           "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
@@ -6038,10 +6036,10 @@ Output:
                             >
                               <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-900">
                                 <Eye size={13} className="text-purple-600" />
-                                <span>👁️ Gaze & ATS Audit</span>
+                                <span>👁️ Structural & ATS Audit</span>
                               </div>
                               <p className="text-[9px] text-purple-800/80 mt-0.5 leading-snug">
-                                Audit eye-tracking density & ATS saliency score.
+                                Audit visual hierarchy & ATS saliency score.
                               </p>
                             </button>
                           </div>
@@ -6899,14 +6897,13 @@ Output:
                 );
 
                 const hasHeaderOnPage = (idToPageMap?.["header"] ?? 0) === pageIndex;
-                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id));
-                const mainSecs = sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id));
+                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills"].includes(s.id));
+                const mainSecs = sections.filter((s: any) => !["licenses", "skills"].includes(s.id));
 
                 const isSidebarSecOnPage = (s: any) => {
                   const hp = idToPageMap?.[`heading-${s.id}`];
                   if (s.id === "licenses") return (idToPageMap?.["lic-list"] ?? hp ?? 0) === pageIndex;
                   if (s.id === "skills") return (idToPageMap?.["skills-grid"] ?? hp ?? 0) === pageIndex;
-                  if (s.id === "education") return (idToPageMap?.["edu-1"] ?? hp ?? 0) === pageIndex;
                   return (hp ?? 0) === pageIndex;
                 };
 
@@ -7008,25 +7005,25 @@ Output:
                       </>
                     )}
 
-                    {/* 6-Sec Recruiter Eye-Tracking Gaze Heatmap Overlay (Rez-Gaze Engine) */}
+                    {/* F-Pattern Visual Hierarchy Overlay (Rez-Gaze Engine) */}
                     {showHeatmapOverlay && !printPreviewMode && (
                       <div className="absolute inset-0 pointer-events-none no-print z-50 overflow-hidden mix-blend-multiply opacity-75">
                         <svg width="100%" height="100%">
                           <defs>
                             <radialGradient id="gaze-hot-spot" cx="50%" cy="50%" r="50%">
-                              <stop offset="0%" stopColor="rgba(239, 68, 68, 0.65)" />
-                              <stop offset="50%" stopColor="rgba(245, 158, 11, 0.35)" />
+                              <stop offset="0%" stopColor="rgba(147, 51, 234, 0.55)" />
+                              <stop offset="50%" stopColor="rgba(168, 85, 247, 0.25)" />
                               <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
                             </radialGradient>
                           </defs>
-                          {/* F-Pattern & Top 30% Recruiter Focal Hotspots */}
+                          {/* F-Pattern & Top 30% Focal Hotspots */}
                           <circle cx="20%" cy="12%" r="140" fill="url(#gaze-hot-spot)" />
                           <circle cx="50%" cy="14%" r="120" fill="url(#gaze-hot-spot)" />
                           <circle cx="25%" cy="28%" r="110" fill="url(#gaze-hot-spot)" />
                           <circle cx="20%" cy="45%" r="85" fill="url(#gaze-hot-spot)" />
                         </svg>
-                        <div className="absolute top-2 right-4 bg-red-600/90 text-white font-sans text-[9px] font-extrabold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 uppercase tracking-wider backdrop-blur-xs">
-                          🔥 6-Sec Recruiter Attention Heatmap Active
+                        <div className="absolute top-2 right-4 bg-purple-600/90 text-white font-sans text-[9px] font-extrabold px-2 py-0.5 rounded shadow-sm flex items-center gap-1 uppercase tracking-wider backdrop-blur-xs">
+                          👁️ F-Pattern Visual Hierarchy Active
                         </div>
                       </div>
                     )}
@@ -7035,7 +7032,7 @@ Output:
                     {(idToPageMap?.["header"] ?? 0) === pageIndex && (
                       <div
                         className={cn(
-                          "header rounded-[var(--radius)] py-6 px-6 mb-[var(--section-gap)] print-avoid-break print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300",
+                          "header rounded-[var(--radius)] py-6 px-6 mb-[var(--section-gap)] print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300",
                           `text-${design.headerAlign}`,
                         )}
                         data-page-break-id="header"
@@ -7133,34 +7130,40 @@ Output:
                     {/* Unified Single Sections Tree (100% Editor & PDF Parity) */}
                     <div className="resume-sections-container w-full">
                       {design.layout === "sidebar" ? (
-                        <div className="flex w-full gap-[1.1rem] items-start">
-                          <div data-column="sidebar" className="w-[var(--sidebar-w)] shrink-0 flex flex-col">
+                        <div 
+                          className="grid w-full items-start"
+                          style={{
+                            gridTemplateColumns: "var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem)",
+                            columnGap: "1.1rem"
+                          }}
+                        >
+                          <div data-column="sidebar" className="flex flex-col min-w-0">
                             <Reorder.Group
-                              values={sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id))}
+                              values={sections.filter((s: any) => ["licenses", "skills"].includes(s.id))}
                               onReorder={(newOrder) => {
-                                const mainSecs = sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id));
+                                const mainSecs = sections.filter((s: any) => !["licenses", "skills"].includes(s.id));
                                 setSections([...newOrder, ...mainSecs]);
                               }}
                               id={`sections-sidebar-${pageIndex}`}
                               className="w-full flex flex-col"
                             >
                               {sections
-                                .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
+                                .filter((s: any) => ["licenses", "skills"].includes(s.id))
                                 .map((s: any) => renderSection(s, "sidebar-"))}
                             </Reorder.Group>
                           </div>
-                          <div data-column="main" className="flex-1 flex flex-col min-w-0">
+                          <div data-column="main" className="flex flex-col min-w-0">
                             <Reorder.Group
-                              values={sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id))}
+                              values={sections.filter((s: any) => !["licenses", "skills"].includes(s.id))}
                               onReorder={(newOrder) => {
-                                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id));
+                                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills"].includes(s.id));
                                 setSections([...sidebarSecs, ...newOrder]);
                               }}
                               id={`sections-main-${pageIndex}`}
                               className="w-full flex flex-col"
                             >
                               {sections
-                                .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
+                                .filter((s: any) => !["licenses", "skills"].includes(s.id))
                                 .map((s: any) => renderSection(s, "main-"))}
                             </Reorder.Group>
                           </div>
