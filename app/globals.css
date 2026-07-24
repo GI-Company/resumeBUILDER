@@ -192,7 +192,7 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   margin-right: 0 !important;
 }
 .layout-sidebar .skills-grid {
-  grid-template-columns: 100%;
+  grid-template-columns: 1fr !important;
   padding: 1rem 1.2rem;
 }
 .layout-sidebar .bullet-list {
