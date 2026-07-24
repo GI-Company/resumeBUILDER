@@ -3339,6 +3339,10 @@ Output:
     const units = rawUnits.filter((el) => {
       const id = el.getAttribute("data-page-break-id");
       if (!id) return false;
+      
+      // Skip hidden duplicates (elements with display: none applied by our page assignment logic)
+      if (el.getBoundingClientRect().height === 0) return false;
+      
       if (seenIds.has(id)) return false;
       seenIds.add(id);
       return true;

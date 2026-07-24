@@ -106,6 +106,7 @@ export function buildSelfContainedHtml(
       <style>
         /* --- Root Dynamic Variables --- */
         :root {
+          --sidebar-w: 230px !important;
           ${inlineVars}
         }
 
@@ -117,9 +118,9 @@ export function buildSelfContainedHtml(
         }
 
         /* Force explicit fallback for sidebar grid tracks in PDF export */
-        .layout-sidebar .resume-sections-container > .grid {
+        .resume-sections-container > .grid {
           display: grid !important;
-          grid-template-columns: 230px calc(100% - 230px - 1.1rem) !important;
+          grid-template-columns: var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem) !important;
           column-gap: 1.1rem !important;
           align-items: start !important;
         }
