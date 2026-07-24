@@ -482,6 +482,7 @@ const SectionRenderer = memo(({
                               className="exp-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-[var(--section-gap)] pl-9 group transition-all duration-300"
                               data-page-break-id={isContinuation ? undefined : `exp-${exp.id}`}
                               style={{
+                                display: targetPageIndex !== undefined && !isContinuation && jobHeaderPage !== targetPageIndex ? "none" : undefined,
                                 backgroundColor: "var(--panel-rgba)",
                                 border: "var(--box-border)",
                                 boxShadow: "var(--box-shadow)",
@@ -664,6 +665,7 @@ const SectionRenderer = memo(({
                               className="edu-entry relative rounded-[var(--radius)] p-4 md:p-5 mb-2 pl-9 group transition-all duration-300"
                               data-page-break-id={isContinuation ? undefined : `edu-${edu.id}`}
                               style={{
+                                display: targetPageIndex !== undefined && !isContinuation && eduHeaderPage !== targetPageIndex ? "none" : undefined,
                                 backgroundColor: "var(--panel-rgba)",
                                 border: "var(--box-border)",
                                 boxShadow: "var(--box-shadow)",
@@ -3415,7 +3417,7 @@ Output:
         : pageStartYMap[colKey]! + contentHeightPx;
         
       const isCurrentlyBroken = breakItem.id && currentIds.includes(breakItem.id);
-      const hysteresisBuffer = isCurrentlyBroken ? 85 : 0;
+      const hysteresisBuffer = isCurrentlyBroken ? 15 : 0;
       const wouldOverflow = elBottom > (maxSafeBottom - hysteresisBuffer);
 
       // Prevent moving the very first section heading right below the top/header of page 1 onto page 2 (which leaves page 1 empty)
