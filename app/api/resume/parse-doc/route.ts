@@ -110,12 +110,19 @@ export async function POST(req: NextRequest) {
           const parsedData = JSON.parse(raw);
           return NextResponse.json({ success: true, data: parsedData, model: 'gemini-1.5-flash' });
         } else {
-          console.error(`[parse-doc] Gemini API error:`, await geminiRes.text());
-          // Fall through to Groq on failure
+          const errText = await geminiRes.text();
+          console.error(`[parse-doc] Gemini API error:`, errText);
+          return NextResponse.json(
+            { success: false, error: `Gemini API Error: ${errText}` },
+            { status: 502 }
+          );
         }
       } catch (e) {
         console.error(`[parse-doc] Gemini fetch exception:`, e);
-        // Fall through to Groq
+        return NextResponse.json(
+          { success: false, error: `Gemini parsing failed: ${e instanceof Error ? e.message : String(e)}` },
+          { status: 500 }
+        );
       }
     }
 

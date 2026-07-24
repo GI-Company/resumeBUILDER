@@ -2996,11 +2996,14 @@ Output:
     // Load from URL if present
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
-    if (id) {
+    if (id && id !== "new") {
       setTimeout(() => {
         setResumeId(id);
         loadResumeFromCloud(id);
       }, 0);
+    } else if (id === "new") {
+      // Clear ID so it saves as a brand new resume instead of passing "new" as UUID
+      setTimeout(() => setResumeId(""), 0);
     }
   }, []);
 
