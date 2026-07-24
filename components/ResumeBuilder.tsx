@@ -1894,11 +1894,14 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
           let textResponse = "";
 
           if (reader) {
+            let buffer = "";
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
-              const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split("\n");
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+              
               for (const line of lines) {
                 if (line.startsWith("data: ")) {
                   const data = line.slice(6).trim();
@@ -2030,11 +2033,14 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       let textResponse = "";
 
       if (reader) {
+        let buffer = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               const data = line.slice(6).trim();
@@ -2236,12 +2242,16 @@ Output:
       if (!reader) throw new Error("No response stream received.");
 
       setAiOutput(""); // Clear previous output
+      let buffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
+        buffer += decoder.decode(value, { stream: true });
+        
         // Parse SSE lines: "data: {...}" or ": meta {...}"
-        const lines = chunk.split("\n");
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        
         for (const line of lines) {
           if (line.startsWith(": meta ")) {
             try {
