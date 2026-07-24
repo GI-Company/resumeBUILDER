@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import AuthModal from './AuthModal';
+import LiveActivityFeed from './LiveActivityFeed';
 
 // Templates details for interactive preview
 const TEMPLATES_INFO = [
@@ -341,6 +342,15 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:block" aria-hidden="true" />
             <span className="text-gray-500">Free daily limits; sign up for unlimited access.</span>
+          </motion.div>
+          
+          {/* Live Activity Feed */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <LiveActivityFeed />
           </motion.div>
 
           {/* Social Proof badges */}

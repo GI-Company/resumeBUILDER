@@ -18,6 +18,11 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 import { groqPromptSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
 import type { AiAction } from '@/lib/types';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // ---------------------------------------------------------------------------
 // Model routing table — ordered by quality, respects free-tier reality
@@ -137,6 +142,18 @@ export async function POST(req: NextRequest) {
         })();
 
         console.log(`[groq] Streaming with model: ${model}`);
+        
+        // Fire-and-forget logging to public activity feed for social proof
+        const activityMsg = aiAction === 'tailor_to_job' ? '🚀 Someone just tailored their resume to a job description'
+          : aiAction === 'generate_summary' ? '✍️ A user generated an executive summary with AI'
+          : aiAction === 'cover_letter' ? '✨ Someone crafted a cover letter using Agent Rez'
+          : aiAction === 'suggest_skills' ? '🎯 A user uncovered high-demand ATS keywords'
+          : '⚡ Someone just optimized a resume bullet with AI';
+        
+        supabase.from('public_activity_feed').insert([
+          { event_type: 'AI_USED', display_message: activityMsg }
+        ]).then(() => {}).catch((e: any) => console.error('[groq] Failed to log activity:', e));
+
         return new Response(readable, {
           headers: {
             'Content-Type': 'text/event-stream',

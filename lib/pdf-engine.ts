@@ -340,8 +340,22 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
       pageSize
     );
 
-    onProgress?.('server_rendering', 'Generating enterprise vector PDF via serverless Chromium...');
+    onProgress?.('server_rendering', 'Initializing serverless Chromium engine...');
     
+    const optimisticMessages = [
+      "Parsing layout & typography rules...",
+      "Injecting high-fidelity CSSOM grid...",
+      "Rendering vector PDF pages...",
+      "Finalizing document stream..."
+    ];
+    let msgIndex = 0;
+    const progressInterval = setInterval(() => {
+      if (msgIndex < optimisticMessages.length) {
+        onProgress?.('server_rendering', optimisticMessages[msgIndex]);
+        msgIndex++;
+      }
+    }, 1500);
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s timeout (aligns with maxDuration=60)
 
@@ -370,6 +384,7 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
       });
     } finally {
       clearTimeout(timeoutId);
+      clearInterval(progressInterval);
     }
 
     if (!response.ok) {

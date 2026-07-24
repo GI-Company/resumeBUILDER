@@ -3060,6 +3060,17 @@ Output:
       });
 
       toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
+      
+      // Fire-and-forget: Log to public activity feed for landing page social proof
+      fetch('/api/log-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'PDF_EXPORTED',
+          display_message: '📄 Someone just exported an ATS-optimized PDF resume'
+        })
+      }).catch(e => console.error("Failed to log activity:", e));
+
     } catch (err: any) {
       console.error("PDF export failed:", err);
       toast.error("PDF export failed. Opening system print as fallback...");

@@ -2,7 +2,7 @@
 -- 1. Resumes Table
 CREATE TABLE IF NOT EXISTS resumes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID NOT NULL REFERENCES auth.users(id),
     content JSONB NOT NULL DEFAULT '{}'::jsonb,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'trash', 'archive')),
     is_public BOOLEAN NOT NULL DEFAULT FALSE,
@@ -114,14 +114,22 @@ BEGIN
     WHERE client_id = p_client_id;
 
     -- 2. Security (Ownership Verification / IDOR Protection)
+    IF v_user_id IS NULL THEN
+        RETURN json_build_object(
+            'success', false,
+            'code', 'UNAUTHORIZED',
+            'message', 'Authentication required to save resumes.'
+        );
+    END IF;
+
     v_final_id := COALESCE(p_id, gen_random_uuid());
     
     SELECT TRUE, user_id INTO v_exists, v_existing_owner
     FROM resumes
     WHERE id = v_final_id;
 
-    IF v_exists AND v_existing_owner IS NOT NULL THEN
-        IF v_user_id IS NULL OR v_existing_owner <> v_user_id THEN
+    IF v_exists THEN
+        IF v_existing_owner <> v_user_id THEN
             RETURN json_build_object(
                 'success', false,
                 'code', 'UNAUTHORIZED',
@@ -136,7 +144,6 @@ BEGIN
     ON CONFLICT (id) DO UPDATE
     SET content = EXCLUDED.content, 
         status = EXCLUDED.status,
-        user_id = COALESCE(resumes.user_id, v_user_id), 
         updated_at = v_now;
 
     -- 4. Audit Log
@@ -231,4 +238,36 @@ BEGIN
     );
 END;
 $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. Public Activity Feed (For Landing Page Live Social Proof)
+CREATE TABLE IF NOT EXISTS public_activity_feed (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type VARCHAR(255) NOT NULL,
+    display_message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Enable RLS and public read access
+ALTER TABLE public_activity_feed ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view activity feed" ON public_activity_feed;
+CREATE POLICY "Public can view activity feed" ON public_activity_feed
+    FOR SELECT USING (true);
+
+-- No direct client inserts/updates. Must use a backend API route.
+DROP POLICY IF EXISTS "No direct insert on public_activity_feed" ON public_activity_feed;
+CREATE POLICY "No direct insert on public_activity_feed" ON public_activity_feed FOR INSERT WITH CHECK (false);
+
+-- Enable Realtime for the public activity feed
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 
+    FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'public_activity_feed'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public_activity_feed;
+  END IF;
+END
+$$;
 
