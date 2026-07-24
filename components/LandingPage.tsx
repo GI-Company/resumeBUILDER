@@ -150,17 +150,43 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
         })
       });
 
-      const resData = await response.json();
       if (!response.ok) {
-        throw new Error(resData.error || "Sandbox evaluation limited. Guests get 5 requests daily.");
+        const errData = await response.json().catch(() => ({}));
+        throw new Error((errData as any).error || "Sandbox evaluation limited. Guests get 5 requests daily.");
       }
 
-      if (resData.success) {
-        setSandboxOutput(resData.text);
-        toast.success("AI suggestion generated! ✨");
-      } else {
-        throw new Error(resData.error || "Failed to generate suggestions.");
+      // Consume the SSE stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      if (!reader) throw new Error("No response stream received.");
+
+      setSandboxOutput(""); // Clear before streaming
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              const token = parsed.choices?.[0]?.delta?.content ?? "";
+              if (token) {
+                accumulated += token;
+                setSandboxOutput(accumulated);
+              }
+            } catch { /* skip incomplete chunk */ }
+          }
+        }
       }
+
+      if (!accumulated.trim()) throw new Error("Failed to generate suggestions.");
+      toast.success("AI suggestion generated! ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
       setSandboxOutput(`⚠️ LIMITATION NOTICE: ${err.message || "AI engine request failed. Guest tier is limited to 5 daily requests. Sign up to unlock unlimited high-speed requests."}`);

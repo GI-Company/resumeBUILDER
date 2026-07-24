@@ -1883,12 +1883,35 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
             })
           });
 
-          const resData = await response.json();
-          if (!response.ok || !resData.success) {
-            throw new Error(resData.error || "Failed to compile resume.");
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error((errData as any).error || "Failed to compile resume.");
           }
 
-          const textResponse = resData.text;
+          // Consume the SSE stream
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          let textResponse = "";
+
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split("\n");
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const data = line.slice(6).trim();
+                  if (data === "[DONE]") break;
+                  try {
+                    const parsed = JSON.parse(data);
+                    const token = parsed.choices?.[0]?.delta?.content ?? "";
+                    textResponse += token;
+                  } catch { /* skip */ }
+                }
+              }
+            }
+          }
           const updatedHistory = [...updatedMessages, generatingMsg];
           const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
           let actionExecuted = undefined;
@@ -1996,12 +2019,35 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         })
       });
 
-      const resData = await response.json();
-      if (!response.ok || !resData.success) {
-        throw new Error(resData.error || "Failed to generate response.");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error((errData as any).error || "Failed to generate response.");
       }
 
-      const textResponse = resData.text;
+      // Consume the SSE stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let textResponse = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") break;
+              try {
+                const parsed = JSON.parse(data);
+                const token = parsed.choices?.[0]?.delta?.content ?? "";
+                textResponse += token;
+              } catch { /* skip */ }
+            }
+          }
+        }
+      }
       const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
       let actionExecuted = undefined;
 
