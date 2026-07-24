@@ -260,4 +260,34 @@ export function usePaginationEngine(containerRef: React.RefObject<HTMLElement | 
       window.removeEventListener("resize", debouncedCalc);
     };
   }, [calcPages, containerRef]);
+
+  // Trigger calculation when content that affects layout changes
+  // We must do this because the container has a fixed height based on totalPages,
+  // so ResizeObserver won't detect text wrapping or content changes within a page.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      calcPages();
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [
+    calcPages,
+    store.design.pageSize,
+    store.design.pageMargin,
+    store.design.pageMarginTopBottom,
+    store.design.font,
+    store.design.fontSize,
+    store.design.lineSpacing,
+    store.sections,
+    store.experiences,
+    store.educations,
+    store.skills,
+    store.projects,
+    store.publications,
+    store.awards,
+    store.summary,
+    store.name,
+    store.contactLine,
+    store.footer,
+    store.manualBreaks
+  ]);
 }

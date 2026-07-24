@@ -2351,7 +2351,7 @@ Output:
     }
 
     if (file.type === "application/pdf" || file.name.endsWith(".pdf") || file.name.endsWith(".docx")) {
-      const toastId = toast.loading("Uploading and parsing document with Gemini... ⚡");
+      const toastId = toast.loading("Uploading and parsing document with Groq... ⚡");
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
