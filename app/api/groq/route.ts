@@ -150,9 +150,15 @@ export async function POST(req: NextRequest) {
           : aiAction === 'suggest_skills' ? '🎯 A user uncovered high-demand ATS keywords'
           : '⚡ Someone just optimized a resume bullet with AI';
         
-        supabase.from('public_activity_feed').insert([
-          { event_type: 'AI_USED', display_message: activityMsg }
-        ]).then(() => {}).catch((e: any) => console.error('[groq] Failed to log activity:', e));
+        (async () => {
+          try {
+            await supabase.from('public_activity_feed').insert([
+              { event_type: 'AI_USED', display_message: activityMsg }
+            ]);
+          } catch (e) {
+            console.error('[groq] Failed to log activity:', e);
+          }
+        })();
 
         return new Response(readable, {
           headers: {
