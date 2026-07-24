@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { parseDocSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
+// @ts-ignore
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 
