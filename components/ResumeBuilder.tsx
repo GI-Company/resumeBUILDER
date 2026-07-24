@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
+import { useResumeStore } from "../lib/store/useResumeStore";
+import { usePaginationEngine } from "../hooks/usePaginationEngine";
 import { StructuralParser, GazeProfiler, LayoutRebalancer } from "@/lib/agent-rez";
 import { ContentEditableField } from "./ContentEditableField";
 import { Reorder, useDragControls, motion } from "motion/react";
@@ -1070,6 +1072,61 @@ const SectionRenderer = memo(({
 });
 
 export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: () => void, initialTemplateId?: string }) {
+
+  const store = useResumeStore();
+
+  const {
+    name, contactLine, summary, experiences, educations, skills, licenses, projects, publications, awards, footer, profilePhoto, design, sections, sectionHeaders, manualBreaks,
+    canvasZoom, printPreviewMode, showMarginGuides, showHeatmapOverlay, activeSidebarTab, sidebarWidth, showOnboarding, aiPresetType, aiAgentTab, interviewStep, interviewAnswers, agentMessages,
+    gapHeights, idToPageMap, pageBreaks, pageBreakElementIds
+  } = store;
+
+
+  // --- Shim Setters for Zustand ---
+  const updateDoc = store.updateDocument;
+  const updateUI = store.updateUI;
+  const updateLayout = store.updateLayout;
+
+  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(store.name) : v });
+  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(store.contactLine) : v });
+  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(store.summary) : v });
+  const setFooter = (v: any) => updateDoc({ footer: typeof v === "function" ? v(store.footer) : v });
+  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(store.experiences) : v });
+  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(store.educations) : v });
+  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(store.skills) : v });
+  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(store.licenses) : v });
+  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(store.projects) : v });
+  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(store.publications) : v });
+  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(store.awards) : v });
+  const setProfilePhoto = (v: any) => updateDoc({ profilePhoto: typeof v === "function" ? v(store.profilePhoto) : v });
+  const setDesign = (v: any) => updateDoc({ design: typeof v === "function" ? v(store.design) : v });
+  const setSections = (v: any) => updateDoc({ sections: typeof v === "function" ? v(store.sections) : v });
+  const setSectionHeaders = (v: any) => updateDoc({ sectionHeaders: typeof v === "function" ? v(store.sectionHeaders) : v });
+  const setManualBreaks = (v: any) => updateDoc({ manualBreaks: typeof v === "function" ? v(store.manualBreaks) : v });
+
+  const setCanvasZoom = (v: any) => updateUI({ canvasZoom: typeof v === "function" ? v(store.canvasZoom) : v });
+  const setPrintPreviewMode = (v: any) => updateUI({ printPreviewMode: typeof v === "function" ? v(store.printPreviewMode) : v });
+  const setShowMarginGuides = (v: any) => updateUI({ showMarginGuides: typeof v === "function" ? v(store.showMarginGuides) : v });
+  const setShowHeatmapOverlay = (v: any) => updateUI({ showHeatmapOverlay: typeof v === "function" ? v(store.showHeatmapOverlay) : v });
+  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(store.activeSidebarTab) : v });
+  const setSidebarWidth = (v: any) => updateUI({ sidebarWidth: typeof v === "function" ? v(store.sidebarWidth) : v });
+  const setShowOnboarding = (v: any) => updateUI({ showOnboarding: typeof v === "function" ? v(store.showOnboarding) : v });
+  const setAiPresetType = (v: any) => updateUI({ aiPresetType: typeof v === "function" ? v(store.aiPresetType) : v });
+  const setAiAgentTab = (v: any) => updateUI({ aiAgentTab: typeof v === "function" ? v(store.aiAgentTab) : v });
+  const setInterviewStep = (v: any) => updateUI({ interviewStep: typeof v === "function" ? v(store.interviewStep) : v });
+  const setInterviewAnswers = (v: any) => updateUI({ interviewAnswers: typeof v === "function" ? v(store.interviewAnswers) : v });
+  const setAgentMessages = (v: any) => updateUI({ agentMessages: typeof v === "function" ? v(store.agentMessages) : v });
+
+  const setGapHeights = (v: any) => updateLayout({ gapHeights: typeof v === "function" ? v(store.gapHeights) : v });
+  const setIdToPageMap = (v: any) => updateLayout({ idToPageMap: typeof v === "function" ? v(store.idToPageMap) : v });
+  const setPageBreaks = (v: any) => updateLayout({ pageBreaks: typeof v === "function" ? v(store.pageBreaks) : v });
+  const setPageBreakElementIds = (v: any) => updateLayout({ pageBreakElementIds: typeof v === "function" ? v(store.pageBreakElementIds) : v });
+
+  const history = store.past;
+  const setHistory = (v: any) => {};
+  const historyIndex = store.past.length - 1;
+  const setHistoryIndex = (v: any) => {};
+
   // --- Local Draft Retrieval ---
   let localDraft: any = null;
   if (typeof window !== "undefined") {
@@ -1107,70 +1164,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
   const [pageDrawerOpen, setPageDrawerOpen] = useState(false);
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
-  const [canvasZoom, setCanvasZoom] = useState<number>(100);
-  const [printPreviewMode, setPrintPreviewMode] = useState<boolean>(false);
-  const [showMarginGuides, setShowMarginGuides] = useState<boolean>(true);
-  const [showHeatmapOverlay, setShowHeatmapOverlay] = useState<boolean>(false);
 
   // --- Design State ---
-  const [design, setDesign] = useState<DesignConfig>(() => {
-    const initialTemplate = initialTemplateId ? TEMPLATES.find(t => t.id === initialTemplateId) : null;
-    const baseDesign = (initialTemplate ?? localDraft?.design ?? {}) as any;
-    const defaults = {
-      template: "classic",
-      fontHeading: "'Kalam',cursive",
-      fontBody: "'Lora',serif",
-      accent: "#3a353a",
-      panel: "#ffffff",
-      paper: "#ffffff",
-      layout: "classic",
-      scale: 100,
-      radius: 10,
-      lineHeight: 1.55,
-      gap: 14,
-      headingStyle: "bar",
-      italic: true,
-      pageSize: "letter",
-      headerAlign: "left",
-      listStyle: "disc",
-      pageMargin: 38,
-      itemSpacing: 16,
-      jobLayout: "stacked",
-      boxOpacity: 95,
-      boxShadow: "none",
-      borderStyle: "none",
-      backdropBlur: 4,
-    };
-    return {
-      ...defaults,
-      ...baseDesign,
-      pageSize: baseDesign?.pageSize || defaults.pageSize,
-    };
-  });
 
   // --- Profile Photo State ---
-  const [profilePhoto, setProfilePhoto] = useState<ProfilePhotoConfig>(() => localDraft?.profilePhoto ?? {
-    enabled: false,
-    url: "https://picsum.photos/seed/portrait/150/150",
-    rawUploadedUrl: "",
-    opacity: 100,
-    scale: 100,
-    radius: 50,
-    filter: "none",
-    tone: "none",
-    xOffset: 0,
-    yOffset: 0,
-    borderWidth: 2,
-    borderColor: "#e2e8f0",
-    aspectRatio: "1:1",
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    blur: 0,
-    hueRotate: 0,
-    sepia: 0,
-    animation: "none",
-  });
 
   const [eraseModalOpen, setEraseModalOpen] = useState(false);
   const [bgRemoveSensitivity, setBgRemoveSensitivity] = useState(40);
@@ -1436,20 +1433,12 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   };
 
   // --- Content State ---
-  const [name, setName] = useState(() => localDraft?.name ?? "ALEX MORGAN");
-  const [contactLine, setContactLine] = useState(() => localDraft?.contactLine ??
-    "San Francisco, CA <span class=\"text-[var(--hairline)] mx-2\">|</span> (415) 555-0199 <span class=\"text-[var(--hairline)] mx-2\">|</span> alex.morgan@email.com <span class=\"text-[var(--hairline)] mx-2\">|</span> linkedin.com/in/alexmorgan"
-  );
-  const [summary, setSummary] = useState(() => localDraft?.summary ??
-    "Innovative Full-Stack Software Engineer with over 5 years of experience designing, building, and deploying highly scalable web applications. Proven track record of optimizing application performance, leading cross-functional teams, and implementing cloud-native solutions to drive business outcomes."
-  );
-  const [footer, setFooter] = useState(() => localDraft?.footer ?? "Alex Morgan");
   const [aiRemaining, setAiRemaining] = useState<number | null>(5);
   const [showCapacityTip, setShowCapacityTip] = useState(false);
 
   // --- History & Undo/Redo State ---
-  const [history, setHistory] = useState<any[]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  
+  
   const isHistoryActionRef = useRef(false);
   const historyRef = useRef<any[]>([]);
   const historyIndexRef = useRef<number>(-1);
@@ -1460,120 +1449,14 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     historyIndexRef.current = historyIndex;
   }, [history, historyIndex]);
 
-  const [sections, setSections] = useState<any[]>(() => localDraft?.sections ?? [
-    { id: "summary" },
-    { id: "licenses" },
-    { id: "skills" },
-    { id: "experience" },
-    { id: "education" },
-  ]);
-  const [manualBreaks, setManualBreaks] = useState<Record<string, boolean>>(() => localDraft?.manualBreaks ?? {});
 
-  const [sectionHeaders, setSectionHeaders] = useState<Record<string, string>>(() => localDraft?.sectionHeaders ?? {
-    summary: "Professional Summary",
-    licenses: "Certifications & Licenses",
-    skills: "Skills",
-    experience: "Professional Experience",
-    education: "Education",
-    projects: "Projects",
-    publications: "Publications",
-    awards: "Awards & Honors"
-  });
 
-  const [projects, setProjects] = useState<any[]>(() => localDraft?.projects ?? [
-    {
-      id: "proj-1",
-      title: "<b>Personal Portfolio Website</b> — Next.js & Tailwind",
-      date: "2024",
-      bullets: [
-        { id: "pb-1", text: "Built with Next.js, Tailwind CSS, and Framer Motion for premium portfolio presentation." },
-      ]
-    }
-  ]);
 
-  const [publications, setPublications] = useState<any[]>(() => localDraft?.publications ?? [
-    {
-      id: "pub-1",
-      text: "<b>Real-time Collaborative Platforms</b> — Technical Journal, 2024"
-    }
-  ]);
 
-  const [awards, setAwards] = useState<any[]>(() => localDraft?.awards ?? [
-    {
-      id: "aw-1",
-      text: "<b>First Place Hackathon</b> — Developer Coalition, 2023"
-    }
-  ]);
 
-  const [licenses, setLicenses] = useState<any[]>(() => localDraft?.licenses ?? [
-    {
-      id: "lic-1",
-      text: "<b>AWS Certified Solutions Architect</b> — Amazon Web Services (ID: AWS-ASA-99321)",
-    },
-    {
-      id: "lic-2",
-      text: "<b>Professional Scrum Master I (PSM I)</b> — Scrum.org",
-    },
-  ]);
 
-  const [skills, setSkills] = useState<any[]>(() => localDraft?.skills ?? [
-    {
-      id: "sk-1",
-      title: "Core Languages",
-      items: "TypeScript, JavaScript (ES6+), Python, Go, Java, SQL, HTML5, CSS3",
-    },
-    {
-      id: "sk-2",
-      title: "Frameworks & Tools",
-      items: "React, Next.js, Node.js, Express, Tailwind CSS, Redux, PostgreSQL, Docker, AWS",
-    },
-  ]);
 
-  const [experiences, setExperiences] = useState<any[]>(() => localDraft?.experiences ?? [
-    {
-      id: "exp-1",
-      title: "Senior Full-Stack Engineer | TechFlow Solutions – San Francisco, CA",
-      date: "Aug 2023 – Present",
-      bullets: [
-        {
-          id: "b-1",
-          text: "Architected and deployed a highly available React/Next.js dashboard, improving client-side page load times by 42% and increasing user engagement by 18%.",
-        },
-        {
-          id: "b-2",
-          text: "Led a team of 4 engineers in redesigning the core API orchestration layer using Node.js and GraphQL, reducing query latency by 150ms.",
-        },
-      ],
-      meta: "Stack: Next.js, TypeScript, GraphQL, Tailwind CSS, PostgreSQL, AWS",
-    },
-    {
-      id: "exp-2",
-      title: "Software Engineer II | DevCore Technologies – Austin, TX",
-      date: "Jun 2021 – Jul 2023",
-      bullets: [
-        {
-          id: "b-3",
-          text: "Designed and maintained responsive enterprise web portals using React and Redux Toolkit, handling over 100k daily active users.",
-        },
-        {
-          id: "b-4",
-          text: "Optimized database queries and added Redis caching, resulting in a 30% reduction in database CPU utilization during peak load times.",
-        },
-      ],
-      meta: "Stack: React, Redux, Node.js, Express, Redis, PostgreSQL",
-    },
-  ]);
 
-  const [educations, setEducations] = useState<any[]>(() => localDraft?.educations ?? [
-    {
-      id: "edu-1",
-      degree: "B.S. in Computer Science | University of California, Berkeley",
-      bullets: [
-        { id: "eb-1", text: "Graduated with Honors, GPA: 3.82/4.00" },
-        { id: "eb-2", text: "Relevant Coursework: Data Structures, Database Management Systems, Cloud Computing" },
-      ],
-    },
-  ]);
 
   const [atsScoreModalOpen, setAtsScoreModalOpen] = useState(false);
 
@@ -1662,22 +1545,6 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [saveResumeName, setSaveResumeName] = useState("My Resume");
   const [saveOverwriteId, setSaveOverwriteId] = useState<string | null>(null);
-  const [activeSidebarTab, setActiveSidebarTab] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(320);
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/editor')) {
-        return false;
-      }
-      const params = new URLSearchParams(window.location.search);
-      const hasLocalDraft = !!localStorage.getItem("resume_autosave_content");
-      
-      // If they have an ID, an initial template, OR a local draft, skip the onboarding wizard
-      return !params.has("id") && !initialTemplateId && !hasLocalDraft;
-    }
-    return true;
-  });
 
   // Password update states
   const [currentPassword, setCurrentPassword] = useState("");
@@ -1734,7 +1601,6 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [aiInput, setAiInput] = useState("");
   const [aiOutput, setAiOutput] = useState("");
   const [aiIsGenerating, setAiIsGenerating] = useState(false);
-  const [aiPresetType, setAiPresetType] = useState<"summary" | "bullets" | "custom" | "parser" | "linkedin">("summary");
   
   // Custom states for document parser and cover letter generator
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -1745,17 +1611,9 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [coverLetterIsGenerating, setCoverLetterIsGenerating] = useState(false);
 
   // Agentic Interactive Chat & Interview state
-  const [aiAgentTab, setAiAgentTab] = useState<"presets" | "agent" | "coverletter">("agent");
-  const [interviewStep, setInterviewStep] = useState<number>(-1); // -1 means inactive, 0 to 4 means active step
-  const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
+  
   const [agentChatInput, setAgentChatInput] = useState("");
   const [isAgentResponding, setIsAgentResponding] = useState(false);
-  const [agentMessages, setAgentMessages] = useState<Array<{ role: "user" | "assistant" | "system", content: string, actionExecuted?: string }>>([
-    {
-      role: "assistant",
-      content: "👋 Hello! I am **Agent Rez**, your personal AI Career Agent. I can build or refine your entire resume in real-time.\n\nChoose an option below to get started:",
-    }
-  ]);
 
   const applyParsedResumeToState = (data: any) => {
     isHistoryActionRef.current = true;
@@ -1869,7 +1727,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       ? `⚡ **ATS Action-Verb Booster Complete!** Successfully upgraded **${count} passive verb(s)** across your work experience into high-impact ATS power verbs!`
       : `⚡ **ATS Action-Verb Booster Complete!** Your experience bullets are already using strong high-impact ATS action verbs!`;
 
-    setAgentMessages(prev => [...prev, { role: "assistant", content: msg }]);
+    setAgentMessages((prev: any[]) => [...prev, { role: "assistant", content: msg }]);
     toast.success("ATS Action-Verb Booster applied! 🚀");
   };
 
@@ -1888,7 +1746,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 • Toggle the eye icon to view the F-Pattern Visual Hierarchy Overlay.
 • Use 1-Click ATS Verb Booster to maximize ATS parsing score!`;
 
-    setAgentMessages(prev => [...prev, { role: "assistant", content: report }]);
+    setAgentMessages((prev: any[]) => [...prev, { role: "assistant", content: report }]);
     setShowHeatmapOverlay(true);
     toast.success("Agent Rez Audit complete! 👁️");
   };
@@ -3019,7 +2877,7 @@ Output:
       
       // Update history
       if (!isHistoryActionRef.current) {
-        setHistory((prev) => {
+        setHistory((prev: any[]) => {
           const current = prev[historyIndex];
           if (current && JSON.stringify(current) === JSON.stringify(trimmedPayload)) {
             return prev;
@@ -3228,7 +3086,7 @@ Output:
         sel.rangeCount === 0 ||
         sel.toString().trim() === ""
       ) {
-        setFormatBar((p) => ({ ...p, visible: false }));
+        setFormatBar((p: any) => ({ ...p, visible: false }));
         return;
       }
       const node = sel.anchorNode;
@@ -3239,7 +3097,7 @@ Output:
         !el.closest(".page") ||
         !el.closest('[contenteditable="true"]')
       ) {
-        setFormatBar((p) => ({ ...p, visible: false }));
+        setFormatBar((p: any) => ({ ...p, visible: false }));
         return;
       }
       const rect = sel.getRangeAt(0).getBoundingClientRect();
@@ -3300,7 +3158,7 @@ Output:
     } else {
       document.execCommand(cmd, false, val);
     }
-    setFormatBar((p) => ({
+    setFormatBar((p: any) => ({
       ...p,
       active: {
         b: document.queryCommandState("bold"),
@@ -3311,255 +3169,10 @@ Output:
   };
 
   // --- Page Breaks Calculation ---
-  const [gapHeights, setGapHeights] = useState<Record<string, { total: number; top: number }>>({});
-  const [idToPageMap, setIdToPageMap] = useState<Record<string, number>>({});
-  const [pageBreaks, setPageBreaks] = useState<number[]>([]);
-  const [pageBreakElementIds, setPageBreakElementIds] = useState<string[]>([]);
-  const pageBreakElementIdsRef = useRef<string[]>([]);
-
-  useEffect(() => {
-    pageBreakElementIdsRef.current = pageBreakElementIds;
-  }, [pageBreakElementIds]);
-
   const resumeRef = useRef<HTMLDivElement>(null);
+  usePaginationEngine(resumeRef);
 
-  const calcPages = useCallback(() => {
-    if (!resumeRef.current) return;
-    const resume = resumeRef.current;
-    const pageHeightPx = design.pageSize === "letter" ? 1056 : 1123;
-    const marginPx = design.pageMarginTopBottom ?? design.pageMargin;
-    const contentHeightPx = pageHeightPx - marginPx * 2;
-    const resumeRect = resume.getBoundingClientRect();
-    const scale = resumeRect.width / (design.pageSize === "letter" ? 816 : 794) || 1;
-    const rawUnits = Array.from(
-      resume.querySelectorAll("[data-page-break-id]"),
-    ) as HTMLElement[];
 
-    const seenIds = new Set<string>();
-    const units = rawUnits.filter((el) => {
-      const id = el.getAttribute("data-page-break-id");
-      if (!id) return false;
-      
-      // Skip hidden duplicates (elements with display: none applied by our page assignment logic)
-      if (el.getBoundingClientRect().height === 0) return false;
-      
-      if (seenIds.has(id)) return false;
-      seenIds.add(id);
-      return true;
-    });
-
-    if (units.length === 0) {
-      setPageBreaks([]);
-      setPageBreakElementIds([]);
-      setIdToPageMap({});
-      setGapHeights({});
-      return;
-    }
-
-    const gaps = Array.from(resume.querySelectorAll(".block.print\\:hidden .page-break-gap")) as HTMLElement[];
-    const resumeTop = resumeRect.top / scale;
-
-    const naturalCoords = units.map((el) => {
-      const colKey = el.closest("[data-column]")?.getAttribute("data-column") || "default";
-      const containerEl = el.closest(".physical-page-container") as HTMLElement | null;
-      const containerPageIdx = parseInt(containerEl?.getAttribute("data-page-index") || "0", 10);
-      const rect = el.getBoundingClientRect();
-      const elHeight = rect.height / scale;
-
-      const containerRect = containerEl ? containerEl.getBoundingClientRect() : null;
-      const elPageTop = containerRect
-        ? (rect.top - containerRect.top) / scale - marginPx
-        : (rect.top - resumeRect.top) / scale - marginPx;
-
-      const elTop = Math.max(0, containerPageIdx * contentHeightPx + elPageTop);
-      const elBottom = elTop + elHeight;
-
-      const id = el.getAttribute("data-page-break-id");
-
-      return {
-        el,
-        id,
-        colKey,
-        rect,
-        elTop,
-        elBottom,
-      };
-    });
-
-    const pageStartYMap: Record<string, number | null> = {};
-    const pageStartYInitialMap: Record<string, number> = {};
-    const currentPIdxTracker: Record<string, number> = {};
-    const prevItemPerCol: Record<string, typeof naturalCoords[0] | null> = {};
-    const currentIds = pageBreakElementIdsRef.current;
-    const breakStarts: { el: HTMLElement; id: string | null; colKey: string; elTop: number; elBottom: number }[] = [];
-    naturalCoords.forEach((item, i) => {
-      const { el, id, colKey, elTop, elBottom } = item;
-
-      if (pageStartYMap[colKey] === undefined || pageStartYMap[colKey] === null) {
-        pageStartYMap[colKey] = elTop;
-        pageStartYInitialMap[colKey] = elTop;
-        currentPIdxTracker[colKey] = 0;
-        prevItemPerCol[colKey] = item;
-        return;
-      }
-
-      const section = el.closest(".section");
-      const isHeading = el.classList.contains("section-heading");
-      const manualBreakHere =
-        isHeading && section && section.classList.contains("manual-break");
-      const prevItem = prevItemPerCol[colKey] ?? null;
-      const coupledWithHeading =
-        !isHeading &&
-        prevItem &&
-        prevItem.el.classList.contains("section-heading") &&
-        prevItem.el.closest(".section") === section;
-
-      const breakItem = coupledWithHeading ? prevItem : item;
-      const checkTop = coupledWithHeading ? prevItem.elTop : elTop;
-      const maxSafeBottom = currentPIdxTracker[colKey] === 0
-        ? pageHeightPx - marginPx
-        : pageStartYMap[colKey]! + contentHeightPx;
-        
-      const isCurrentlyBroken = breakItem.id && currentIds.includes(breakItem.id);
-      const hysteresisBuffer = isCurrentlyBroken ? 15 : 0;
-      const wouldOverflow = elBottom > (maxSafeBottom - hysteresisBuffer);
-
-      // Prevent moving the very first section heading right below the top/header of page 1 onto page 2 (which leaves page 1 empty)
-      const isFirstSectionHeadingUnderHeader =
-        coupledWithHeading && currentPIdxTracker[colKey] === 0 && checkTop === pageStartYMap[colKey];
-
-      if ((manualBreakHere || (wouldOverflow && !isFirstSectionHeadingUnderHeader)) && checkTop !== pageStartYMap[colKey]) {
-        pageStartYMap[colKey] = checkTop;
-        currentPIdxTracker[colKey] = (currentPIdxTracker[colKey] || 0) + 1;
-        
-        if (breakStarts.length === 0 || breakStarts[breakStarts.length - 1].el !== breakItem.el) {
-          breakStarts.push({
-            el: breakItem.el,
-            id: breakItem.id,
-            colKey: breakItem.colKey,
-            elTop: breakItem.elTop,
-            elBottom: breakItem.elBottom,
-          });
-        }
-      }
-      prevItemPerCol[colKey] = item;
-    });
-
-    const newBreakIds = breakStarts
-      .map((item) => item.id)
-      .filter(Boolean) as string[];
-
-    const newIdToPageMap: Record<string, number> = {};
-    const currentPIdxMap: Record<string, number> = {};
-    units.forEach((el) => {
-      const colKey = el.closest("[data-column]")?.getAttribute("data-column") || "default";
-      if (currentPIdxMap[colKey] === undefined) {
-        currentPIdxMap[colKey] = 0;
-      }
-      const id = el.getAttribute("data-page-break-id");
-      if (!id) return;
-      if (newBreakIds.includes(id)) {
-        currentPIdxMap[colKey]++;
-      }
-      if (newIdToPageMap[id] === undefined) {
-        newIdToPageMap[id] = currentPIdxMap[colKey];
-      }
-    });
-
-    setIdToPageMap((prev) => {
-      const keys = Object.keys(newIdToPageMap);
-      const prevKeys = Object.keys(prev);
-      if (keys.length !== prevKeys.length) return newIdToPageMap;
-      if (keys.some((k) => prev[k] !== newIdToPageMap[k])) return newIdToPageMap;
-      return prev;
-    });
-
-    const newGapHeights: Record<string, { total: number; top: number }> = {};
-    breakStarts.forEach((br, idx) => {
-      const brId = br.id;
-      if (!brId) return;
-
-      const brIndex = naturalCoords.findIndex((item) => item.el === br.el);
-      const prevItem = brIndex > 0 ? naturalCoords[brIndex - 1] : null;
-
-      const prevActualBottomInPage = prevItem 
-        ? (prevItem.rect.bottom / scale - resumeTop) 
-        : marginPx;
-
-      const sheetBottom = (idx + 1) * pageHeightPx + idx * 32;
-      const topSpacer = Math.max(0, Math.round(sheetBottom - prevActualBottomInPage));
-      const total = Math.round(topSpacer + 32 + marginPx);
-
-      newGapHeights[brId] = { total, top: topSpacer };
-    });
-
-    const newBreaks = breakStarts.map((item) => {
-      return Math.round(item.elTop - (pageStartYInitialMap[item.colKey ?? "default"] ?? 0));
-    });
-
-    setPageBreaks((prev) => {
-      if (
-        prev.length === newBreaks.length &&
-        prev.every((v, i) => Math.abs(v - newBreaks[i]) <= 2)
-      ) {
-        return prev;
-      }
-      return newBreaks;
-    });
-
-    setPageBreakElementIds((prev) => {
-      if (
-        prev.length === newBreakIds.length &&
-        prev.every((v, i) => v === newBreakIds[i])
-      ) {
-        return prev;
-      }
-      return newBreakIds;
-    });
-
-    setGapHeights((prev) => {
-      const keys = Object.keys(newGapHeights);
-      const prevKeys = Object.keys(prev);
-      if (keys.length !== prevKeys.length) {
-        return newGapHeights;
-      }
-      const isDifferent = keys.some(
-        (k) =>
-          prev[k] === undefined ||
-          Math.abs((prev[k]?.total ?? 0) - (newGapHeights[k]?.total ?? 0)) > 2 ||
-          Math.abs((prev[k]?.top ?? 0) - (newGapHeights[k]?.top ?? 0)) > 2
-      );
-      if (isDifferent) {
-        return newGapHeights;
-      }
-      return prev;
-    });
-  }, [design.pageSize, design.pageMargin, design.pageMarginLeftRight, design.pageMarginTopBottom]);
-
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    const runCalc = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        calcPages();
-      }, 300); // 300ms debounce to prevent layout thrashing
-    };
-
-    runCalc();
-    const observer = new MutationObserver(runCalc);
-    if (resumeRef.current)
-      observer.observe(resumeRef.current, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-    window.addEventListener("resize", runCalc);
-    return () => {
-      clearTimeout(timeoutId);
-      observer.disconnect();
-      window.removeEventListener("resize", runCalc);
-    };
-  }, [calcPages]);
 
   const applyTemplate = (t: any) => {
     setDesign((prev: any) => ({
@@ -4132,7 +3745,7 @@ Output:
               <div className="flex gap-2">
                 {tutorialStep > 0 && (
                   <button
-                    onClick={() => setTutorialStep((p) => p - 1)}
+                    onClick={() => setTutorialStep((p: any) => p - 1)}
                     className="rounded-lg px-4 py-2 text-sm font-semibold border border-gray-200 hover:bg-gray-50"
                   >
                     Back
@@ -4140,7 +3753,7 @@ Output:
                 )}
                 {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
                   <button
-                    onClick={() => setTutorialStep((p) => p + 1)}
+                    onClick={() => setTutorialStep((p: any) => p + 1)}
                     className="rounded-lg px-4 py-2 text-sm font-semibold bg-gray-900 text-white hover:bg-black"
                   >
                     Next
@@ -4327,7 +3940,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.fontHeading}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           fontHeading: e.target.value,
                         }))
@@ -4347,7 +3960,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.fontBody}
                       onChange={(e) =>
-                        setDesign((p) => ({ ...p, fontBody: e.target.value }))
+                        setDesign((p: any) => ({ ...p, fontBody: e.target.value }))
                       }
                     >
                       <option value="'Lora',serif">Lora</option>
@@ -4371,7 +3984,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.scale}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           scale: parseInt(e.target.value),
                         }))
@@ -4392,7 +4005,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.lineHeight}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           lineHeight: parseFloat(e.target.value),
                         }))
@@ -4461,7 +4074,7 @@ Output:
                         className="w-full h-8 rounded cursor-pointer border-0 p-0"
                         value={design.accent}
                         onChange={(e) =>
-                          setDesign((p) => ({ ...p, accent: e.target.value }))
+                          setDesign((p: any) => ({ ...p, accent: e.target.value }))
                         }
                       />
                     </div>
@@ -4474,7 +4087,7 @@ Output:
                         className="w-full h-8 rounded cursor-pointer border-0 p-0"
                         value={design.panel}
                         onChange={(e) =>
-                          setDesign((p) => ({ ...p, panel: e.target.value }))
+                          setDesign((p: any) => ({ ...p, panel: e.target.value }))
                         }
                       />
                     </div>
@@ -4487,7 +4100,7 @@ Output:
                         className="w-full h-8 rounded cursor-pointer border-0 p-0"
                         value={design.paper}
                         onChange={(e) =>
-                          setDesign((p) => ({ ...p, paper: e.target.value }))
+                          setDesign((p: any) => ({ ...p, paper: e.target.value }))
                         }
                       />
                     </div>
@@ -4506,7 +4119,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.layout}
                       onChange={(e) =>
-                        setDesign((p) => ({ ...p, layout: e.target.value }))
+                        setDesign((p: any) => ({ ...p, layout: e.target.value }))
                       }
                     >
                       <option value="classic">Single Column</option>
@@ -4521,7 +4134,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.jobLayout}
                       onChange={(e) =>
-                        setDesign((p) => ({ ...p, jobLayout: e.target.value }))
+                        setDesign((p: any) => ({ ...p, jobLayout: e.target.value }))
                       }
                     >
                       <option value="stacked">Stacked</option>
@@ -4536,7 +4149,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.headingStyle}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           headingStyle: e.target.value,
                         }))
@@ -4559,7 +4172,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.radius}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           radius: parseInt(e.target.value),
                         }))
@@ -4578,7 +4191,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.gap}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           gap: parseInt(e.target.value),
                         }))
@@ -4597,7 +4210,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.itemSpacing}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           itemSpacing: parseInt(e.target.value),
                         }))
@@ -4613,7 +4226,7 @@ Output:
                       <button
                         type="button"
                         onClick={() => {
-                          setDesign((p) => ({
+                          setDesign((p: any) => ({
                             ...p,
                             pageMargin: 48,
                             pageMarginLeftRight: 48,
@@ -4635,7 +4248,7 @@ Output:
                       <button
                         type="button"
                         onClick={() => {
-                          setDesign((p) => ({
+                          setDesign((p: any) => ({
                             ...p,
                             pageMargin: 72,
                             pageMarginLeftRight: 72,
@@ -4657,7 +4270,7 @@ Output:
                       <button
                         type="button"
                         onClick={() => {
-                          setDesign((p) => ({
+                          setDesign((p: any) => ({
                             ...p,
                             pageMargin: 96,
                             pageMarginLeftRight: 96,
@@ -4738,7 +4351,7 @@ Output:
                       value={design.pageMargin}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           pageMargin: val,
                           pageMarginLeftRight: val,
@@ -4761,7 +4374,7 @@ Output:
                       value={design.pageMarginLeftRight ?? design.pageMargin}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           pageMarginLeftRight: val,
                         }));
@@ -4782,7 +4395,7 @@ Output:
                       value={design.pageMarginTopBottom ?? design.pageMargin}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           pageMarginTopBottom: val,
                         }));
@@ -4808,7 +4421,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.boxOpacity}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           boxOpacity: parseInt(e.target.value),
                         }))
@@ -4823,7 +4436,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.boxShadow}
                       onChange={(e) =>
-                        setDesign((p) => ({ ...p, boxShadow: e.target.value }))
+                        setDesign((p: any) => ({ ...p, boxShadow: e.target.value }))
                       }
                     >
                       <option value="none">None (Flat)</option>
@@ -4842,7 +4455,7 @@ Output:
                       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       value={design.borderStyle}
                       onChange={(e) =>
-                        setDesign((p) => ({ ...p, borderStyle: e.target.value }))
+                        setDesign((p: any) => ({ ...p, borderStyle: e.target.value }))
                       }
                     >
                       <option value="none">No Border</option>
@@ -4865,7 +4478,7 @@ Output:
                       className="w-full accent-blue-600"
                       value={design.backdropBlur}
                       onChange={(e) =>
-                        setDesign((p) => ({
+                        setDesign((p: any) => ({
                           ...p,
                           backdropBlur: parseInt(e.target.value),
                         }))
@@ -5120,7 +4733,7 @@ Output:
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <span className="text-xs font-semibold text-gray-800">Show Photo on Resume</span>
                 <button
-                  onClick={() => setProfilePhoto(p => ({ ...p, enabled: !p.enabled }))}
+                  onClick={() => setProfilePhoto((p: any) => ({ ...p, enabled: !p.enabled }))}
                   className={cn(
                     "w-11 h-6 rounded-full transition-colors relative",
                     profilePhoto.enabled ? "bg-blue-600" : "bg-gray-200"
@@ -5149,7 +4762,7 @@ Output:
                           const reader = new FileReader();
                           reader.onload = (event) => {
                             const b64 = event.target?.result as string;
-                            setProfilePhoto(p => ({ ...p, url: b64, rawUploadedUrl: b64 }));
+                            setProfilePhoto((p: any) => ({ ...p, url: b64, rawUploadedUrl: b64 }));
                           };
                           reader.readAsDataURL(file);
                         }
@@ -5236,7 +4849,7 @@ Output:
                       ].map((f) => (
                         <button
                           key={f.id}
-                          onClick={() => setProfilePhoto(p => ({ ...p, filter: f.id }))}
+                          onClick={() => setProfilePhoto((p: any) => ({ ...p, filter: f.id }))}
                           className={cn(
                             "py-1.5 px-2 text-[11px] font-semibold border rounded-lg transition-all",
                             profilePhoto.filter === f.id
@@ -5266,7 +4879,7 @@ Output:
                       ].map((t) => (
                         <button
                           key={t.id}
-                          onClick={() => setProfilePhoto(p => ({ ...p, tone: t.id }))}
+                          onClick={() => setProfilePhoto((p: any) => ({ ...p, tone: t.id }))}
                           className={cn(
                             "py-1.5 px-2 text-[11px] font-semibold border rounded-lg transition-all",
                             profilePhoto.tone === t.id
@@ -5294,7 +4907,7 @@ Output:
                         </label>
                         <select
                           value={profilePhoto.aspectRatio}
-                          onChange={(e) => setProfilePhoto(p => ({ ...p, aspectRatio: e.target.value as any }))}
+                          onChange={(e) => setProfilePhoto((p: any) => ({ ...p, aspectRatio: e.target.value as any }))}
                           className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 outline-none"
                         >
                           <option value="1:1">1:1 Square</option>
@@ -5309,19 +4922,19 @@ Output:
                         </label>
                         <div className="flex gap-1">
                           <button
-                            onClick={() => setProfilePhoto(p => ({ ...p, radius: 50 }))}
+                            onClick={() => setProfilePhoto((p: any) => ({ ...p, radius: 50 }))}
                             className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[11px] font-bold", profilePhoto.radius === 50 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
                           >
                             Circle
                           </button>
                           <button
-                            onClick={() => setProfilePhoto(p => ({ ...p, radius: 12 }))}
+                            onClick={() => setProfilePhoto((p: any) => ({ ...p, radius: 12 }))}
                             className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[11px] font-bold", profilePhoto.radius === 12 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
                           >
                             Rounded
                           </button>
                           <button
-                            onClick={() => setProfilePhoto(p => ({ ...p, radius: 0 }))}
+                            onClick={() => setProfilePhoto((p: any) => ({ ...p, radius: 0 }))}
                             className={cn("flex-1 py-1 px-1.5 border rounded-lg text-[11px] font-bold", profilePhoto.radius === 0 ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white border-gray-200")}
                           >
                             Square
@@ -5340,7 +4953,7 @@ Output:
                         min="50"
                         max="150"
                         value={profilePhoto.scale}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, scale: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, scale: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5355,7 +4968,7 @@ Output:
                         min="10"
                         max="100"
                         value={profilePhoto.opacity}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, opacity: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, opacity: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5369,7 +4982,7 @@ Output:
                           min="-80"
                           max="80"
                           value={profilePhoto.xOffset}
-                          onChange={(e) => setProfilePhoto(p => ({ ...p, xOffset: parseInt(e.target.value) }))}
+                          onChange={(e) => setProfilePhoto((p: any) => ({ ...p, xOffset: parseInt(e.target.value) }))}
                           className="w-full accent-blue-600"
                         />
                       </div>
@@ -5380,7 +4993,7 @@ Output:
                           min="-80"
                           max="80"
                           value={profilePhoto.yOffset}
-                          onChange={(e) => setProfilePhoto(p => ({ ...p, yOffset: parseInt(e.target.value) }))}
+                          onChange={(e) => setProfilePhoto((p: any) => ({ ...p, yOffset: parseInt(e.target.value) }))}
                           className="w-full accent-blue-600"
                         />
                       </div>
@@ -5395,7 +5008,7 @@ Output:
                           min="0"
                           max="8"
                           value={profilePhoto.borderWidth}
-                          onChange={(e) => setProfilePhoto(p => ({ ...p, borderWidth: parseInt(e.target.value) }))}
+                          onChange={(e) => setProfilePhoto((p: any) => ({ ...p, borderWidth: parseInt(e.target.value) }))}
                           className="w-full accent-blue-600"
                         />
                       </div>
@@ -5404,7 +5017,7 @@ Output:
                         <input
                           type="color"
                           value={profilePhoto.borderColor}
-                          onChange={(e) => setProfilePhoto(p => ({ ...p, borderColor: e.target.value }))}
+                          onChange={(e) => setProfilePhoto((p: any) => ({ ...p, borderColor: e.target.value }))}
                           className="w-full h-8 rounded cursor-pointer border-0 p-0"
                         />
                       </div>
@@ -5424,14 +5037,14 @@ Output:
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Brightness ({profilePhoto.brightness ?? 100}%)</label>
-                        <button onClick={() => setProfilePhoto(p => ({ ...p, brightness: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
+                        <button onClick={() => setProfilePhoto((p: any) => ({ ...p, brightness: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
                         type="range"
                         min="50"
                         max="200"
                         value={profilePhoto.brightness ?? 100}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, brightness: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, brightness: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5440,14 +5053,14 @@ Output:
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Contrast ({profilePhoto.contrast ?? 100}%)</label>
-                        <button onClick={() => setProfilePhoto(p => ({ ...p, contrast: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
+                        <button onClick={() => setProfilePhoto((p: any) => ({ ...p, contrast: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
                         type="range"
                         min="50"
                         max="200"
                         value={profilePhoto.contrast ?? 100}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, contrast: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, contrast: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5456,14 +5069,14 @@ Output:
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Saturation ({profilePhoto.saturation ?? 100}%)</label>
-                        <button onClick={() => setProfilePhoto(p => ({ ...p, saturation: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
+                        <button onClick={() => setProfilePhoto((p: any) => ({ ...p, saturation: 100 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
                         type="range"
                         min="0"
                         max="200"
                         value={profilePhoto.saturation ?? 100}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, saturation: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, saturation: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5472,7 +5085,7 @@ Output:
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Soft Focus / Blur ({profilePhoto.blur ?? 0}px)</label>
-                        <button onClick={() => setProfilePhoto(p => ({ ...p, blur: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
+                        <button onClick={() => setProfilePhoto((p: any) => ({ ...p, blur: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
                         type="range"
@@ -5480,7 +5093,7 @@ Output:
                         max="10"
                         step="0.5"
                         value={profilePhoto.blur ?? 0}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, blur: parseFloat(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, blur: parseFloat(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5489,14 +5102,14 @@ Output:
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Hue Shift ({profilePhoto.hueRotate ?? 0}°)</label>
-                        <button onClick={() => setProfilePhoto(p => ({ ...p, hueRotate: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
+                        <button onClick={() => setProfilePhoto((p: any) => ({ ...p, hueRotate: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
                         type="range"
                         min="0"
                         max="360"
                         value={profilePhoto.hueRotate ?? 0}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, hueRotate: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, hueRotate: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5505,14 +5118,14 @@ Output:
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Warmth / Sepia ({profilePhoto.sepia ?? 0}%)</label>
-                        <button onClick={() => setProfilePhoto(p => ({ ...p, sepia: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
+                        <button onClick={() => setProfilePhoto((p: any) => ({ ...p, sepia: 0 }))} className="text-[9px] text-blue-500 hover:underline">Reset</button>
                       </div>
                       <input
                         type="range"
                         min="0"
                         max="100"
                         value={profilePhoto.sepia ?? 0}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, sepia: parseInt(e.target.value) }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, sepia: parseInt(e.target.value) }))}
                         className="w-full accent-blue-600"
                       />
                     </div>
@@ -5529,7 +5142,7 @@ Output:
                       </label>
                       <select
                         value={profilePhoto.animation || "none"}
-                        onChange={(e) => setProfilePhoto(p => ({ ...p, animation: e.target.value }))}
+                        onChange={(e) => setProfilePhoto((p: any) => ({ ...p, animation: e.target.value }))}
                         className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 outline-none"
                       >
                         <option value="none">None (Static)</option>
@@ -5548,7 +5161,7 @@ Output:
                   {/* Reset Adjustments */}
                   <div className="pt-4">
                     <button
-                      onClick={() => setProfilePhoto(p => ({
+                      onClick={() => setProfilePhoto((p: any) => ({
                         ...p,
                         opacity: 100,
                         scale: 100,
@@ -5996,7 +5609,7 @@ Output:
                           type="button"
                           onClick={() => {
                             setInterviewStep(-1);
-                            setAgentMessages(prev => [
+                            setAgentMessages((prev: any[]) => [
                               ...prev,
                               { role: "assistant", content: "Interview cancelled. You are now in conversational chat mode! Ask me to edit any parts of your resume or paste career details directly." }
                             ]);
@@ -6057,7 +5670,7 @@ Output:
                           <button
                             type="button"
                             onClick={() => {
-                              setAgentMessages(prev => [
+                              setAgentMessages((prev: any[]) => [
                                 ...prev,
                                 { role: "user", content: "Paste my old resume to rebuild" },
                                 { role: "assistant", content: "Go ahead and paste your old resume text or unstructured prompt right here in the chat, and I'll analyze it, optimize it using modern ATS keywords, and rebuild it in the editor for you!" }
@@ -7222,7 +6835,7 @@ Output:
               <div className="flex items-center gap-0.5 border-r border-gray-100 pr-1.5 md:pr-2">
                 <button
                   type="button"
-                  onClick={() => setCanvasZoom(prev => Math.max(50, prev - 10))}
+                  onClick={() => setCanvasZoom((prev: any) => Math.max(50, prev - 10))}
                   className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
                   title="Zoom Out"
                 >
@@ -7238,7 +6851,7 @@ Output:
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCanvasZoom(prev => Math.min(150, prev + 10))}
+                  onClick={() => setCanvasZoom((prev: any) => Math.min(150, prev + 10))}
                   className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 active:scale-90 transition-all cursor-pointer"
                   title="Zoom In"
                 >

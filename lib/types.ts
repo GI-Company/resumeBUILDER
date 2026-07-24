@@ -65,21 +65,31 @@ export interface Award {
 // --- Design Config ---
 
 export interface DesignConfig {
-  templateId: string;
-  accentColor: string;
+  template: string;
   fontHeading: string;
   fontBody: string;
-  fontSize: number;
+  accent: string;
+  panel: string;
+  paper: string;
+  layout: string;
+  scale: number;
+  radius: number;
+  lineHeight: number;
+  gap: number;
+  headingStyle: string;
+  italic: boolean;
+  pageSize: string;
+  headerAlign: string;
+  listStyle: string;
   pageMargin: number;
   pageMarginLeftRight?: number;
   pageMarginTopBottom?: number;
   itemSpacing: number;
   jobLayout: 'split' | 'stacked';
-  sidebarWidth: number;
-  paperColor: string;
-  inkColor: string;
-  showPhoto: boolean;
-  layoutStyle: 'standard' | 'sidebar' | 'grid';
+  boxOpacity: number;
+  boxShadow: string;
+  borderStyle: string;
+  backdropBlur: number;
 }
 
 // --- Section Headers (user-editable heading text) ---
