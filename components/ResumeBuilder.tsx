@@ -334,7 +334,11 @@ const SectionRenderer = memo(({
                       <SafeReorderGroup isPrint={isPrint}
                         values={skills}
                         onReorder={setSkills}
-                        className="skills-grid flex flex-wrap gap-x-6 gap-y-3 rounded-[var(--radius)] p-5 mb-[var(--section-gap)] transition-all duration-300 [&>*]:w-full [&>*]:md:w-[calc(50%-12px)]"
+                        className={`skills-grid flex flex-wrap gap-y-3 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300 ${
+                          design.layout === "sidebar"
+                            ? "gap-x-0 p-3 [&>*]:w-full"
+                            : "gap-x-6 p-5 [&>*]:w-full [&>*]:md:w-[calc(50%-12px)]"
+                        }`}
                         id="skills-grid"
                         data-page-break-id="skills-grid"
                         style={{
