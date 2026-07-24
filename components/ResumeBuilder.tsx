@@ -7139,6 +7139,7 @@ Output:
                         >
                           <div data-column="sidebar" className="flex flex-col min-w-0">
                             <Reorder.Group
+                              as="div"
                               values={sections.filter((s: any) => ["licenses", "skills"].includes(s.id))}
                               onReorder={(newOrder) => {
                                 const mainSecs = sections.filter((s: any) => !["licenses", "skills"].includes(s.id));
@@ -7154,6 +7155,7 @@ Output:
                           </div>
                           <div data-column="main" className="flex flex-col min-w-0">
                             <Reorder.Group
+                              as="div"
                               values={sections.filter((s: any) => !["licenses", "skills"].includes(s.id))}
                               onReorder={(newOrder) => {
                                 const sidebarSecs = sections.filter((s: any) => ["licenses", "skills"].includes(s.id));
@@ -7170,6 +7172,7 @@ Output:
                         </div>
                       ) : (
                         <Reorder.Group
+                          as="div"
                           values={sections}
                           onReorder={setSections}
                           id={`sections-container-${pageIndex}`}

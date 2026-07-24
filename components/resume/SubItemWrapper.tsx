@@ -1,18 +1,19 @@
 import React, { memo } from "react";
 import { Reorder, useDragControls } from "motion/react";
 
-export const SubItemWrapper = memo(({ id, item, value, className, children, isPrint }: any) => {
+export const SubItemWrapper = memo(({ id, item, value, className, children, isPrint, as: Component = "div" }: any) => {
   const dc = useDragControls();
   const actualValue = item ?? value;
   if (isPrint) {
     return (
-      <div key={`print-sub-${id}`} className={className}>
+      <Component key={`print-sub-${id}`} className={className}>
         {typeof children === "function" ? children(dc) : children}
-      </div>
+      </Component>
     );
   }
   return (
     <Reorder.Item
+      as={Component}
       key={id}
       value={actualValue}
       id={id}

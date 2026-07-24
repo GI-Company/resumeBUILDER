@@ -266,6 +266,7 @@ export const SectionWrapper = memo(({
 
   return (
     <Reorder.Item
+      as="div"
       key={id}
       value={item}
       id={id}
