@@ -123,6 +123,7 @@ export function buildSelfContainedHtml(
           grid-template-columns: var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem) !important;
           column-gap: 1.1rem !important;
           align-items: start !important;
+          grid-auto-flow: dense !important;
         }
 
         html, body {

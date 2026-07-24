@@ -169,28 +169,29 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
 }
 
 /* Sidebar Layout */
-.layout-sidebar #sections-container {
-  display: grid;
+.layout-sidebar .resume-sections-container > .grid {
+  display: grid !important;
   /* SAFARI PRINT BUG FIX: Safari resolves 1fr to min-content in print. Use calc() instead. */
-  grid-template-columns: var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem);
-  column-gap: 1.1rem;
-  align-items: start;
-  grid-auto-flow: dense;
+  grid-template-columns: var(--sidebar-w) calc(100% - var(--sidebar-w) - 1.1rem) !important;
+  column-gap: 1.1rem !important;
+  align-items: start !important;
+  grid-auto-flow: dense !important;
 }
-/* Force Summary to stay in the wide main column (Col 2) */
+/* 1. Force Header and Summary to span BOTH columns at the very top */
+.layout-sidebar .resume-header,
 .layout-sidebar .section[data-section="summary"] {
-  grid-column: 2 !important;
+  grid-column: 1 / -1 !important;
   width: 100% !important;
 }
 
-/* Force Skills, Licenses, and Education to stay in the narrow sidebar (Col 1) */
+/* 2. Force Sidebar items to stay strictly in Column 1 below the summary */
 .layout-sidebar .section[data-section="skills"],
 .layout-sidebar .section[data-section="licenses"],
 .layout-sidebar .section[data-section="education"] {
   grid-column: 1 !important;
 }
 
-/* Force Experience to stay in the wide main column (Col 2) */
+/* 3. Force Experience to stay strictly in Column 2 below the summary */
 .layout-sidebar .section[data-section="experience"] {
   grid-column: 2 !important;
 }
