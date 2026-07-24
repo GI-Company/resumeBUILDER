@@ -1910,7 +1910,9 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
                     const parsed = JSON.parse(data);
                     const token = parsed.choices?.[0]?.delta?.content ?? "";
                     textResponse += token;
-                  } catch { /* skip */ }
+                  } catch (e: any) {
+                    textResponse += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
+                  }
                 }
               }
             }
@@ -2049,7 +2051,9 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
                 const parsed = JSON.parse(data);
                 const token = parsed.choices?.[0]?.delta?.content ?? "";
                 textResponse += token;
-              } catch { /* skip */ }
+              } catch (e: any) {
+                textResponse += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
+              }
             }
           }
         }
@@ -2268,7 +2272,10 @@ Output:
                 accumulated += token;
                 setAiOutput(accumulated);
               }
-            } catch { /* incomplete JSON chunk, skip */ }
+            } catch (e: any) {
+              accumulated += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
+              setAiOutput(accumulated);
+            }
           }
         }
       }
