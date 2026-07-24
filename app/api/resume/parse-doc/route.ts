@@ -49,6 +49,36 @@ Return ONLY a valid, raw, minified JSON object with EXACTLY this structure:
   ],
   "skills": [
     { "id": "sk-1", "title": "Category", "items": "Skill1, Skill2, Skill3" }
+  ],
+  "licenses": [
+    { "id": "lic-1", "text": "License/Cert Name (e.g., Registered Nurse, ACLS, BLS)" }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "title": "Project Name",
+      "date": "Year",
+      "meta": "Technologies",
+      "bullets": [{ "id": "b-p1", "text": "Project detail..." }]
+    }
+  ],
+  "publications": [
+    {
+      "id": "pub-1",
+      "title": "Publication Name",
+      "date": "Year",
+      "meta": "Publisher",
+      "bullets": [{ "id": "b-pub1", "text": "Detail..." }]
+    }
+  ],
+  "awards": [
+    {
+      "id": "aw-1",
+      "title": "Award Name",
+      "date": "Year",
+      "meta": "Issuer",
+      "bullets": [{ "id": "b-a1", "text": "Detail..." }]
+    }
   ]
 }
 
