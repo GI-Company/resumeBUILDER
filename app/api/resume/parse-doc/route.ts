@@ -20,6 +20,10 @@ const MODEL_CHAIN = [
 
 const SYSTEM_PROMPT = `You are an elite resume parsing expert. The user will provide raw extracted text from a resume document.
 Your task: parse it into a perfectly structured JSON resume object.
+CRITICAL INSTRUCTIONS:
+1. Do NOT summarize or shorten anything.
+2. Extract EVERY SINGLE job, experience, education, certification, and bullet point.
+3. If the resume is 4+ pages long, you MUST extract all 4 pages of data. Be completely exhaustive.
 
 Return ONLY a valid, raw, minified JSON object with EXACTLY this structure:
 {
@@ -120,6 +124,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             model,
             temperature: 0.1,
+            max_tokens: 8000,
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: userPrompt },
