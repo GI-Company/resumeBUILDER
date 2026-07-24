@@ -6863,6 +6863,7 @@ Output:
               ref={resumeRef}
               className={cn(
                 "resume-canvas-container relative origin-top transition-all duration-200 flex flex-col items-center gap-8 print:!gap-0 print:!block",
+                layoutClasses,
                 printPreviewMode && "print-preview-active"
               )}
               style={{
