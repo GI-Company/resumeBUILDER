@@ -177,21 +177,21 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   align-items: start;
   grid-auto-flow: dense;
 }
-/* Ensure Header and Summary span full width at the top */
-.layout-sidebar .section[data-section="summary"],
-.layout-sidebar .header-container {
-  grid-column: 1 / -1 !important;
+/* Force Summary to stay in the wide main column (Col 2) */
+.layout-sidebar .section[data-section="summary"] {
+  grid-column: 2 !important;
   width: 100% !important;
 }
 
-/* Push sidebar and experience side-by-side ONLY below the summary */
+/* Force Skills, Licenses, and Education to stay in the narrow sidebar (Col 1) */
+.layout-sidebar .section[data-section="skills"],
 .layout-sidebar .section[data-section="licenses"],
-.layout-sidebar .section[data-section="skills"] {
+.layout-sidebar .section[data-section="education"] {
   grid-column: 1 !important;
 }
 
-.layout-sidebar .section[data-section="experience"],
-.layout-sidebar .section[data-section="education"] {
+/* Force Experience to stay in the wide main column (Col 2) */
+.layout-sidebar .section[data-section="experience"] {
   grid-column: 2 !important;
 }
 .layout-sidebar .page-break-gap {

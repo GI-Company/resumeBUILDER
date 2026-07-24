@@ -7151,32 +7151,32 @@ Output:
                           <div data-column="main" className="contents">
                             <Reorder.Group
                               as="div"
-                              values={sections.filter((s: any) => !["licenses", "skills"].includes(s.id))}
+                              values={sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id))}
                               onReorder={(newOrder) => {
-                                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills"].includes(s.id));
+                                const sidebarSecs = sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id));
                                 setSections([...sidebarSecs, ...newOrder]);
                               }}
                               id={`sections-main-${pageIndex}`}
                               className="contents"
                             >
                               {sections
-                                .filter((s: any) => !["licenses", "skills"].includes(s.id))
+                                .filter((s: any) => !["licenses", "skills", "education"].includes(s.id))
                                 .map((s: any) => renderSection(s, "main-"))}
                             </Reorder.Group>
                           </div>
                           <div data-column="sidebar" className="contents">
                             <Reorder.Group
                               as="div"
-                              values={sections.filter((s: any) => ["licenses", "skills"].includes(s.id))}
+                              values={sections.filter((s: any) => ["licenses", "skills", "education"].includes(s.id))}
                               onReorder={(newOrder) => {
-                                const mainSecs = sections.filter((s: any) => !["licenses", "skills"].includes(s.id));
+                                const mainSecs = sections.filter((s: any) => !["licenses", "skills", "education"].includes(s.id));
                                 setSections([...newOrder, ...mainSecs]);
                               }}
                               id={`sections-sidebar-${pageIndex}`}
                               className="contents"
                             >
                               {sections
-                                .filter((s: any) => ["licenses", "skills"].includes(s.id))
+                                .filter((s: any) => ["licenses", "skills", "education"].includes(s.id))
                                 .map((s: any) => renderSection(s, "sidebar-"))}
                             </Reorder.Group>
                           </div>
