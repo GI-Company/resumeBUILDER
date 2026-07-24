@@ -69,8 +69,62 @@ export async function POST(req: NextRequest) {
 
     const { base64Data, mimeType, filename } = parsed.data;
 
+    // ========================================================================
+    // 1. GEMINI PARSING (Preferred if API_KEY is set)
+    // ========================================================================
+    if (env.API_KEY) {
+      console.log(`[parse-doc] Using Gemini API for native document parsing`);
+      try {
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents: [
+                {
+                  parts: [
+                    { text: `Parse this resume document (${filename ?? mimeType}) into the required JSON structure.` },
+                    {
+                      inlineData: {
+                        mimeType: mimeType || 'application/pdf',
+                        data: base64Data,
+                      },
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: 'application/json',
+              },
+            }),
+          }
+        );
+
+        if (geminiRes.ok) {
+          const data = await geminiRes.json();
+          let raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+          raw = raw.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+          const parsedData = JSON.parse(raw);
+          return NextResponse.json({ success: true, data: parsedData, model: 'gemini-1.5-flash' });
+        } else {
+          console.error(`[parse-doc] Gemini API error:`, await geminiRes.text());
+          // Fall through to Groq on failure
+        }
+      } catch (e) {
+        console.error(`[parse-doc] Gemini fetch exception:`, e);
+        // Fall through to Groq
+      }
+    }
+
+    // ========================================================================
+    // 2. GROQ FALLBACK (Uses crude ASCII text extraction since Groq lacks Vision)
+    // ========================================================================
+    console.log(`[parse-doc] Falling back to Groq text extraction`);
+    
     // Attempt to extract text from the base64 data
-    // For text-based PDFs and DOCX, the base64 often contains readable ASCII
     let extractedText = '';
     try {
       const decoded = atob(base64Data);
