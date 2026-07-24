@@ -1,7 +1,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium-min", "@sparticuz/chromium"],
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium-min", "@sparticuz/chromium", "pdf-parse", "mammoth"],
   outputFileTracingIncludes: {
     "/api/**/*": ["./assets/fonts/**/*"],
   },
