@@ -1,18 +1,15 @@
 // ============================================================
 //  app/api/resume/parse-doc/route.ts — Document Resume Parser
-//  Accepts a base64-encoded PDF/DOCX, sends it as text context
-//  to Groq for structured JSON extraction. Migrated from Gemini.
-//
-//  NOTE: Groq doesn't support inline binary file uploads like
-//  Gemini Vision. We first decode the base64 to extract any
-//  embedded text (for text-based PDFs/DOCX) and send it as
-//  the user message. For scanned images, we tell the user to
-//  copy-paste their text instead.
+//  Accepts a base64-encoded PDF/DOCX, extracts text precisely
+//  using server-side libraries (pdf-parse/mammoth), and sends it 
+//  as text context to Groq for structured JSON extraction.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { parseDocSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
+import pdf from 'pdf-parse';
+import mammoth from 'mammoth';
 
 const MODEL_CHAIN = [
   'llama-3.3-70b-versatile',
@@ -69,98 +66,50 @@ export async function POST(req: NextRequest) {
 
     const { base64Data, mimeType, filename } = parsed.data;
 
-    // ========================================================================
-    // 1. GEMINI PARSING (Preferred if API_KEY is set)
-    // ========================================================================
-    if (env.API_KEY) {
-      console.log(`[parse-doc] Using Gemini API for native document parsing`);
-      try {
-        const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-              contents: [
-                {
-                  parts: [
-                    { text: `Parse this resume document (${filename ?? mimeType}) into the required JSON structure.` },
-                    {
-                      inlineData: {
-                        mimeType: mimeType || 'application/pdf',
-                        data: base64Data,
-                      },
-                    },
-                  ],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: 'application/json',
-              },
-            }),
-          }
-        );
-
-        if (geminiRes.ok) {
-          const data = await geminiRes.json();
-          let raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-          raw = raw.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-          const parsedData = JSON.parse(raw);
-          return NextResponse.json({ success: true, data: parsedData, model: 'gemini-1.5-flash' });
-        } else {
-          const errText = await geminiRes.text();
-          console.error(`[parse-doc] Gemini API error:`, errText);
-          return NextResponse.json(
-            { success: false, error: `Gemini API Error: ${errText}` },
-            { status: 502 }
-          );
-        }
-      } catch (e) {
-        console.error(`[parse-doc] Gemini fetch exception:`, e);
-        return NextResponse.json(
-          { success: false, error: `Gemini parsing failed: ${e instanceof Error ? e.message : String(e)}` },
-          { status: 500 }
-        );
-      }
-    }
-
-    // ========================================================================
-    // 2. GROQ FALLBACK (Uses crude ASCII text extraction since Groq lacks Vision)
-    // ========================================================================
-    console.log(`[parse-doc] Falling back to Groq text extraction`);
-    
-    // Attempt to extract text from the base64 data
     let extractedText = '';
+    
     try {
-      const decoded = atob(base64Data);
-      // Extract printable ASCII characters (crude but effective for text-based docs)
-      extractedText = decoded.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n').trim();
-    } catch {
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      const isPdf = mimeType === 'application/pdf' || filename?.toLowerCase().endsWith('.pdf');
+      const isDocx = mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || filename?.toLowerCase().endsWith('.docx');
+
+      if (isPdf) {
+        const pdfData = await pdf(buffer);
+        extractedText = pdfData.text.trim();
+      } else if (isDocx) {
+        const docxData = await mammoth.extractRawText({ buffer });
+        extractedText = docxData.value.trim();
+      } else {
+        // Fallback for plain text or unknown types
+        extractedText = buffer.toString('utf-8').trim();
+      }
+      
+    } catch (e) {
+      console.error("[parse-doc] Failed to extract text natively:", e);
       return NextResponse.json(
-        { success: false, error: 'Could not decode the uploaded file. Please try copy-pasting your resume text instead.' },
+        { success: false, error: 'Failed to extract text from the document. The file might be corrupted or password protected.' },
         { status: 400 }
       );
     }
 
-    if (extractedText.length < 100) {
+    if (extractedText.length < 50) {
       return NextResponse.json(
         {
           success: false,
-          error: 'This file appears to be a scanned image or is not text-readable. Please copy and paste your resume text directly into the text field.',
+          error: 'This file appears to be a scanned image or is empty. Please copy and paste your resume text directly into the text field instead.',
         },
         { status: 422 }
       );
     }
 
-    const userPrompt = `Parse this resume document (${filename ?? mimeType}) into the required JSON structure:\n\n${extractedText.slice(0, 12000)}`;
+    const userPrompt = `Parse this resume document (${filename ?? mimeType}) into the required JSON structure:\n\n${extractedText.slice(0, 15000)}`;
 
     let lastError: Error | null = null;
 
     for (const model of MODEL_CHAIN) {
       try {
-        console.log(`[parse-doc] Attempting model: ${model}`);
+        console.log(`[parse-doc] Attempting Groq model: ${model}`);
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {

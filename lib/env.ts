@@ -11,7 +11,6 @@ const envSchema = z.object({
   GROQ: z.string().min(10, 'GROQ API key is missing or too short'),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(10, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is missing'),
-  API_KEY: z.string().optional(), // Gemini API Key
 });
 
 type Env = z.infer<typeof envSchema>;
