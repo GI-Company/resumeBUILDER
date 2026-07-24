@@ -116,6 +116,14 @@ export function buildSelfContainedHtml(
           -moz-osx-font-smoothing: grayscale !important;
         }
 
+        /* Force explicit fallback for sidebar grid tracks in PDF export */
+        .layout-sidebar .resume-sections-container > .grid {
+          display: grid !important;
+          grid-template-columns: 230px calc(100% - 230px - 1.1rem) !important;
+          column-gap: 1.1rem !important;
+          align-items: start !important;
+        }
+
         html, body {
           margin: 0 !important;
           padding: 0 !important;
