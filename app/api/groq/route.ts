@@ -14,6 +14,8 @@
 //  tokens in real-time as they arrive from Groq.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'edge';
+
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { groqPromptSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
@@ -27,22 +29,20 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // ---------------------------------------------------------------------------
 // Model routing table — ordered by quality, respects free-tier reality
 // ---------------------------------------------------------------------------
+// We use only officially supported Groq models for reliability
 const MODEL_CHAINS: Record<'complex' | 'quick', string[]> = {
-  // Complex: needs deep reasoning, large context. groq/compound has no token/day cap.
+  // Complex: needs deep reasoning, large context
   complex: [
-    'groq/compound',
     'llama-3.3-70b-versatile',
-    'openai/gpt-oss-120b',
-    'groq/compound-mini',
-    'llama-3.1-8b-instant',   // emergency fallback (14.4K req/day)
+    'llama3-70b-8192',
+    'llama-3.1-8b-instant',
   ],
-  // Quick: speed and volume matter. llama-3.1-8b-instant has 14,400 req/day.
+  // Quick: needs speed, small context
   quick: [
     'llama-3.1-8b-instant',
-    'openai/gpt-oss-20b',
-    'qwen/qwen3.6-27b',
+    'llama3-8b-8192',
+    'gemma2-9b-it',
     'llama-3.3-70b-versatile', // escalate if small model struggles
-    'groq/compound-mini',
   ],
 };
 
