@@ -2168,30 +2168,6 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
                 ))}
               </div>
 
-              {/* Trust Showcase Card */}
-              <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-gray-600 uppercase tracking-widest">Trust Metrics & Reviews</span>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-xs text-gray-600 space-y-3">
-                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-[11px]">
-                    <Sparkles size={12} className="text-blue-500 animate-pulse" />
-                    <span>Average 22% salary increase</span>
-                  </div>
-                  <p className="leading-relaxed italic text-gray-600 text-[11px]">
-                    "This tool completely transformed my job search. The formatting engine is flawless, and the real-time layout guidelines saved me hours."
-                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[11px]">— Dan K., Lead Engineer at Meta</span>
-                  </p>
-                  <p className="leading-relaxed italic text-gray-600 text-[11px] border-t border-gray-200/50 pt-2">
-                    "The single-click PDF export layout is gorgeous. Hiring managers immediately commented on the clean typography."
-                    <span className="block font-bold text-gray-700 not-italic mt-1 text-[11px]">— Priya S., Senior PM</span>
-                  </p>
-                  <div className="border-t border-gray-200/50 pt-2 flex items-center justify-between text-[9px] text-gray-600 font-semibold uppercase tracking-wider">
-                    <span>⭐⭐⭐⭐⭐ Rated 4.9/5</span>
-                    <span>10,000+ happy devs</span>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
