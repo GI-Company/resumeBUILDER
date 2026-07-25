@@ -1966,7 +1966,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
           The structure MUST EXACTLY be:
           <UPDATE_RESUME>
           {
-            "name": "Jane Doe",
+            "name": "[User's Name]",
             "contactLine": "City, ST | (123) 456-7890 | email@domain.com | linkedin.com/in/username",
             "summary": "Professional summary...",
             "experiences": [
@@ -2000,6 +2000,8 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
             ]
           }
           </UPDATE_RESUME>
+          
+          CRITICAL: Do NOT use placeholder names like 'Jane Doe' or placeholder companies. If the user did not provide a specific piece of information, leave it blank or omit it, but NEVER invent fake personal details.
           
           Provide a friendly, conversational message before the XML block congratulating the user on finishing their career interview and explaining how their resume was crafted.`;
 
@@ -2091,7 +2093,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       const systemPrompt = `You are Agent Rez, an elite AI Career Agent who has direct access to update the user's active resume draft in real-time.
       
       The user's current resume state is:
-      ${JSON.stringify({ name, contactLine, summary, experiences, educations, skills })}
+      ${JSON.stringify({ name, contactLine, summary, experiences, educations, projects, publications, awards, skills, licenses })}
       
       Current Live Cognitive & ATS Audit Metrics:
       - ATS Action-Verb Saliency Score: ${saliencyScore}/5.0
@@ -2129,6 +2131,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         "summary": "Visionary executive leader with 15+ years driving digital transformation and managing cross-functional teams to deliver scalable enterprise solutions. Proven track record of aligning technology initiatives with core business objectives to accelerate revenue growth.",
         "experiences": [...],
         "educations": [...],
+        "projects": [...],
+        "publications": [...],
+        "awards": [...],
+        "licenses": [...],
         "skills": [...]
       }
       </UPDATE_RESUME>"
@@ -2139,9 +2145,13 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       - summary: string
       - experiences: [{ id, title, date, bullets: [{ id, text }], meta }]
       - educations: [{ id, degree, bullets: [{ id, text }] }]
+      - projects: [{ id, title, date, bullets: [{ id, text }], meta }]
+      - publications: [{ id, title, date, bullets: [{ id, text }], meta }]
+      - awards: [{ id, title, date, bullets: [{ id, text }], meta }]
       - skills: [{ id, title, items }]
+      - licenses: [{ id, text }]
       
-      Ensure each object in experiences, educations, and skills has a unique 'id' string (e.g., 'exp-X', 'edu-X', 'sk-X').
+      Ensure each object in experiences, educations, projects, publications, awards, and skills has a unique 'id' string (e.g., 'exp-X', 'edu-X', 'proj-X', 'sk-X').
       If the user is just asking a question and no resume changes are needed, do not include the <UPDATE_RESUME> tags. Just reply conversationally.`;
 
       const headers: Record<string, string> = { "Content-Type": "application/json" };
