@@ -51,6 +51,7 @@ import {
   Share2,
   Download, Settings2, Menu, X as CloseIcon, FileDown, Loader2,
   BarChart3, CheckCircle2, AlertCircle, TrendingUp, ShieldCheck, Ruler,
+  ArrowUp, ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -163,6 +164,20 @@ const SectionRenderer = memo(({
   const getPageIndex = (id: string | null | undefined): number => {
     if (!id) return 0;
     return idToPageMap?.[id] ?? 0;
+  };
+
+  const moveItemUp = (arr: any[], index: number) => {
+    if (index <= 0) return arr;
+    const newArr = [...arr];
+    [newArr[index - 1], newArr[index]] = [newArr[index], newArr[index - 1]];
+    return newArr;
+  };
+
+  const moveItemDown = (arr: any[], index: number) => {
+    if (index >= arr.length - 1) return arr;
+    const newArr = [...arr];
+    [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
+    return newArr;
   };
 
   const headingPage = getPageIndex(`heading-${section.id}`);
@@ -498,16 +513,38 @@ const SectionRenderer = memo(({
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
-                              <button
-                                onClick={() =>
-                                  setExperiences((e: any[]) =>
-                                    e.filter((x) => x.id !== exp.id),
-                                  )
-                                }
-                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
-                              >
-                                <X size={12} /> remove
-                              </button>
+                              <div className="absolute top-2 right-2 md:top-3 md:right-3 flex items-center gap-1 opacity-50 hover:opacity-100 hidden group-hover:flex no-print">
+                                <button
+                                  onClick={() => {
+                                    const idx = experiences.findIndex((x: any) => x.id === exp.id);
+                                    if (idx > -1) setExperiences(moveItemUp(experiences, idx));
+                                  }}
+                                  className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-800"
+                                  title="Move Up"
+                                >
+                                  <ArrowUp size={14} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const idx = experiences.findIndex((x: any) => x.id === exp.id);
+                                    if (idx > -1) setExperiences(moveItemDown(experiences, idx));
+                                  }}
+                                  className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-800"
+                                  title="Move Down"
+                                >
+                                  <ArrowDown size={14} />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    setExperiences((e: any[]) =>
+                                      e.filter((x) => x.id !== exp.id),
+                                    )
+                                  }
+                                  className="p-1 rounded hover:bg-red-100 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans flex items-center gap-1"
+                                >
+                                  <X size={12} /> remove
+                                </button>
+                              </div>
                               {isContinuation ? (
                                 <div className="exp-header mb-2 pb-1 border-b border-gray-200/60 flex justify-between items-baseline">
                                   <span className="font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)]">
@@ -574,25 +611,64 @@ const SectionRenderer = memo(({
                                         ); }}
                                       spellCheck={spellcheckEnabled}
                                     />
-                                    <button
-                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                      onClick={() =>
-                                        setExperiences((e: any[]) =>
-                                          e.map((x) =>
-                                            x.id === exp.id
-                                              ? {
-                                                  ...x,
-                                                  bullets: x.bullets.filter(
-                                                    (y: any) => y.id !== b.id,
-                                                  ),
-                                                }
-                                              : x,
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      ✕
-                                    </button>
+                                    <div className="hidden group-hover/bullet:flex absolute -left-14 top-0.5 items-center gap-0.5 no-print bg-white/80 rounded px-0.5 py-0.5 shadow-sm border border-gray-100">
+                                      <button
+                                        onClick={() =>
+                                          setExperiences((e: any[]) =>
+                                            e.map((x) =>
+                                              x.id === exp.id
+                                                ? {
+                                                    ...x,
+                                                    bullets: moveItemUp(x.bullets, x.bullets.findIndex((y: any) => y.id === b.id)),
+                                                  }
+                                                : x,
+                                            ),
+                                          )
+                                        }
+                                        className="text-gray-400 hover:text-gray-700 cursor-pointer p-0.5 rounded hover:bg-gray-200"
+                                        title="Move Up"
+                                      >
+                                        <ArrowUp size={11} />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setExperiences((e: any[]) =>
+                                            e.map((x) =>
+                                              x.id === exp.id
+                                                ? {
+                                                    ...x,
+                                                    bullets: moveItemDown(x.bullets, x.bullets.findIndex((y: any) => y.id === b.id)),
+                                                  }
+                                                : x,
+                                            ),
+                                          )
+                                        }
+                                        className="text-gray-400 hover:text-gray-700 cursor-pointer p-0.5 rounded hover:bg-gray-200"
+                                        title="Move Down"
+                                      >
+                                        <ArrowDown size={11} />
+                                      </button>
+                                      <button
+                                        className="text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans p-0.5 ml-0.5 hover:bg-red-50 rounded"
+                                        title="Remove"
+                                        onClick={() =>
+                                          setExperiences((e: any[]) =>
+                                            e.map((x) =>
+                                              x.id === exp.id
+                                                ? {
+                                                    ...x,
+                                                    bullets: x.bullets.filter(
+                                                      (y: any) => y.id !== b.id,
+                                                    ),
+                                                  }
+                                                : x,
+                                            ),
+                                          )
+                                        }
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
                                   </li>
                                 ))}
                               </ul>
@@ -604,11 +680,11 @@ const SectionRenderer = memo(({
                                         ? {
                                             ...x,
                                             bullets: [
-                                              ...x.bullets,
                                               {
                                                 id: Date.now().toString(),
                                                 text: "New bullet",
                                               },
+                                              ...x.bullets,
                                             ],
                                           }
                                         : x,
@@ -681,16 +757,38 @@ const SectionRenderer = memo(({
                               <div className="absolute left-2 top-4 no-print">
                                 <DragHandle dragControls={dc} />
                               </div>
-                              <button
-                                onClick={() =>
-                                  setEducations((e: any[]) =>
-                                    e.filter((x) => x.id !== edu.id),
-                                  )
-                                }
-                                className="remove-entry absolute top-2 right-2 md:top-3 md:right-3 bg-transparent border-none text-[var(--danger)] text-[11px] font-bold cursor-pointer opacity-50 hover:opacity-100 font-sans no-print flex items-center gap-1 hidden group-hover:flex"
-                              >
-                                <X size={12} /> remove
-                              </button>
+                              <div className="absolute top-2 right-2 md:top-3 md:right-3 flex items-center gap-1 opacity-50 hover:opacity-100 hidden group-hover:flex no-print">
+                                <button
+                                  onClick={() => {
+                                    const idx = educations.findIndex((x: any) => x.id === edu.id);
+                                    if (idx > -1) setEducations(moveItemUp(educations, idx));
+                                  }}
+                                  className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-800"
+                                  title="Move Up"
+                                >
+                                  <ArrowUp size={14} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const idx = educations.findIndex((x: any) => x.id === edu.id);
+                                    if (idx > -1) setEducations(moveItemDown(educations, idx));
+                                  }}
+                                  className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-800"
+                                  title="Move Down"
+                                >
+                                  <ArrowDown size={14} />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    setEducations((e: any[]) =>
+                                      e.filter((x) => x.id !== edu.id),
+                                    )
+                                  }
+                                  className="p-1 rounded hover:bg-red-100 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans flex items-center gap-1"
+                                >
+                                  <X size={12} /> remove
+                                </button>
+                              </div>
                               {isContinuation ? (
                                 <div className="edu-header mb-2 pb-1 border-b border-gray-200/60 flex justify-between items-baseline">
                                   <span className="font-[family:var(--font-heading)] font-bold text-base text-[var(--ink)]">
@@ -734,25 +832,64 @@ const SectionRenderer = memo(({
                                         ); }}
                                       spellCheck={spellcheckEnabled}
                                     />
-                                    <button
-                                      className="hidden group-hover/bullet:inline absolute -left-4 top-1 text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans no-print"
-                                      onClick={() =>
-                                        setEducations((e: any[]) =>
-                                          e.map((x) =>
-                                            x.id === edu.id
-                                              ? {
-                                                  ...x,
-                                                  bullets: x.bullets.filter(
-                                                    (y: any) => y.id !== b.id,
-                                                  ),
-                                                }
-                                              : x,
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      ✕
-                                    </button>
+                                    <div className="hidden group-hover/bullet:flex absolute -left-14 top-0.5 items-center gap-0.5 no-print bg-white/80 rounded px-0.5 py-0.5 shadow-sm border border-gray-100">
+                                      <button
+                                        onClick={() =>
+                                          setEducations((e: any[]) =>
+                                            e.map((x) =>
+                                              x.id === edu.id
+                                                ? {
+                                                    ...x,
+                                                    bullets: moveItemUp(x.bullets, x.bullets.findIndex((y: any) => y.id === b.id)),
+                                                  }
+                                                : x,
+                                            ),
+                                          )
+                                        }
+                                        className="text-gray-400 hover:text-gray-700 cursor-pointer p-0.5 rounded hover:bg-gray-200"
+                                        title="Move Up"
+                                      >
+                                        <ArrowUp size={11} />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setEducations((e: any[]) =>
+                                            e.map((x) =>
+                                              x.id === edu.id
+                                                ? {
+                                                    ...x,
+                                                    bullets: moveItemDown(x.bullets, x.bullets.findIndex((y: any) => y.id === b.id)),
+                                                  }
+                                                : x,
+                                            ),
+                                          )
+                                        }
+                                        className="text-gray-400 hover:text-gray-700 cursor-pointer p-0.5 rounded hover:bg-gray-200"
+                                        title="Move Down"
+                                      >
+                                        <ArrowDown size={11} />
+                                      </button>
+                                      <button
+                                        className="text-[var(--danger)] text-[11px] font-bold cursor-pointer font-sans p-0.5 ml-0.5 hover:bg-red-50 rounded"
+                                        title="Remove"
+                                        onClick={() =>
+                                          setEducations((e: any[]) =>
+                                            e.map((x) =>
+                                              x.id === edu.id
+                                                ? {
+                                                    ...x,
+                                                    bullets: x.bullets.filter(
+                                                      (y: any) => y.id !== b.id,
+                                                    ),
+                                                  }
+                                                : x,
+                                            ),
+                                          )
+                                        }
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
                                   </li>
                                 ))}
                               </ul>
@@ -764,11 +901,11 @@ const SectionRenderer = memo(({
                                         ? {
                                             ...x,
                                             bullets: [
-                                              ...x.bullets,
                                               {
                                                 id: Date.now().toString(),
                                                 text: "New bullet",
                                               },
+                                              ...x.bullets,
                                             ],
                                           }
                                         : x,
@@ -4634,7 +4771,6 @@ Output:
                 <button
                   onClick={() =>
                     setExperiences([
-                      ...experiences,
                       {
                         id: Date.now().toString(),
                         title: "Job Title",
@@ -4644,6 +4780,7 @@ Output:
                         ],
                         meta: "",
                       },
+                      ...experiences,
                     ])
                   }
                   className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
@@ -4656,12 +4793,12 @@ Output:
                 <button
                   onClick={() =>
                     setSkills([
-                      ...skills,
                       {
                         id: Date.now().toString(),
                         title: "New Category",
                         items: "Skills",
                       },
+                      ...skills,
                     ])
                   }
                   className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
@@ -4674,7 +4811,6 @@ Output:
                 <button
                   onClick={() =>
                     setEducations([
-                      ...educations,
                       {
                         id: Date.now().toString(),
                         degree: "Degree",
@@ -4682,6 +4818,7 @@ Output:
                           { id: Date.now().toString(), text: "New bullet" },
                         ],
                       },
+                      ...educations,
                     ])
                   }
                   className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
@@ -4694,11 +4831,11 @@ Output:
                 <button
                   onClick={() =>
                     setLicenses([
-                      ...licenses,
                       {
                         id: Date.now().toString(),
                         text: "New License or Certification",
                       },
+                      ...licenses,
                     ])
                   }
                   className="w-full text-left p-2.5 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold text-gray-800 text-xs flex items-center gap-2"
