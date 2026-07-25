@@ -14,6 +14,7 @@
 //  tokens in real-time as they arrive from Groq.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server';
+import { validateCsrfOrigin } from '@/lib/csrf';
 export const runtime = 'edge';
 
 import { enforceRateLimit } from '@/lib/rateLimit';
@@ -22,8 +23,8 @@ import { env } from '@/lib/env';
 import type { AiAction } from '@/lib/types';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,9 @@ function getModelChain(action: AiAction): string[] {
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
     const { errorResponse, user, rateLimitResult } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 

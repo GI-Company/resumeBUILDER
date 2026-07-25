@@ -1,12 +1,25 @@
 import React, { memo } from "react";
 import { Reorder, useDragControls } from "motion/react";
 
-export const SubItemWrapper = memo(({ id, item, value, className, children, isPrint, as: Component = "div" }: any) => {
+interface SubItemWrapperProps {
+  id: string;
+  item?: any;
+  value?: any;
+  className?: string;
+  children: React.ReactNode | ((dragControls: any) => React.ReactNode);
+  isPrint?: boolean;
+  as?: any;
+  style?: React.CSSProperties;
+  "data-page-break-id"?: string;
+}
+
+export const SubItemWrapper = memo(({ id, item, value, className, children, isPrint, as: Component = "div", ...rest }: SubItemWrapperProps) => {
   const dc = useDragControls();
   const actualValue = item ?? value;
   if (isPrint) {
     return (
-      <Component key={`print-sub-${id}`} className={className}>
+      <Component key={`print-sub-${id}`} className={className}
+      {...rest} {...rest}>
         {typeof children === "function" ? children(dc) : children}
       </Component>
     );
@@ -20,6 +33,7 @@ export const SubItemWrapper = memo(({ id, item, value, className, children, isPr
       dragListener={false}
       dragControls={dc}
       className={className}
+      {...rest}
     >
       {typeof children === "function" ? children(dc) : children}
     </Reorder.Item>

@@ -6,7 +6,38 @@ import { PageBreakGap } from "./PageBreakGap";
 import { DragHandle } from "./DragHandle";
 import { ContentEditableField } from "../ContentEditableField";
 
+
+interface SectionWrapperProps {
+  id: string;
+  item: any;
+  children: React.ReactNode;
+  manualBreaks: Record<string, boolean>;
+  setManualBreaks: (v: any) => void;
+  pageBreakElementIds: string[];
+  gapHeights: Record<string, any>;
+  design: any;
+  licenses: any[];
+  setLicenses: (v: any[]) => void;
+  skills: any[];
+  setSkills: (v: any[]) => void;
+  experiences: any[];
+  setExperiences: (v: any[]) => void;
+  educations: any[];
+  setEducations: (v: any[]) => void;
+  projects: any[];
+  setProjects: (v: any[]) => void;
+  publications: any[];
+  setPublications: (v: any[]) => void;
+  awards: any[];
+  setAwards: (v: any[]) => void;
+  sectionHeaders: Record<string, string>;
+  setSectionHeaders: (v: any) => void;
+  isPrint?: boolean;
+  hideHeading?: boolean;
+}
+
 export const SectionWrapper = memo(({
+
   id,
   item,
   children,
@@ -33,7 +64,7 @@ export const SectionWrapper = memo(({
   setSectionHeaders,
   isPrint,
   hideHeading,
-}: any) => {
+}: SectionWrapperProps) => {
   const dragControls = useDragControls();
   const content = (
     <>

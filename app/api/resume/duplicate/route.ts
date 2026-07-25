@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfOrigin } from '@/lib/csrf';
 import { createClient } from "@supabase/supabase-js";
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -7,6 +8,9 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 export async function POST(req: NextRequest) {
   try {
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });

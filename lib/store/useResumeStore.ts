@@ -48,6 +48,7 @@ export interface UIState {
   interviewStep: number;
   interviewAnswers: Record<string, string>;
   agentMessages: Array<{ role: "user" | "assistant" | "system", content: string, actionExecuted?: string }>;
+  jobDescription: string;
 }
 
 export interface LayoutState {
@@ -78,6 +79,9 @@ export interface ResumeStore extends DocumentState, UIState, LayoutState {
   // Actions - UI & Layout
   updateUI: (partial: Partial<UIState>) => void;
   updateLayout: (partial: Partial<LayoutState>) => void;
+  
+  // Actions - Reset
+  resetStore: () => void;
 }
 
 // ============================================================
@@ -137,7 +141,8 @@ const initialDocumentState: DocumentState = {
     boxOpacity: 100,
     boxShadow: "none",
     borderStyle: "none",
-    backdropBlur: 0
+    backdropBlur: 0,
+    autoBalanceLayout: false
   } as DesignConfig,
   sections: [
     { id: "summary", title: "Summary", type: "summary" },
@@ -161,7 +166,8 @@ const initialUIState: UIState = {
   aiAgentTab: "agent",
   interviewStep: -1,
   interviewAnswers: {},
-  agentMessages: []
+  agentMessages: [],
+  jobDescription: ""
 };
 
 const initialLayoutState: LayoutState = {
@@ -289,5 +295,15 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
 
   updateLayout: (partial) => {
     set((state) => ({ ...state, ...partial }));
+  },
+
+  resetStore: () => {
+    set({
+      ...initialDocumentState,
+      ...initialUIState,
+      ...initialLayoutState,
+      past: [],
+      future: [],
+    });
   }
 }));

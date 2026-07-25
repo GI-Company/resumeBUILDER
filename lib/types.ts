@@ -90,6 +90,7 @@ export interface DesignConfig {
   boxShadow: string;
   borderStyle: string;
   backdropBlur: number;
+  autoBalanceLayout?: boolean;
 }
 
 // --- Section Headers (user-editable heading text) ---

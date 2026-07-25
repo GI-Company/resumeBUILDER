@@ -10,12 +10,16 @@
 //  Free tier: 2,000 req/day, 28,800 audio seconds/day.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server';
+import { validateCsrfOrigin } from '@/lib/csrf';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { transcribeSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
 
 export async function POST(req: NextRequest) {
   try {
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
     const { errorResponse } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 

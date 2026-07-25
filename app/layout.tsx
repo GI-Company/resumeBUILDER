@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: '/icon.svg',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Agent Rez AI — Free AI Resume Builder & ATS Templates',
@@ -72,7 +73,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ['/icon.svg'],
+    images: ['/og-image.png'],
   },
 
   // ── Icons / Favicon ───────────────────────────────────────

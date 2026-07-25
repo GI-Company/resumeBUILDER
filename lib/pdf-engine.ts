@@ -361,17 +361,6 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
 
     let response: Response;
     try {
-      await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          html: selfContainedHtml,
-          filename: cleanFilename,
-          pageSize,
-          htmlOnly: true,
-        }),
-      }).catch(e => console.error(e));
-
       response = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

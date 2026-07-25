@@ -23,12 +23,18 @@ import AuthModal from './AuthModal';
 import { User } from '@supabase/supabase-js';
 
 export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string) => void }) {
-  const [resumes, setResumes] = useState<any[]>([]);
+  const [allResumes, setAllResumes] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'active' | 'trash'>('active');
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [trashConfirmId, setTrashConfirmId] = useState<string | null>(null);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editTitleValue, setEditTitleValue] = useState("");
+
+  const resumes = allResumes.filter((r) => r.status === activeTab);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,7 +57,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
       });
       const result = await response.json();
       if (result.success) {
-        setResumes(result.data.filter((r: any) => r.status === 'active'));
+        setAllResumes(result.data);
       } else {
         toast.error("Failed to load resumes");
       }
@@ -62,7 +68,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
     }
   };
 
-  const handleAction = async (action: 'duplicate' | 'trash', id: string) => {
+  const handleAction = async (action: 'duplicate' | 'trash' | 'restore', id: string) => {
       if (action === 'duplicate') setDuplicatingId(id);
       if (action === 'trash') setDeletingId(id);
 
@@ -71,7 +77,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
         if (!session) return;
         
         const endpoint = action === 'duplicate' ? '/api/resume/duplicate' : '/api/resume/status';
-        const body = action === 'duplicate' ? { id } : { id, status: 'trash' };
+        const body = action === 'duplicate' ? { id } : { id, status: action === 'restore' ? 'active' : 'trash' };
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -94,6 +100,36 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
         setDuplicatingId(null);
         setDeletingId(null);
       }
+  };
+
+  const handleRename = async (id: string, newName: string) => {
+    if (!newName.trim()) return;
+    setEditingTitleId(null);
+    const target = allResumes.find(r => r.id === id);
+    if (!target) return;
+    if ((target.content.resumeName || target.content.name) === newName.trim()) return;
+
+    const toastId = toast.loading("Renaming...");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const newContent = { ...target.content, resumeName: newName.trim() };
+      const response = await fetch('/api/resume/save', {
+        method: 'POST',
+        headers: { "Authorization": `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id, content: newContent, clientId: 'web', status: target.status })
+      });
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Renamed successfully", { id: toastId });
+        fetchResumes();
+      } else {
+        toast.error("Rename failed", { id: toastId });
+      }
+    } catch (e) {
+      toast.error("Rename error", { id: toastId });
+    }
   };
 
   const openResume = async (resume: any) => {
@@ -308,10 +344,23 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
         {/* Resumes Header */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-              Your Saved Cloud Resumes ({resumes.length})
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+              <span 
+                className={`cursor-pointer pb-1 ${activeTab === 'active' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('active')}
+              >
+                Saved Cloud Resumes
+              </span>
+              <span className="text-gray-300">|</span>
+              <span 
+                className={`cursor-pointer pb-1 ${activeTab === 'trash' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('trash')}
+              >
+                Trash
+              </span>
+              <span className="text-gray-400 font-normal">({resumes.length})</span>
             </h3>
-            <p className="text-[11px] text-gray-500">Auto-saves every single edit live to secure database.</p>
+            <p className="text-[11px] text-gray-500 mt-1">Auto-saves every single edit live to secure database.</p>
           </div>
         </div>
 
@@ -325,15 +374,19 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
               Let's craft your first masterpiece!
             </h4>
             <p className="text-xs text-gray-500 max-w-sm leading-relaxed mb-6">
-              You haven't saved any cloud resumes yet. Kickstart one now using any of our premium templates or with your active conversational AI assistant!
+              {activeTab === 'active' 
+                ? "You haven't saved any cloud resumes yet. Kickstart one now using any of our premium templates or with your active conversational AI assistant!"
+                : "Your trash is empty."}
             </p>
-            <button 
-              onClick={() => onOpenResume('new')}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus size={15} />
-              <span>Launch New Document</span>
-            </button>
+            {activeTab === 'active' && (
+              <button 
+                onClick={() => onOpenResume('new')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={15} />
+                <span>Launch New Document</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -361,9 +414,35 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                     </div>
                   </div>
 
-                  <h5 className="font-extrabold text-sm text-gray-900 group-hover:text-blue-600 transition-colors truncate mb-1">
-                    {r.content.name || 'Untitled Resume'}
-                  </h5>
+                  <div className="flex items-center gap-2 mb-1 group/title">
+                    {editingTitleId === r.id ? (
+                      <input 
+                        type="text" 
+                        autoFocus
+                        value={editTitleValue}
+                        onChange={(e) => setEditTitleValue(e.target.value)}
+                        onBlur={() => handleRename(r.id, editTitleValue)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename(r.id, editTitleValue);
+                          if (e.key === 'Escape') setEditingTitleId(null);
+                        }}
+                        className="w-full text-sm font-extrabold text-gray-900 border-b-2 border-blue-500 focus:outline-none bg-blue-50/50 px-1 py-0.5 rounded-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <h5 
+                        className="font-extrabold text-sm text-gray-900 group-hover:text-blue-600 transition-colors truncate"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTitleId(r.id);
+                          setEditTitleValue(r.content.resumeName || r.content.name || 'Untitled Resume');
+                        }}
+                        title="Click to rename"
+                      >
+                        {r.content.resumeName || r.content.name || 'Untitled Resume'}
+                      </h5>
+                    )}
+                  </div>
                   <p className="text-[11px] text-gray-500 font-medium truncate leading-relaxed">
                     {r.content.basics?.label || 'General Professional'}
                   </p>
@@ -380,27 +459,29 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                 {/* Footer Controls */}
                 <div className="px-5 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                   <button 
-                    onClick={() => openResume(r)}
+                    onClick={() => activeTab === 'active' ? openResume(r) : handleAction('restore', r.id)}
                     className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5"
                   >
-                    <span>Edit Draft</span>
-                    <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                    <span>{activeTab === 'active' ? 'Edit Draft' : 'Restore'}</span>
+                    {activeTab === 'active' && <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />}
                   </button>
 
                   <div className="flex items-center gap-3">
+                    {activeTab === 'active' && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleAction('duplicate', r.id); }} 
+                        disabled={duplicatingId === r.id}
+                        className="text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        title="Duplicate Draft"
+                      >
+                        {duplicatingId === r.id ? <Loader2 size={14} className="animate-spin" /> : <Copy size={14}/>}
+                      </button>
+                    )}
                     <button 
-                      onClick={() => handleAction('duplicate', r.id)} 
-                      disabled={duplicatingId === r.id}
-                      className="text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer"
-                      title="Duplicate Draft"
-                    >
-                      {duplicatingId === r.id ? <Loader2 size={14} className="animate-spin" /> : <Copy size={14}/>}
-                    </button>
-                    <button 
-                      onClick={() => handleAction('trash', r.id)} 
+                      onClick={(e) => { e.stopPropagation(); handleAction('trash', r.id); }} 
                       disabled={deletingId === r.id}
                       className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
-                      title="Move to Trash"
+                      title={activeTab === 'active' ? "Move to Trash" : "Delete Permanently (Not implemented yet)"}
                     >
                       {deletingId === r.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14}/>}
                     </button>

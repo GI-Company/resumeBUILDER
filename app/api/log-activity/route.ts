@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfOrigin } from '@/lib/csrf';
 import { createClient } from "@supabase/supabase-js";
 // Using the existing rate limit logic if available, otherwise simplified
 // Wait, I will just create a simple endpoint without rateLimit imported to avoid breaking if the import path is wrong.
 
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 // Use the service role key to bypass RLS and insert securely from the backend
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder_key";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(req: NextRequest) {
   try {
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
     const { event_type, display_message } = await req.json();
 
     if (!event_type || !display_message) {

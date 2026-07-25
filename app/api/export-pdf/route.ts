@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { validateCsrfOrigin } from '@/lib/csrf';
 import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 
@@ -41,23 +42,17 @@ async function getChromiumExecutable(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[DEBUG export-pdf] Received POST request");
+    const csrfError = validateCsrfOrigin(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
-    const { html, viewport, htmlOnly } = body;
+    const { html, viewport } = body;
 
     if (!html || typeof html !== "string") {
       return NextResponse.json(
         { error: "Valid HTML string is required" },
         { status: 400 }
       );
-    }
-
-    if (htmlOnly) {
-      const fs = require('fs');
-      fs.writeFileSync('/tmp/export.html', html);
-      return new NextResponse("Saved to /tmp/export.html", {
-        headers: { "Content-Type": "text/plain" },
-      });
     }
 
     const isProduction =
@@ -95,9 +90,6 @@ export async function POST(request: NextRequest) {
     );
     const page = await browser.newPage();
 
-    console.log("[DEBUG export-pdf] HTML includes print-avoid-break?", html.includes("print-avoid-break"));
-    console.log("[DEBUG export-pdf] HTML includes manual-break?", html.includes("manual-break"));
-    
     if (viewport) {
       await page.setViewport({
         width: viewport.width || 1200,

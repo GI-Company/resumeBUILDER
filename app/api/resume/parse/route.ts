@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrfOrigin } from '@/lib/csrf';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { parseResumeSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
@@ -59,7 +60,10 @@ CRITICAL INSTRUCTION: Return ONLY the JSON block. No pre-text, no markdown code 
 
 export async function POST(req: NextRequest) {
   try {
-    const { errorResponse } = await enforceRateLimit(req);
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
+    const { errorResponse, rateLimitResult } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 
     const body = await req.json();

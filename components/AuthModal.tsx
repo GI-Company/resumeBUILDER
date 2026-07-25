@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { X, ArrowLeft, Mail, ShieldAlert, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 
 const US_STATES = [
   { code: 'AL', name: 'Alabama' },
@@ -250,7 +251,17 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[12px] font-bold text-gray-700 ml-1">Password</label>
+                    <div className="flex justify-between items-center ml-1">
+                      <label className="text-[12px] font-bold text-gray-700">Password</label>
+                      {!isSignUp && (
+                        <Link 
+                          href="/forgot-password"
+                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-500"
+                        >
+                          Forgot password?
+                        </Link>
+                      )}
+                    </div>
                     <div className="relative group">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
                       <input 

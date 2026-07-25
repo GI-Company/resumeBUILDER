@@ -4,6 +4,7 @@
 //  and returns a structured resume JSON. Migrated from Gemini.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server';
+import { validateCsrfOrigin } from '@/lib/csrf';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { parseLinkedinSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
@@ -48,6 +49,9 @@ CRITICAL: No markdown, no code blocks, no commentary. Raw valid JSON only.`;
 
 export async function POST(req: NextRequest) {
   try {
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
     const { errorResponse } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 

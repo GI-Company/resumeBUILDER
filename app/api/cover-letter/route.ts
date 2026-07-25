@@ -4,15 +4,14 @@
 //  Returns a Server-Sent Events stream for real-time rendering.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server';
+import { validateCsrfOrigin } from '@/lib/csrf';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { coverLetterSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
 
 const MODEL_CHAIN = [
-  'groq/compound',
   'llama-3.3-70b-versatile',
-  'openai/gpt-oss-120b',
-  'groq/compound-mini',
+  'llama-3.1-70b-versatile',
   'llama-3.1-8b-instant',
 ];
 
@@ -34,6 +33,9 @@ CRITICAL: Output ONLY the finished, plain-text cover letter. Zero meta-commentar
 
 export async function POST(req: NextRequest) {
   try {
+    const csrfError = validateCsrfOrigin(req);
+    if (csrfError) return csrfError;
+
     const { errorResponse, rateLimitResult } = await enforceRateLimit(req);
     if (errorResponse) return errorResponse;
 
