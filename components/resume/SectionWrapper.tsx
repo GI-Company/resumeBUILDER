@@ -2,7 +2,6 @@ import React, { memo } from "react";
 import { Reorder, useDragControls } from "motion/react";
 import { ArrowDownToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PageBreakGap } from "./PageBreakGap";
 import { DragHandle } from "./DragHandle";
 import { ContentEditableField } from "../ContentEditableField";
 
@@ -70,7 +69,6 @@ export const SectionWrapper = memo(({
     <>
       {!hideHeading && (
         <>
-          <PageBreakGap id={`heading-${id}`} pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} />
           <div
             className="section-heading font-[family:var(--font-heading)] font-bold text-base tracking-wide text-[var(--ink)] rounded-[var(--radius)] py-2 px-6 mt-3.5 mb-[var(--section-gap)] flex flex-wrap items-center justify-between gap-x-2 gap-y-2 print-break-after-avoid transition-all duration-300"
             data-page-break-id={`heading-${id}`}
