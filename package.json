@@ -25,6 +25,7 @@
     "next": "^15.5.20",
     "pdf-parse": "^1.1.1",
     "postcss": "^8.5.6",
+    "posthog-js": "^1.407.2",
     "puppeteer-core": "^25.3.0",
     "react": "^19.0.0",
     "react-contenteditable": "^3.3.7",

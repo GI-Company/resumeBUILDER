@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { Analytics } from '@vercel/analytics/react';
+import { CSPostHogProvider } from './providers';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -124,9 +125,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning className="font-sans antialiased">
-        {children}
-        <Toaster position="bottom-right" />
-        
+        <CSPostHogProvider>
+          {children}
+          <Toaster position="bottom-right" />
+        </CSPostHogProvider>
       </body>
     </html>
   );
