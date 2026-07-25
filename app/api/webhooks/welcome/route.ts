@@ -27,12 +27,23 @@ export async function POST(req: Request) {
 
     const userEmail = body.record.email;
 
+    const templateId = process.env.RESEND_WELCOME_TEMPLATE_ID;
+
     // 3. Send the Welcome Email via Resend
-    const { data, error } = await resend.emails.send({
+    const payload: any = {
       from: 'Agent Rez AI <welcome@agentrez.com>', // Replace with your verified sender domain if applicable
       to: userEmail,
       subject: 'Welcome to Agent Rez AI! Let\'s build your resume.',
-      html: `
+    };
+
+    if (templateId) {
+      payload.template = {
+        id: templateId,
+        // Add variables here if your Resend template requires them
+        // variables: { email: userEmail }
+      };
+    } else {
+      payload.html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
           <h2 style="color: #6366f1;">Welcome to Agent Rez AI! 🎉</h2>
           <p>We are thrilled to have you as one of our early founding members.</p>
@@ -52,8 +63,10 @@ export async function POST(req: Request) {
           <p>Happy building,</p>
           <p><strong>The Agent Rez Team</strong></p>
         </div>
-      `,
-    });
+      `;
+    }
+
+    const { data, error } = await resend.emails.send(payload);
 
     if (error) {
       console.error('Error sending welcome email via Resend:', error);
