@@ -2466,11 +2466,41 @@ Output:
       if (!response.ok || !resData.success) throw new Error(resData.error || "Failed to parse");
 
       const { data } = resData;
+      
+      // Sanitizer to guarantee unique IDs for pagination engine
+      const sanitizeItems = (items: any[], prefix: string) => {
+        if (!Array.isArray(items)) return [];
+        return items.map((item, idx) => ({
+          ...item,
+          id: `${prefix}-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`,
+          bullets: Array.isArray(item.bullets) ? item.bullets.map((b: any, bIdx: number) => ({
+            ...b,
+            id: `b-${Date.now()}-${idx}-${bIdx}-${Math.random().toString(36).substr(2, 5)}`
+          })) : []
+        }));
+      };
+
       if (data.name) setName(data.name);
       if (data.summary) setSummary(data.summary);
-      if (data.experiences) setExperiences(data.experiences);
-      if (data.educations) setEducations(data.educations);
-      if (data.skills) setSkills(Array.isArray(data.skills) ? data.skills : [data.skills]);
+      if (data.experiences) setExperiences(sanitizeItems(data.experiences, 'exp'));
+      if (data.educations) setEducations(sanitizeItems(data.educations, 'edu'));
+      if (data.projects) setProjects(sanitizeItems(data.projects, 'proj'));
+      if (data.publications) setPublications(sanitizeItems(data.publications, 'pub'));
+      if (data.awards) setAwards(sanitizeItems(data.awards, 'award'));
+      if (data.licenses) {
+        const sanitizedLicenses = (Array.isArray(data.licenses) ? data.licenses : []).map((l: any, idx: number) => ({
+          ...l,
+          id: `lic-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
+        }));
+        setLicenses(sanitizedLicenses);
+      }
+      if (data.skills) {
+        const sanitizedSkills = (Array.isArray(data.skills) ? data.skills : [data.skills]).map((s: any, idx: number) => ({
+          ...s,
+          id: `sk-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
+        }));
+        setSkills(sanitizedSkills);
+      }
       
       toast.success("Resume built and applied! ✨");
     } catch (err: any) {

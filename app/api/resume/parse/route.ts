@@ -36,11 +36,24 @@ You MUST return a JSON object with EXACTLY the following format:
       "bullets": [{ "id": "b-e1", "text": "GPA 3.8, Honors" }]
     }
   ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "title": "Open Source Contributions",
+      "date": "2022",
+      "bullets": [{ "id": "b-p1", "text": "Contributed to React core" }]
+    }
+  ],
+  "publications": [],
+  "awards": [],
+  "licenses": [],
   "skills": [
     { "id": "sk-1", "title": "Programming Languages", "items": "TypeScript, JavaScript, Python" },
     { "id": "sk-2", "title": "Frameworks & Databases", "items": "React, Next.js, PostgreSQL" }
   ]
 }
+
+CRITICAL: Do NOT use placeholder names like 'Jane Doe'. If the user's name is not available, leave it blank. Return ALL relevant sections found in the text.
 
 CRITICAL INSTRUCTION: Return ONLY the JSON block. No pre-text, no markdown code blocks, no follow-up text. Raw valid JSON only.`;
 
