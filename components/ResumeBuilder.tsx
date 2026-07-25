@@ -2481,6 +2481,7 @@ Output:
       };
 
       if (data.name) setName(data.name);
+      if (data.contactLine) setContactLine(data.contactLine);
       if (data.summary) setSummary(data.summary);
       if (data.experiences) setExperiences(sanitizeItems(data.experiences, 'exp'));
       if (data.educations) setEducations(sanitizeItems(data.educations, 'edu'));
