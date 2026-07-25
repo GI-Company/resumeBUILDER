@@ -209,30 +209,6 @@ export default function ResumeCanvas({
                   if (s.id === "licenses") return (idToPageMap?.["lic-list"] ?? hp ?? 0) === pageIndex;
                   if (s.id === "skills") return (idToPageMap?.["skills-grid"] ?? hp ?? 0) === pageIndex;
                 
-  // Auto-balance Layout
-  const contentVolume = React.useMemo(() => {
-    let vol = 0;
-    vol += (name || "").length;
-    vol += (contactLine || "").length;
-    vol += (summary || "").length;
-    experiences?.forEach((e: any) => {
-      vol += (e.title || "").length + (e.meta || "").length;
-      e.bullets?.forEach((b: any) => vol += (b.text || "").length);
-    });
-    educations?.forEach((e: any) => {
-      vol += (e.degree || "").length;
-      e.bullets?.forEach((b: any) => vol += (b.text || "").length);
-    });
-    return vol;
-  }, [name, contactLine, summary, experiences, educations]);
-
-  const optimalLayout = React.useMemo(() => {
-    if (!design.autoBalanceLayout) return null;
-    return LayoutRebalancer.calculateOptimalLayout(contentVolume, totalHeightPx || 1056);
-  }, [design.autoBalanceLayout, contentVolume, totalHeightPx]);
-
-  const appliedLineHeight = optimalLayout ? optimalLayout.lineHeight : design.lineHeight;
-  const appliedSectionSpacing = optimalLayout ? optimalLayout.sectionSpacing : design.gap;
 
   return (hp ?? 0) === pageIndex;
                 };
@@ -243,30 +219,6 @@ export default function ResumeCanvas({
                   if (s.id === "experience") return (idToPageMap?.["exp-1"] ?? hp ?? 0) === pageIndex;
                   if (s.id === "projects") return (idToPageMap?.["proj-1"] ?? hp ?? 0) === pageIndex;
                 
-  // Auto-balance Layout
-  const contentVolume = React.useMemo(() => {
-    let vol = 0;
-    vol += (name || "").length;
-    vol += (contactLine || "").length;
-    vol += (summary || "").length;
-    experiences?.forEach((e: any) => {
-      vol += (e.title || "").length + (e.meta || "").length;
-      e.bullets?.forEach((b: any) => vol += (b.text || "").length);
-    });
-    educations?.forEach((e: any) => {
-      vol += (e.degree || "").length;
-      e.bullets?.forEach((b: any) => vol += (b.text || "").length);
-    });
-    return vol;
-  }, [name, contactLine, summary, experiences, educations]);
-
-  const optimalLayout = React.useMemo(() => {
-    if (!design.autoBalanceLayout) return null;
-    return LayoutRebalancer.calculateOptimalLayout(contentVolume, totalHeightPx || 1056);
-  }, [design.autoBalanceLayout, contentVolume, totalHeightPx]);
-
-  const appliedLineHeight = optimalLayout ? optimalLayout.lineHeight : design.lineHeight;
-  const appliedSectionSpacing = optimalLayout ? optimalLayout.sectionSpacing : design.gap;
 
   return (hp ?? 0) === pageIndex;
                 };
@@ -279,30 +231,6 @@ export default function ResumeCanvas({
                 }
 
               
-  // Auto-balance Layout
-  const contentVolume = React.useMemo(() => {
-    let vol = 0;
-    vol += (name || "").length;
-    vol += (contactLine || "").length;
-    vol += (summary || "").length;
-    experiences?.forEach((e: any) => {
-      vol += (e.title || "").length + (e.meta || "").length;
-      e.bullets?.forEach((b: any) => vol += (b.text || "").length);
-    });
-    educations?.forEach((e: any) => {
-      vol += (e.degree || "").length;
-      e.bullets?.forEach((b: any) => vol += (b.text || "").length);
-    });
-    return vol;
-  }, [name, contactLine, summary, experiences, educations]);
-
-  const optimalLayout = React.useMemo(() => {
-    if (!design.autoBalanceLayout) return null;
-    return LayoutRebalancer.calculateOptimalLayout(contentVolume, totalHeightPx || 1056);
-  }, [design.autoBalanceLayout, contentVolume, totalHeightPx]);
-
-  const appliedLineHeight = optimalLayout ? optimalLayout.lineHeight : design.lineHeight;
-  const appliedSectionSpacing = optimalLayout ? optimalLayout.sectionSpacing : design.gap;
 
   return (
                   <div
