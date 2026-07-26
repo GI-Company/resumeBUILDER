@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     // 3. Send the Welcome Email via Resend
     const payload: any = {
-      from: 'Agent Rez AI <welcome@agentrez.com>', // Replace with your verified sender domain if applicable
+      from: process.env.RESEND_FROM_EMAIL || 'Agent Rez AI <onboarding@resend.dev>', 
       to: userEmail,
       subject: 'Welcome to Agent Rez AI! Let\'s build your resume.',
     };
