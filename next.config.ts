@@ -1,6 +1,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  skipTrailingSlashRedirect: true,
   serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium-min", "@sparticuz/chromium", "pdf-parse", "mammoth"],
   outputFileTracingIncludes: {
     "/api/**/*": ["./assets/fonts/**/*"],
@@ -53,7 +54,7 @@ const nextConfig: NextConfig = {
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://va.vercel-scripts.com https://vitals.vercel-insights.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self';",
+              "default-src 'self'; script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://*.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.posthog.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self';",
           },
         ],
       },
@@ -86,6 +87,22 @@ const nextConfig: NextConfig = {
             value: 'noindex, nofollow, noarchive',
           },
         ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://us-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/array/:path*',
+        destination: 'https://us-assets.i.posthog.com/array/:path*',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://us.i.posthog.com/:path*',
       },
     ];
   },

@@ -5,6 +5,7 @@ import { X, ArrowLeft, Mail, ShieldAlert, CheckCircle, Eye, EyeOff, Lock } from 
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import posthog from 'posthog-js';
 
 const US_STATES = [
   { code: 'AL', name: 'Alabama' },
@@ -131,8 +132,12 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
         toast.success('Verification code sent. Please check your email.');
         setStep('verify');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (signInData.user) {
+          posthog.identify(signInData.user.id, { email: signInData.user.email });
+          posthog.capture('user_signed_in', { auth_provider: 'email' });
+        }
         toast.success('Welcome back.');
         onClose();
       }
@@ -162,7 +167,13 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
         if (error.message.includes('expired')) throw new Error('Code expired. Please request a new one.');
         throw error;
       }
-      
+
+      const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+      if (verifiedUser) {
+        posthog.identify(verifiedUser.id, { email: verifiedUser.email });
+        posthog.capture('user_signed_up', { auth_provider: 'email' });
+      }
+
       toast.success('Account verified successfully.');
       onClose();
     } catch (err: any) {

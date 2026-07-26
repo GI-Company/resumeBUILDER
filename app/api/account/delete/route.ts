@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfOrigin } from '@/lib/csrf';
 import { createClient } from "@supabase/supabase-js";
+import { getPostHogClient } from '@/lib/posthog-server';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
@@ -42,6 +43,15 @@ export async function POST(req: NextRequest) {
     if (deleteError) {
       console.error("[Account Delete Error]:", deleteError);
       return NextResponse.json({ success: false, error: deleteError.message }, { status: 500 });
+    }
+
+    const phClient = getPostHogClient();
+    if (phClient) {
+      phClient.capture({
+        distinctId: user.id,
+        event: 'account_deleted',
+      });
+      await phClient.flush();
     }
 
     return NextResponse.json({ success: true });

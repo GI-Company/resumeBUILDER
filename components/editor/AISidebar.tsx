@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { 
-  Sparkles, X, Bot, FileText, CheckSquare, Eye, Send, 
+import {
+  Sparkles, X, Bot, FileText, CheckSquare, Eye, Send,
   RefreshCw, CloudUpload, Copy, Download, Target, CheckCircle2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
+import posthog from 'posthog-js';
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 import { StructuralParser, GazeProfiler, LayoutRebalancer } from "@/lib/agent-rez";
@@ -742,6 +743,8 @@ export default function AISidebar({
     setAiIsGenerating(true);
     setAiOutput("");
 
+    posthog.capture('ai_feature_used', { preset_type: aiPresetType });
+
     try {
       // 1. Get optional supabase session to obtain JWT
       const { data: { session } } = await supabase.auth.getSession();
@@ -1004,6 +1007,7 @@ Output:
     }
 
     setCoverLetterIsGenerating(true);
+    posthog.capture('cover_letter_generated', { has_job_description: !!coverLetterJobDesc.trim() });
     const toastId = toast.loading("Generating your tailored cover letter... ✍️");
 
     try {
