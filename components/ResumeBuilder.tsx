@@ -69,6 +69,7 @@ import { hexToRgb, shadeColor, getCookie, setCookie } from "@/lib/resume-utils";
 import { PRESET_AVATARS, TEMPLATES, TUTORIAL_STEPS } from "@/lib/resume-constants";
 import { PageBreakGap } from "./resume/PageBreakGap";
 import { exportResumeToPdf } from "@/lib/pdf-engine";
+import posthog from 'posthog-js';
 // --- Subcomponents ---
 import { DragHandle } from "./resume/DragHandle";
 import { SubItemWrapper } from "./resume/SubItemWrapper";
@@ -1366,7 +1367,8 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       });
 
       toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
-      
+      posthog.capture('pdf_exported', { page_size: design.pageSize === 'a4' ? 'a4' : 'letter' });
+
       // Fire-and-forget: Log to public activity feed for landing page social proof
       fetch('/api/log-activity', {
         method: 'POST',

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
+import posthog from 'posthog-js';
 import { 
   FileText, 
   Plus, 
@@ -40,6 +41,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
     supabase.auth.getSession().then(({ data: { session } }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
+            posthog.identify(session.user.id, { email: session.user.email });
             fetchResumes();
         } else {
             setLoading(false);
@@ -75,21 +77,23 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        
+
         const endpoint = action === 'duplicate' ? '/api/resume/duplicate' : '/api/resume/status';
         const body = action === 'duplicate' ? { id } : { id, status: action === 'restore' ? 'active' : 'trash' };
 
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 
-              "Authorization": `Bearer ${session.access_token}`, 
-              "Content-Type": "application/json" 
+            headers: {
+              "Authorization": `Bearer ${session.access_token}`,
+              "Content-Type": "application/json"
             },
             body: JSON.stringify(body)
         });
         const result = await response.json();
         if (result.success) {
             toast.success(`Resume successfully ${action === 'duplicate' ? 'duplicated' : 'archived'}`);
+            if (action === 'duplicate') posthog.capture('resume_duplicated', { resume_id: id });
+            if (action === 'trash') posthog.capture('resume_trashed', { resume_id: id });
             fetchResumes();
         } else {
             toast.error(result.error || "Action failed");
@@ -134,10 +138,18 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
 
   const openResume = async (resume: any) => {
       localStorage.setItem("resume_autosave_content", JSON.stringify(resume.content));
+      posthog.capture('resume_opened', { resume_id: resume.id });
       onOpenResume(resume.id);
   };
 
+  const handleCreateNew = () => {
+    posthog.capture('resume_created');
+    onOpenResume('new');
+  };
+
   const handleLogout = async () => {
+    posthog.capture('user_signed_out');
+    posthog.reset();
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Failed to sign out");
@@ -326,8 +338,8 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
               </p>
             </div>
 
-            <button 
-              onClick={() => onOpenResume('new')}
+            <button
+              onClick={handleCreateNew}
               className="bg-white hover:bg-blue-50 text-indigo-950 px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all shrink-0 flex items-center justify-center gap-2 group cursor-pointer"
             >
               <Plus size={16} className="text-blue-600" />
@@ -379,8 +391,8 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                 : "Your trash is empty."}
             </p>
             {activeTab === 'active' && (
-              <button 
-                onClick={() => onOpenResume('new')}
+              <button
+                onClick={handleCreateNew}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus size={15} />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfOrigin } from '@/lib/csrf';
 import { createClient } from "@supabase/supabase-js";
+import { getPostHogClient } from '@/lib/posthog-server';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
@@ -44,6 +45,16 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    const phClient = getPostHogClient();
+    if (phClient) {
+      phClient.capture({
+        distinctId: user.id,
+        event: 'resume_saved',
+        properties: { resume_id: id, status: status || 'active' },
+      });
+      await phClient.flush();
     }
 
     return NextResponse.json(data);
