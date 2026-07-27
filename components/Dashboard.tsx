@@ -42,6 +42,13 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
         setUser(session?.user ?? null);
         if (session?.user) {
             posthog.identify(session.user.id, { email: session.user.email });
+            
+            // Seamless Hand-off: if user just came from ATS Scanner, send them straight to editor
+            if (typeof window !== 'undefined' && sessionStorage.getItem('pending_resume_text')) {
+                onOpenResume();
+                return;
+            }
+
             fetchResumes();
         } else {
             setLoading(false);
