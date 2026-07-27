@@ -24,5 +24,5 @@ export default function MarketingPage() {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  return <LandingPage />;
+  return <LandingPage onOpenResume={(id) => router.push(`/editor?templateId=${id}`)} />;
 }
