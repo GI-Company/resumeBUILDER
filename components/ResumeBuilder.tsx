@@ -147,6 +147,24 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 
   const store = useResumeStore();
 
+  useEffect(() => {
+    const storedJobDesc = sessionStorage.getItem('pending_job_description');
+    const storedResumeText = sessionStorage.getItem('pending_resume_text');
+
+    if (storedJobDesc || storedResumeText) {
+      console.log('Restored session from public scanner hand-off:', {
+        hasJobDesc: !!storedJobDesc,
+        hasResumeText: !!storedResumeText,
+      });
+      if (storedResumeText) {
+        store.updateDocument({ summary: storedResumeText });
+      }
+
+      sessionStorage.removeItem('pending_job_description');
+      sessionStorage.removeItem('pending_resume_text');
+      sessionStorage.removeItem('pending_scan_score');
+    }
+  }, []);
   const {
     name, contactLine, summary, experiences, educations, skills, licenses, projects, publications, awards, footer, profilePhoto, design, sections, sectionHeaders, manualBreaks,
     canvasZoom, printPreviewMode, showMarginGuides, showHeatmapOverlay, activeSidebarTab, sidebarWidth, showOnboarding, aiPresetType, aiAgentTab, interviewStep, interviewAnswers, agentMessages,

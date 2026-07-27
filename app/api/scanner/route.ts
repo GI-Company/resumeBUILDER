@@ -1,14 +1,28 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore
 import pdfParse from 'pdf-parse';
 import Groq from 'groq-sdk';
+import { enforceRateLimit } from '@/lib/rateLimit';
+import { PostHog } from 'posthog-node';
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || 'placeholder_key',
 });
 
-export async function POST(req: Request) {
+const posthogClient = new PostHog(
+  process.env.NEXT_PUBLIC_POSTHOG_KEY || '',
+  { host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com' }
+);
+
+export async function POST(req: NextRequest) {
   try {
+    // 1. Enforce Rate Limiting
+    const { errorResponse, ip } = await enforceRateLimit(req);
+    
+    if (errorResponse) {
+      return errorResponse;
+    }
+
     const formData = await req.formData();
     const file = formData.get('resume') as File | null;
     const jobDescription = formData.get('jobDescription') as string | null;
@@ -47,13 +61,25 @@ ${resumeText}`;
     const content = completion.choices[0]?.message?.content || '{}';
     const result = JSON.parse(content);
 
+    const score = result.score || 50;
+    const flaws = result.flaws || [
+      'Missing key industry keywords',
+      'Formatting incompatible with standard ATS',
+      'Lack of quantified impact metrics',
+    ];
+
+    // Fire server-side PostHog completion event
+    posthogClient.capture({
+      distinctId: ip,
+      event: 'scanner_completed',
+      properties: { score, flawsCount: flaws.length },
+    });
+    await posthogClient.shutdown();
+
     return NextResponse.json({
-      score: result.score || 50,
-      flaws: result.flaws || [
-        'Missing key industry keywords',
-        'Formatting incompatible with standard ATS',
-        'Lack of quantified impact metrics',
-      ],
+      score,
+      flaws,
+      resumeText,
     });
   } catch (error: any) {
     console.error('Error scanning resume:', error);

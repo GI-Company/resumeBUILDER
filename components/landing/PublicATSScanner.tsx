@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { Upload, FileText, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
 
 interface ScanResult {
   score: number;
   flaws: string[];
+  resumeText: string;
 }
 
 export function PublicATSScanner() {
@@ -15,7 +17,9 @@ export function PublicATSScanner() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
   const router = useRouter();
+  const posthog = usePostHog();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -38,6 +42,9 @@ export function PublicATSScanner() {
 
     setLoading(true);
     setError(null);
+
+    // Track scan started
+    posthog?.capture('scanner_started');
 
     try {
       const formData = new FormData();
@@ -64,6 +71,14 @@ export function PublicATSScanner() {
   };
 
   const handleCtaClick = () => {
+    posthog?.capture('scanner_cta_clicked', { score: result?.score });
+    
+    if (result) {
+      sessionStorage.setItem('pending_job_description', jobDescription);
+      sessionStorage.setItem('pending_resume_text', result.resumeText);
+      sessionStorage.setItem('pending_scan_score', String(result.score));
+    }
+
     router.push('/signup');
   };
 
