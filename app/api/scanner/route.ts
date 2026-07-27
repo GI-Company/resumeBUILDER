@@ -4,7 +4,7 @@ import pdfParse from 'pdf-parse';
 import Groq from 'groq-sdk';
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY || 'placeholder_key',
 });
 
 export async function POST(req: Request) {
