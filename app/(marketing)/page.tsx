@@ -24,13 +24,5 @@ export default function MarketingPage() {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  const handleOpenResume = (templateId: string) => {
-    if (templateId && templateId !== 'new' && templateId !== 'classic') {
-      router.push(`/editor?templateId=${templateId}`);
-    } else {
-      router.push('/editor?id=new');
-    }
-  };
-
-  return <LandingPage onOpenResume={handleOpenResume} />;
+  return <LandingPage />;
 }
