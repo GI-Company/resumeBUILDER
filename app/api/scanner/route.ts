@@ -3,16 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import pdfParse from 'pdf-parse';
 import Groq from 'groq-sdk';
 import { enforceRateLimit } from '@/lib/rateLimit';
-import { PostHog } from 'posthog-node';
+import { getPostHogClient } from '@/lib/posthog-server';
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || 'placeholder_key',
 });
 
-const posthogClient = new PostHog(
-  process.env.NEXT_PUBLIC_POSTHOG_KEY || '',
-  { host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com' }
-);
 
 export async function POST(req: NextRequest) {
   try {
@@ -69,12 +65,15 @@ ${resumeText}`;
     ];
 
     // Fire server-side PostHog completion event
-    posthogClient.capture({
-      distinctId: ip,
-      event: 'scanner_completed',
-      properties: { score, flawsCount: flaws.length },
-    });
-    await posthogClient.shutdown();
+    const posthogClient = getPostHogClient();
+    if (posthogClient) {
+      posthogClient.capture({
+        distinctId: ip,
+        event: 'scanner_completed',
+        properties: { score, flawsCount: flaws.length },
+      });
+      await posthogClient.shutdown();
+    }
 
     return NextResponse.json({
       score,

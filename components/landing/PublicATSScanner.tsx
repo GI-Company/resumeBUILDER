@@ -11,7 +11,11 @@ interface ScanResult {
   resumeText: string;
 }
 
-export function PublicATSScanner() {
+interface PublicATSScannerProps {
+  onSignupClick?: () => void;
+}
+
+export function PublicATSScanner({ onSignupClick }: PublicATSScannerProps) {
   const [file, setFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -79,7 +83,11 @@ export function PublicATSScanner() {
       sessionStorage.setItem('pending_scan_score', String(result.score));
     }
 
-    router.push('/signup');
+    if (onSignupClick) {
+      onSignupClick();
+    } else {
+      router.push('/signup');
+    }
   };
 
   return (

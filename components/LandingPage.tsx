@@ -1,11 +1,17 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { PublicATSScanner } from './landing/PublicATSScanner';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import AuthModal from './AuthModal';
 
 export default function LandingPage() {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-md sticky top-0 z-50 bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -14,18 +20,18 @@ export default function LandingPage() {
             <span>AgentRez</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
+            <button
+              onClick={() => setAuthModalOpen(true)}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Sign In
-            </Link>
-            <Link
-              href="/signup"
+            </button>
+            <button
+              onClick={() => setAuthModalOpen(true)}
               className="text-sm font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
             >
               Get Started Free
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -44,13 +50,13 @@ export default function LandingPage() {
             Stop getting rejected by applicant tracking systems. AgentRez instantly analyzes, rewrites, and tailors your resume for every job application.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/signup"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold shadow-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold shadow-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Start Building Free
               <ArrowRight className="w-5 h-5" />
-            </Link>
+            </button>
             <a
               href="#scanner"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-card border border-border text-foreground font-semibold hover:bg-card/80 transition-all flex items-center justify-center gap-2"
@@ -62,7 +68,7 @@ export default function LandingPage() {
 
         {/* Public ATS Scanner Section */}
         <div id="scanner">
-          <PublicATSScanner />
+          <PublicATSScanner onSignupClick={() => setAuthModalOpen(true)} />
         </div>
 
         {/* Features Section */}
