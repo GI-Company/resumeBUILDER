@@ -154,7 +154,7 @@ export function PublicATSScanner({ onSignupClick }: PublicATSScannerProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 px-6 rounded-2xl bg-primary text-primary-foreground font-semibold shadow-lg hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            className="group w-full py-4 px-6 rounded-2xl bg-foreground text-background font-bold text-lg shadow-xl hover:bg-foreground/90 hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
@@ -164,7 +164,7 @@ export function PublicATSScanner({ onSignupClick }: PublicATSScannerProps) {
             ) : (
               <>
                 Scan ATS Score Now
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}
           </button>
@@ -175,35 +175,65 @@ export function PublicATSScanner({ onSignupClick }: PublicATSScannerProps) {
           {result ? (
             <div className="space-y-6 flex flex-col justify-between h-full">
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-foreground">ATS Scan Results</h3>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                    <span className="text-2xl font-extrabold text-primary">{result.score}/100</span>
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-black text-foreground tracking-tight">ATS Scan Results</h3>
+                  
+                  {/* Dynamic Score Ring */}
+                  <div className="relative flex items-center justify-center w-20 h-20">
+                    <svg className="absolute w-full h-full transform -rotate-90">
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r="36"
+                        className="stroke-muted fill-none stroke-[6]"
+                      />
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r="36"
+                        className={`fill-none stroke-[6] stroke-current transition-all duration-1000 ${
+                          result.score >= 80 ? 'text-emerald-500' :
+                          result.score >= 60 ? 'text-amber-500' : 'text-red-500'
+                        }`}
+                        strokeDasharray={226}
+                        strokeDashoffset={226 - (226 * result.score) / 100}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className={`text-xl font-extrabold ${
+                      result.score >= 80 ? 'text-emerald-500' :
+                      result.score >= 60 ? 'text-amber-500' : 'text-red-500'
+                    }`}>
+                      {result.score}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
                     Identified Gaps & Flaws
                   </h4>
                   <div className="space-y-3">
                     {result.flaws.map((flaw, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 rounded-xl bg-card border border-border/50 text-sm text-foreground">
-                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                        <span>{flaw}</span>
+                      <div key={index} className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-sm font-medium text-foreground hover:bg-amber-500/10 transition-colors">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="leading-relaxed text-muted-foreground">{flaw}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-border/50 mt-6">
+              <div className="pt-8 mt-4">
                 <button
                   onClick={handleCtaClick}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-primary to-indigo-600 text-white font-semibold shadow-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="group w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-primary text-white font-bold text-lg shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)] hover:shadow-[0_0_60px_-15px_rgba(99,102,241,0.7)] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
                 >
-                  Sign up free to let AgentRez automatically fix these gaps
-                  <ArrowRight className="w-5 h-5" />
+                  <span>Auto-Fix These Gaps For Free</span>
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
