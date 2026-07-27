@@ -4,13 +4,13 @@ import pdfParse from 'pdf-parse';
 import Groq from 'groq-sdk';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { getPostHogClient } from '@/lib/posthog-server';
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || 'placeholder_key',
-});
-
+import { env } from '@/lib/env';
 
 export async function POST(req: NextRequest) {
+  const groq = new Groq({
+    apiKey: env.GROQ,
+  });
+
   try {
     // 1. Enforce Rate Limiting
     const { errorResponse, ip } = await enforceRateLimit(req);
