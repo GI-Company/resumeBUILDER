@@ -63,7 +63,12 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: 'https://resume-builder-pi-coral.vercel.app',
+            // Use configured app URL → Vercel URL → same-origin fallback
+            value: process.env.APP_URL
+              ? new URL(process.env.APP_URL).origin
+              : process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}`
+              : 'same-origin',
           },
           {
             key: 'Access-Control-Allow-Methods',

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfOrigin } from '@/lib/csrf';
+import { enforceRateLimit } from '@/lib/rateLimit';
 import { createClient } from "@supabase/supabase-js";
-// Using the existing rate limit logic if available, otherwise simplified
-// Wait, I will just create a simple endpoint without rateLimit imported to avoid breaking if the import path is wrong.
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
@@ -15,6 +14,10 @@ export async function POST(req: NextRequest) {
   try {
     const csrfError = validateCsrfOrigin(req);
     if (csrfError) return csrfError;
+
+    // Enforce rate limiting to prevent activity feed spam
+    const { errorResponse } = await enforceRateLimit(req);
+    if (errorResponse) return errorResponse;
 
     const { event_type, display_message } = await req.json();
 

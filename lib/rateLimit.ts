@@ -133,7 +133,7 @@ export async function enforceRateLimit(
         errorResponse: NextResponse.json(
           {
             success: false,
-            error: `Daily AI limit reached. Authenticated users get ${USER_DAILY_LIMIT} AI requests per day. Your limit resets at ${result.resetTime.toLocaleTimeString()}.`,
+            error: `Daily AI limit reached. Authenticated users get ${USER_DAILY_LIMIT} AI requests per day. Resets at ${result.resetTime.toUTCString()}.`,
             remaining: 0,
             resetTime: result.resetTime.toISOString(),
           },
@@ -154,7 +154,7 @@ export async function enforceRateLimit(
       errorResponse: NextResponse.json(
         {
           success: false,
-          error: `AI Rate limit exceeded. Guest tier allows ${GUEST_DAILY_LIMIT} requests per 24 hours. Log in or sign up to unlock ${USER_DAILY_LIMIT} daily AI requests. Your limit resets at ${result.resetTime.toLocaleTimeString()}.`,
+          error: `AI Rate limit exceeded. Guest tier allows ${GUEST_DAILY_LIMIT} requests per 24 hours. Log in or sign up to unlock ${USER_DAILY_LIMIT} daily AI requests. Resets at ${result.resetTime.toUTCString()}.`,
           remaining: 0,
           resetTime: result.resetTime.toISOString(),
         },

@@ -66,6 +66,7 @@ import { toast } from "react-hot-toast";
 import { z } from "zod";
 import AuthModal from "./AuthModal";
 import { User } from "@supabase/supabase-js";
+import type { DesignConfig } from "@/lib/types";
 
 import { hexToRgb, shadeColor, getCookie, setCookie } from "@/lib/resume-utils";
 import { PRESET_AVATARS, TEMPLATES, TUTORIAL_STEPS } from "@/lib/resume-constants";
@@ -83,33 +84,7 @@ const SaveResponseSchema = z.object({
   id: z.string().optional(),
 });
 
-interface DesignConfig {
-  template: string;
-  fontHeading: string;
-  fontBody: string;
-  accent: string;
-  panel: string;
-  paper: string;
-  layout: string;
-  scale: number;
-  radius: number;
-  lineHeight: number;
-  gap: number;
-  headingStyle: string;
-  italic: boolean;
-  pageSize: string;
-  headerAlign: string;
-  listStyle: string;
-  pageMargin: number;
-  pageMarginLeftRight?: number;
-  pageMarginTopBottom?: number;
-  itemSpacing: number;
-  jobLayout: string;
-  boxOpacity: number;
-  boxShadow: string;
-  borderStyle: string;
-  backdropBlur: number;
-}
+// DesignConfig is imported from @/lib/types — do not redefine it here.
 
 interface ProfilePhotoConfig {
   enabled: boolean;

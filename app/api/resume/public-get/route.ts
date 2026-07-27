@@ -5,8 +5,8 @@ const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-// Since we are fetching a shared resume, we read it using the base client.
-// If the table RLS is active, we use standard select.
+// Fetch a publicly shared resume — only returns resumes explicitly marked public.
+// This prevents IDOR: guessing a UUID cannot expose a private resume.
 export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get("id");
@@ -21,9 +21,14 @@ export async function GET(req: NextRequest) {
       .select('content, updated_at')
       .eq('id', id)
       .eq('status', 'active')
+      .eq('is_public', true)   // ← Security: only return explicitly public resumes
       .single();
 
     if (error) {
+      // PGRST116 = no rows found — return 404 not 500
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ success: false, error: "Resume not found or is not publicly shared." }, { status: 404 });
+      }
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 

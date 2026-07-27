@@ -87,8 +87,8 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
       toast.error('Passwords do not match. Please verify your confirmation password.');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Security Protocol: Password must be at least 6 characters.');
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters.');
       return;
     }
     setSignUpStep(2);

@@ -2,8 +2,8 @@ import React from "react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy - MYresume",
-  description: "Privacy Policy for MYresume",
+  title: "Privacy Policy | Agent Rez AI",
+  description: "Privacy Policy for Agent Rez AI",
 };
 
 export default function PrivacyPage() {
@@ -11,8 +11,8 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="font-[family:'Kalam',cursive] font-bold text-xl text-gray-900">
-            MYresume
+          <Link href="/" className="font-semibold text-xl text-gray-900">
+            Agent Rez AI
           </Link>
           <Link href="/terms" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
             Terms of Service
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
       </main>
       
       <footer className="bg-white border-t border-gray-200 py-8 text-center text-sm text-gray-500">
-        <p>&copy; {new Date().getFullYear()} MYresume. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Agent Rez AI. All rights reserved.</p>
       </footer>
     </div>
   );

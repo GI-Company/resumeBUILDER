@@ -9,10 +9,11 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 import { coverLetterSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
 
+// Two-deep chain: both models confirmed active on Groq as of 2025.
+// llama3-70b-8192 was decommissioned May 2025 — do NOT add it back.
 const MODEL_CHAIN = [
-  'llama-3.3-70b-versatile',
-  'llama-3.1-70b-versatile',
-  'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile', // Primary — 70B, large context
+  'llama-3.1-8b-instant',    // Fallback — fast, reliable, free tier
 ];
 
 const SYSTEM_PROMPT = `You are an elite executive career coach and cover letter writer with 20 years of experience placing candidates at Fortune 500 companies.

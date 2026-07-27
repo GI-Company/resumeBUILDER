@@ -271,3 +271,61 @@ BEGIN
 END
 $$;
 
+-- =================================================================
+-- 6. Authenticated User AI Rate Limits (100 requests / 24 hours)
+--    Mirrors the guest_ai_limits table but keyed by user ID.
+--    Called by check_user_ai_limit RPC from rateLimit.ts.
+-- =================================================================
+CREATE TABLE IF NOT EXISTS user_ai_limits (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    count INT NOT NULL DEFAULT 0,
+    first_request_time TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Enable RLS — users can only see their own row
+ALTER TABLE user_ai_limits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own ai limit" ON user_ai_limits;
+CREATE POLICY "Users can view own ai limit" ON user_ai_limits
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- RPC: Check and Increment Authenticated User AI Rate Limit (100 requests / 24 hours)
+CREATE OR REPLACE FUNCTION check_user_ai_limit(p_user_id UUID)
+RETURNS JSON AS $BODY$
+DECLARE
+    v_limit INT := 100;
+    v_limit_window INTERVAL := '24 hours';
+    v_record RECORD;
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    INSERT INTO user_ai_limits (user_id, count, first_request_time)
+    VALUES (p_user_id, 1, v_now)
+    ON CONFLICT (user_id) DO UPDATE
+    SET 
+        count = CASE 
+            WHEN (NOW() - user_ai_limits.first_request_time) >= INTERVAL '24 hours' THEN 1
+            ELSE user_ai_limits.count + 1
+        END,
+        first_request_time = CASE 
+            WHEN (NOW() - user_ai_limits.first_request_time) >= INTERVAL '24 hours' THEN NOW()
+            ELSE user_ai_limits.first_request_time
+        END
+    RETURNING count, first_request_time INTO v_record;
+
+    IF v_record.count > v_limit THEN
+        RETURN json_build_object(
+            'allowed', false, 
+            'count', v_record.count, 
+            'remaining', 0, 
+            'resetTime', v_record.first_request_time + v_limit_window
+        );
+    END IF;
+
+    RETURN json_build_object(
+        'allowed', true, 
+        'count', v_record.count, 
+        'remaining', v_limit - v_record.count, 
+        'resetTime', v_record.first_request_time + v_limit_window
+    );
+END;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
