@@ -12,6 +12,35 @@ import type {
   SectionHeaders
 } from '../types';
 
+export interface ProfilePhotoConfig {
+  enabled: boolean;
+  url: string;
+  rawUploadedUrl: string;
+  opacity: number;
+  scale: number;
+  radius: number;
+  filter: string;
+  tone: string;
+  xOffset: number;
+  yOffset: number;
+  borderWidth: number;
+  borderColor: string;
+  aspectRatio: string;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  blur?: number;
+  hueRotate?: number;
+  sepia?: number;
+  animation?: string;
+}
+
+export interface SectionConfig {
+  id: string;
+  title: string;
+  type: string;
+}
+
 // ============================================================
 // State Shapes
 // ============================================================
@@ -28,9 +57,9 @@ export interface DocumentState {
   projects: Project[];
   publications: Publication[];
   awards: Award[];
-  profilePhoto: any; // Using any for now to match ProfilePhotoConfig from ResumeBuilder
+  profilePhoto: ProfilePhotoConfig;
   design: DesignConfig;
-  sections: any[];
+  sections: SectionConfig[];
   sectionHeaders: SectionHeaders;
   manualBreaks: Record<string, boolean>;
 }
