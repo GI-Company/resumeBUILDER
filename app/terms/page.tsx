@@ -28,7 +28,7 @@ export default function TermsPage() {
           <section className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
             <p className="text-gray-600 leading-relaxed mb-4">
-              By accessing and using MYresume ("we," "our," or "us"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+              By accessing and using Agent Rez AI ("we," "our," or "us"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
             </p>
           </section>
 
@@ -56,7 +56,7 @@ export default function TermsPage() {
           <section className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">5. Limitation of Liability</h2>
             <p className="text-gray-600 leading-relaxed mb-4">
-              MYresume shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or employment opportunities.
+              Agent Rez AI shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or employment opportunities.
             </p>
           </section>
         </div>
