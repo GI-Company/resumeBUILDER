@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useResumeStore } from "../lib/store/useResumeStore";
+import { useShallow } from 'zustand/react/shallow';
 import DesignPanel from "./editor/DesignPanel";
 import ContentPanel from "./editor/ContentPanel";
 import TemplatesPanel from "./editor/TemplatesPanel";
@@ -120,7 +121,38 @@ import { SectionWrapper } from "./resume/SectionWrapper";
 
 export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: () => void, initialTemplateId?: string }) {
 
-  const store = useResumeStore();
+  const store = useResumeStore(useShallow(state => ({
+    name: state.name,
+    contactLine: state.contactLine,
+    summary: state.summary,
+    experiences: state.experiences,
+    educations: state.educations,
+    skills: state.skills,
+    licenses: state.licenses,
+    projects: state.projects,
+    publications: state.publications,
+    awards: state.awards,
+    footer: state.footer,
+    profilePhoto: state.profilePhoto,
+    design: state.design,
+    sections: state.sections,
+    sectionHeaders: state.sectionHeaders,
+    manualBreaks: state.manualBreaks,
+    canvasZoom: state.canvasZoom,
+    printPreviewMode: state.printPreviewMode,
+    showMarginGuides: state.showMarginGuides,
+    showHeatmapOverlay: state.showHeatmapOverlay,
+    activeSidebarTab: state.activeSidebarTab,
+    sidebarWidth: state.sidebarWidth,
+    showOnboarding: state.showOnboarding,
+    idToPageMap: state.idToPageMap,
+    pageBreakElementIds: state.pageBreakElementIds,
+    past: state.past,
+    updateDocument: state.updateDocument,
+    updateUI: state.updateUI,
+    updateLayout: state.updateLayout,
+    resetStore: state.resetStore
+  })));
 
   useEffect(() => {
     const storedJobDesc = sessionStorage.getItem('pending_job_description');
@@ -140,11 +172,6 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       sessionStorage.removeItem('pending_scan_score');
     }
   }, []);
-  const {
-    name, contactLine, summary, experiences, educations, skills, licenses, projects, publications, awards, footer, profilePhoto, design, sections, sectionHeaders, manualBreaks,
-    canvasZoom, printPreviewMode, showMarginGuides, showHeatmapOverlay, activeSidebarTab, sidebarWidth, showOnboarding, aiPresetType, aiAgentTab, interviewStep, interviewAnswers, agentMessages,
-    gapHeights, idToPageMap, pageBreaks, pageBreakElementIds
-  } = store;
 
 
   // --- Shim Setters for Zustand ---
@@ -152,43 +179,42 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const updateUI = store.updateUI;
   const updateLayout = store.updateLayout;
 
-  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(store.name) : v });
-  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(store.contactLine) : v });
-  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(store.summary) : v });
-  const setFooter = (v: any) => updateDoc({ footer: typeof v === "function" ? v(store.footer) : v });
-  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(store.experiences) : v });
-  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(store.educations) : v });
-  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(store.skills) : v });
-  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(store.licenses) : v });
-  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(store.projects) : v });
-  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(store.publications) : v });
-  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(store.awards) : v });
-  const setProfilePhoto = (v: any) => updateDoc({ profilePhoto: typeof v === "function" ? v(store.profilePhoto) : v });
-  const setDesign = (v: any) => updateDoc({ design: typeof v === "function" ? v(store.design) : v });
-  const setSections = (v: any) => updateDoc({ sections: typeof v === "function" ? v(store.sections) : v });
-  const setSectionHeaders = (v: any) => updateDoc({ sectionHeaders: typeof v === "function" ? v(store.sectionHeaders) : v });
-  const setManualBreaks = (v: any) => updateDoc({ manualBreaks: typeof v === "function" ? v(store.manualBreaks) : v });
+  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(useResumeStore.getState().name) : v });
+  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(useResumeStore.getState().contactLine) : v });
+  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(useResumeStore.getState().summary) : v });
+  const setFooter = (v: any) => updateDoc({ footer: typeof v === "function" ? v(useResumeStore.getState().footer) : v });
+  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(useResumeStore.getState().experiences) : v });
+  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(useResumeStore.getState().educations) : v });
+  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(useResumeStore.getState().skills) : v });
+  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(useResumeStore.getState().licenses) : v });
+  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(useResumeStore.getState().projects) : v });
+  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(useResumeStore.getState().publications) : v });
+  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(useResumeStore.getState().awards) : v });
+  const setProfilePhoto = (v: any) => updateDoc({ profilePhoto: typeof v === "function" ? v(useResumeStore.getState().profilePhoto) : v });
+  const setDesign = (v: any) => updateDoc({ design: typeof v === "function" ? v(useResumeStore.getState().design) : v });
+  const setSections = (v: any) => updateDoc({ sections: typeof v === "function" ? v(useResumeStore.getState().sections) : v });
+  const setSectionHeaders = (v: any) => updateDoc({ sectionHeaders: typeof v === "function" ? v(useResumeStore.getState().sectionHeaders) : v });
+  const setManualBreaks = (v: any) => updateDoc({ manualBreaks: typeof v === "function" ? v(useResumeStore.getState().manualBreaks) : v });
 
-  const setCanvasZoom = (v: any) => updateUI({ canvasZoom: typeof v === "function" ? v(store.canvasZoom) : v });
-  const setPrintPreviewMode = (v: any) => updateUI({ printPreviewMode: typeof v === "function" ? v(store.printPreviewMode) : v });
-  const setShowMarginGuides = (v: any) => updateUI({ showMarginGuides: typeof v === "function" ? v(store.showMarginGuides) : v });
-  const setShowHeatmapOverlay = (v: any) => updateUI({ showHeatmapOverlay: typeof v === "function" ? v(store.showHeatmapOverlay) : v });
-  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(store.activeSidebarTab) : v });
-  const setSidebarWidth = (v: any) => updateUI({ sidebarWidth: typeof v === "function" ? v(store.sidebarWidth) : v });
-  const setShowOnboarding = (v: any) => updateUI({ showOnboarding: typeof v === "function" ? v(store.showOnboarding) : v });
-  const setAiPresetType = (v: any) => updateUI({ aiPresetType: typeof v === "function" ? v(store.aiPresetType) : v });
-  const setAiAgentTab = (v: any) => updateUI({ aiAgentTab: typeof v === "function" ? v(store.aiAgentTab) : v });
-  const setInterviewStep = (v: any) => updateUI({ interviewStep: typeof v === "function" ? v(store.interviewStep) : v });
-  const setInterviewAnswers = (v: any) => updateUI({ interviewAnswers: typeof v === "function" ? v(store.interviewAnswers) : v });
-  const setAgentMessages = (v: any) => updateUI({ agentMessages: typeof v === "function" ? v(store.agentMessages) : v });
+  const setCanvasZoom = (v: any) => updateUI({ canvasZoom: typeof v === "function" ? v(useResumeStore.getState().canvasZoom) : v });
+  const setPrintPreviewMode = (v: any) => updateUI({ printPreviewMode: typeof v === "function" ? v(useResumeStore.getState().printPreviewMode) : v });
+  const setShowMarginGuides = (v: any) => updateUI({ showMarginGuides: typeof v === "function" ? v(useResumeStore.getState().showMarginGuides) : v });
+  const setShowHeatmapOverlay = (v: any) => updateUI({ showHeatmapOverlay: typeof v === "function" ? v(useResumeStore.getState().showHeatmapOverlay) : v });
+  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(useResumeStore.getState().activeSidebarTab) : v });
+  const setSidebarWidth = (v: any) => updateUI({ sidebarWidth: typeof v === "function" ? v(useResumeStore.getState().sidebarWidth) : v });
+  const setShowOnboarding = (v: any) => updateUI({ showOnboarding: typeof v === "function" ? v(useResumeStore.getState().showOnboarding) : v });
+  const setAiPresetType = (v: any) => updateUI({ aiPresetType: typeof v === "function" ? v(useResumeStore.getState().aiPresetType) : v });
+  const setAiAgentTab = (v: any) => updateUI({ aiAgentTab: typeof v === "function" ? v(useResumeStore.getState().aiAgentTab) : v });
+  const setInterviewStep = (v: any) => updateUI({ interviewStep: typeof v === "function" ? v(useResumeStore.getState().interviewStep) : v });
+  const setInterviewAnswers = (v: any) => updateUI({ interviewAnswers: typeof v === "function" ? v(useResumeStore.getState().interviewAnswers) : v });
+  const setAgentMessages = (v: any) => updateUI({ agentMessages: typeof v === "function" ? v(useResumeStore.getState().agentMessages) : v });
 
-  const setGapHeights = (v: any) => updateLayout({ gapHeights: typeof v === "function" ? v(store.gapHeights) : v });
-  const setIdToPageMap = (v: any) => updateLayout({ idToPageMap: typeof v === "function" ? v(store.idToPageMap) : v });
-  const setPageBreaks = (v: any) => updateLayout({ pageBreaks: typeof v === "function" ? v(store.pageBreaks) : v });
-  const setPageBreakElementIds = (v: any) => updateLayout({ pageBreakElementIds: typeof v === "function" ? v(store.pageBreakElementIds) : v });
+  const setGapHeights = (v: any) => updateLayout({ gapHeights: typeof v === "function" ? v(useResumeStore.getState().gapHeights) : v });
+  const setIdToPageMap = (v: any) => updateLayout({ idToPageMap: typeof v === "function" ? v(useResumeStore.getState().idToPageMap) : v });
+  const setPageBreaks = (v: any) => updateLayout({ pageBreaks: typeof v === "function" ? v(useResumeStore.getState().pageBreaks) : v });
+  const setPageBreakElementIds = (v: any) => updateLayout({ pageBreakElementIds: typeof v === "function" ? v(useResumeStore.getState().pageBreakElementIds) : v });
 
   const history = store.past;
-  const setHistory = (v: any) => {};
   const historyIndex = store.past.length - 1;
   const setHistoryIndex = (v: any) => {};
 

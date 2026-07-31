@@ -50,8 +50,8 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
 // ---------------------------------------------------------------------------
 // Authenticated user rate limiting via Supabase RPC (user ID-based)
 // NOTE: Requires the check_user_ai_limit RPC to exist in your Supabase DB.
-// If the RPC doesn't exist yet, this fails open (allows the request) so
-// logged-in users are never blocked due to a missing migration.
+// If the RPC fails or doesn't exist, this fails closed (blocks the request)
+// to prevent free-tier abuse during outages.
 // ---------------------------------------------------------------------------
 export async function checkUserRateLimit(userId: string): Promise<RateLimitResult> {
   try {
