@@ -183,6 +183,9 @@ const initialDocumentState: DocumentState = {
   manualBreaks: {}
 };
 
+/** Single source of truth for the base design defaults. Import this instead of hand-copying. */
+export const DEFAULT_DESIGN = initialDocumentState.design;
+
 const initialUIState: UIState = {
   canvasZoom: 100,
   printPreviewMode: false,

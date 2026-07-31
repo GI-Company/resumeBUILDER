@@ -1,7 +1,9 @@
-import React from "react";
-import { X } from "lucide-react";
+import React, { useState } from "react";
+import { X, RotateCcw } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import { TEMPLATES } from "@/lib/resume-constants";
+import { DEFAULT_DESIGN } from "@/lib/store/useResumeStore";
 
 interface DesignPanelProps {
   activeSidebarTab: string | null;
@@ -24,20 +26,87 @@ export default function DesignPanel({
   showHeatmapOverlay,
   setShowHeatmapOverlay,
 }: DesignPanelProps) {
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const handleReset = () => {
+    const activeTemplate = TEMPLATES.find((t) => t.id === design.template);
+    const templateOverrides = activeTemplate
+      ? {
+          fontHeading: activeTemplate.heading,
+          fontBody: activeTemplate.body,
+          accent: activeTemplate.accent,
+          panel: activeTemplate.panel,
+          paper: activeTemplate.paper || "#ffffff",
+          radius: activeTemplate.radius,
+          layout: activeTemplate.layout,
+          headingStyle: activeTemplate.headingStyle,
+          italic: activeTemplate.italic,
+          headerAlign: activeTemplate.headerAlign || "left",
+          listStyle: activeTemplate.listStyle || "disc",
+          pageMargin: activeTemplate.pageMargin || 36,
+          itemSpacing: activeTemplate.itemSpacing || 8,
+          jobLayout: activeTemplate.jobLayout || "stacked",
+          boxOpacity: activeTemplate.boxOpacity !== undefined ? activeTemplate.boxOpacity : 100,
+          boxShadow: activeTemplate.boxShadow || "none",
+          borderStyle: activeTemplate.borderStyle || "none",
+          backdropBlur: activeTemplate.backdropBlur !== undefined ? activeTemplate.backdropBlur : 0,
+        }
+      : {};
+
+    setDesign((prev: any) => ({
+      ...DEFAULT_DESIGN,
+      template: prev.template,
+      ...templateOverrides,
+    }));
+
+    const templateName = activeTemplate?.name ?? "Default";
+    toast.success(`Reset to ${templateName} defaults! 🔄`);
+    setConfirmReset(false);
+  };
+
   if (activeSidebarTab !== "design") return null;
 
   return (
     <div className="flex-1 overflow-y-auto p-5">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">
           Design Settings
         </h2>
-        <button
-          onClick={() => setActiveSidebarTab(null)}
-          className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
-        >
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Reset to Template Default */}
+          {confirmReset ? (
+            <div className="flex items-center gap-1 bg-orange-50 border border-orange-200 rounded-lg px-2 py-0.5">
+              <span className="text-[10px] text-orange-700 font-semibold">Reset?</span>
+              <button
+                onClick={handleReset}
+                className="text-[10px] font-bold text-orange-700 hover:text-orange-900 px-1.5 py-0.5 rounded hover:bg-orange-100 transition-all cursor-pointer"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="text-[10px] font-bold text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-100 transition-all cursor-pointer"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmReset(true)}
+              title="Reset to current template's defaults"
+              className="text-gray-400 hover:text-orange-600 p-1 hover:bg-orange-50 rounded-lg transition-all flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+            >
+              <RotateCcw size={13} />
+              <span>Reset</span>
+            </button>
+          )}
+          <button
+            onClick={() => setActiveSidebarTab(null)}
+            className="text-gray-600 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-all"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-6">
