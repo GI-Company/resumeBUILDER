@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'dummy_key_for_build');
+
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -22,6 +22,10 @@ export async function POST(req: Request) {
   }
 
   let event: Stripe.Event;
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+    apiVersion: '2026-07-29.dahlia' as any,
+  });
 
   try {
     event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
@@ -43,7 +47,7 @@ export async function POST(req: Request) {
 
           const { count: paidCount } = await supabase
             .from('entitlements')
-            .select('id', { count: 'exact', head: true })
+            .select('user_id', { count: 'exact', head: true })
             .in('tier', ['premium_founder', 'premium']);
           const newTier = (paidCount ?? 0) < 50 ? 'premium_founder' : 'premium';
 
