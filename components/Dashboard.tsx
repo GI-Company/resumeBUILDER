@@ -26,6 +26,7 @@ import { User } from '@supabase/supabase-js';
 export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string) => void }) {
   const [allResumes, setAllResumes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'active' | 'trash'>('active');
+  const [currentView, setCurrentView] = useState<'resumes' | 'settings'>('resumes');
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -402,7 +403,25 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
           <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
         </div>
 
-        {/* Resumes Header */}
+        {/* Dashboard Navigation */}
+        <div className="flex items-center gap-4 mb-8">
+          <button 
+            onClick={() => setCurrentView('resumes')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${currentView === 'resumes' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+          >
+            Cloud Resumes
+          </button>
+          <button 
+            onClick={() => setCurrentView('settings')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${currentView === 'settings' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+          >
+            Account Settings
+          </button>
+        </div>
+
+        {currentView === 'resumes' ? (
+          <>
+            {/* Resumes Header */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
           <div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
@@ -556,6 +575,142 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                 </div>
               </div>
             ))}
+          </div>
+        )}
+          </>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Account Settings</h3>
+            
+            <div className="space-y-8">
+              {/* Profile Section */}
+              <div className="border-b border-gray-100 pb-8">
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Profile Details</h4>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold mb-1">Email Address</p>
+                      <p className="text-sm font-bold text-gray-900">{user.email}</p>
+                    </div>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <LogOut size={14} />
+                      Sign Out
+                    </button>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 font-semibold mb-1">User ID</p>
+                    <p className="text-xs font-mono text-gray-700">{user.id}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscription & Usage Section */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Plan & Usage</h4>
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full text-blue-700 text-[10px] font-bold uppercase tracking-wider mb-3">
+                        <Sparkles size={12} className="text-blue-600" />
+                        <span>{entitlement?.tier === 'founder' ? 'Founding Member (Free)' : entitlement?.tier === 'premium_founder' ? 'Founding Premium ($3.99/mo)' : entitlement?.tier === 'premium' ? 'Premium ($9.99/mo)' : 'Free Tier'}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4 max-w-sm">
+                        You have access to premium templates, offline saving, and priority AI limits based on your tier.
+                      </p>
+                      
+                      <div className="space-y-4 max-w-sm">
+                        <div>
+                          <div className="flex justify-between text-xs font-bold text-gray-700 mb-1.5">
+                            <span>Daily AI Requests</span>
+                            <span>{aiLimit?.count || 0} / {(aiLimit?.count || 0) + (aiLimit?.remaining || 0)}</span>
+                          </div>
+                          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-500 rounded-full" 
+                              style={{ width: `${Math.min(100, ((aiLimit?.count || 0) / Math.max(1, ((aiLimit?.count || 0) + (aiLimit?.remaining || 0)))) * 100)}%` }} 
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs font-bold text-gray-700 mb-1.5">
+                            <span>Cloud Storage Slots</span>
+                            <span>{allResumes.filter(r => r.status !== 'trash').length} / 3</span>
+                          </div>
+                          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 rounded-full" 
+                              style={{ width: `${Math.min(100, (allResumes.filter(r => r.status !== 'trash').length / 3) * 100)}%` }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col justify-center border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-6 md:w-64 shrink-0">
+                      {entitlement?.stripe_subscription_id ? (
+                        <button
+                          onClick={async () => {
+                            const toastId = toast.loading('Opening Stripe Portal...');
+                            try {
+                              const res = await fetch('/api/stripe/portal', {
+                                method: 'POST',
+                                headers: { 
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                                }
+                              });
+                              const data = await res.json();
+                              if (data.url) {
+                                window.location.href = data.url;
+                              } else {
+                                toast.error('Failed to open billing portal', { id: toastId });
+                              }
+                            } catch (e) {
+                              toast.error('Network error', { id: toastId });
+                            }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Lock size={14} />
+                          Manage Subscription
+                        </button>
+                      ) : entitlement?.tier === 'free' ? (
+                        <button
+                          onClick={async () => {
+                            const toastId = toast.loading('Redirecting to checkout...');
+                            try {
+                              const res = await fetch('/api/stripe/checkout', {
+                                method: 'POST',
+                                headers: { 
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                                },
+                                body: JSON.stringify({})
+                              });
+                              const data = await res.json();
+                              if (data.url) window.location.href = data.url;
+                            } catch (e) {
+                              toast.error('Checkout error', { id: toastId });
+                            }
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Sparkles size={14} />
+                          Upgrade to Premium
+                        </button>
+                      ) : (
+                        <div className="bg-gray-50 text-gray-500 border border-gray-200 text-xs font-semibold p-4 rounded-xl text-center shadow-inner">
+                          You are on a Free for Life Founding Tier. No billing management required!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
