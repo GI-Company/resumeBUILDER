@@ -366,6 +366,7 @@ CREATE TABLE IF NOT EXISTS entitlements (
 );
 
 ALTER TABLE entitlements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can read own entitlements" ON entitlements;
 CREATE POLICY "Users can read own entitlements" ON entitlements FOR SELECT USING (auth.uid() = user_id);
 
 CREATE OR REPLACE FUNCTION handle_new_user_entitlement()
