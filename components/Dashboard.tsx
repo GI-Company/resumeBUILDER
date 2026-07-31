@@ -62,10 +62,13 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
 
   const fetchEntitlements = async (userId: string) => {
     try {
-      const { data: entData } = await supabase.from('entitlements').select('*').eq('user_id', userId).single();
+      const { data: entData, error: entError } = await supabase.from('entitlements').select('*').eq('user_id', userId).maybeSingle();
+      if (entError) console.error('Entitlements fetch error:', entError);
+      
+      const safeTier = entData?.tier || 'free';
       if (entData) setEntitlement(entData);
 
-      const tierMax = entData?.tier === 'premium_founder' ? 100 : entData?.tier === 'founder' ? 75 : entData?.tier === 'premium' ? 75 : entData?.tier === 'free' ? 15 : 5;
+      const tierMax = safeTier === 'premium_founder' ? 100 : safeTier === 'founder' ? 75 : safeTier === 'premium' ? 75 : safeTier === 'free' ? 15 : 5;
 
       // AI Limit is returned via RPC but we don't have a direct GET RPC. 
       // Just fetch the raw table for count if needed, or we can assume limits based on tier.
@@ -681,7 +684,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                           <Lock size={14} />
                           Manage Subscription
                         </button>
-                      ) : (entitlement?.tier === 'free' || entitlement?.tier === 'founder') ? (
+                      ) : (!entitlement?.stripe_subscription_id && (entitlement?.tier === 'free' || entitlement?.tier === 'founder' || !entitlement?.tier)) ? (
                         <>
                           <button
                             onClick={async () => {

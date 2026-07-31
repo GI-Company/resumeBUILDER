@@ -53,13 +53,13 @@ export async function POST(req: Request) {
 
           const { error } = await supabase
             .from('entitlements')
-            .update({
+            .upsert({
+              user_id: userId,
               tier: newTier,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               subscription_status: 'active',
-            })
-            .eq('user_id', userId);
+            }, { onConflict: 'user_id' });
 
           if (error) {
             console.error('Failed to update entitlement:', error);
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
           .from('entitlements')
           .select('tier')
           .eq('stripe_subscription_id', subscription.id)
-          .single();
+          .maybeSingle();
           
         const isActive = subscription.status === 'active' || subscription.status === 'trialing';
         const newTier = isActive ? (currentEnt?.tier === 'premium_founder' ? 'premium_founder' : 'premium') : 'free';
