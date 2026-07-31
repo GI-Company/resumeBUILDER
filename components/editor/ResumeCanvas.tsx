@@ -369,8 +369,8 @@ export default function ResumeCanvas({
                       </div>
                     )}
 
-                    {/* Header (Only on designated page, typically page 0) */}
-                    {(idToPageMap?.["header"] ?? 0) === pageIndex && (
+                    {/* Header (Always on page 0 to prevent typing glitches during pagination recalculation) */}
+                    {pageIndex === 0 && (
                       <div
                         className={cn(
                           "header rounded-[var(--radius)] py-6 px-6 mb-[var(--section-gap)] print:!shadow-none print:!border-none print:!bg-transparent transition-all duration-300",
