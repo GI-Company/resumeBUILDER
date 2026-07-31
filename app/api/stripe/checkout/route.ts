@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { count: paidCount } = await supabaseAdmin
       .from('entitlements')
-      .select('id', { count: 'exact', head: true })
+      .select('user_id', { count: 'exact', head: true })
       .in('tier', ['premium_founder', 'premium']);
       
     const priceId = (paidCount ?? 0) < 50 
