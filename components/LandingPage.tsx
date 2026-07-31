@@ -1268,8 +1268,8 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     <li className="flex items-start gap-2.5 font-semibold text-blue-900">
                       <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
                       <div>
-                        <span><strong>100 Daily AI Requests ⚡</strong></span>
-                        <p className="text-[11px] text-gray-500 font-normal mt-0.5">Maximum priority queue capacity.</p>
+                        <span><strong>75 Daily AI Requests ⚡</strong></span>
+                        <p className="text-[11px] text-gray-500 font-normal mt-0.5">Free forever, priority AI access.</p>
                       </div>
                     </li>
                     <li className="flex items-start gap-2.5">
@@ -1305,7 +1305,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   <ul className="space-y-3.5 text-xs text-gray-700">
                     <li className="flex items-start gap-2.5">
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>10 Daily AI Requests</strong></span>
+                      <span><strong>15 Daily AI Requests</strong></span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
@@ -1386,7 +1386,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   <ul className="space-y-3.5 text-xs text-gray-700">
                     <li className="flex items-start gap-2.5 font-semibold text-indigo-900">
                       <CheckCircle size={14} className="text-indigo-600 mt-0.5 shrink-0 animate-pulse" />
-                      <span><strong>50 Daily AI Requests ⚡</strong></span>
+                      <span><strong>75 Daily AI Requests ⚡</strong></span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
