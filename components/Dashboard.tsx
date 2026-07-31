@@ -381,7 +381,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                     const res = await fetch('/api/stripe/checkout', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ priceId: 'price_12345' }) // Replace with actual price ID in Phase 2
+                        body: JSON.stringify({ priceId: 'price_1Tz8RY3z1hyiOMOwVWD4fJiM' })
                     });
                     const data = await res.json();
                     if (data.url) window.location.href = data.url;
