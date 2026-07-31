@@ -65,12 +65,16 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
       const { data: entData } = await supabase.from('entitlements').select('*').eq('user_id', userId).single();
       if (entData) setEntitlement(entData);
 
+      const tierMax = entData?.tier === 'premium_founder' ? 100 : entData?.tier === 'founder' ? 75 : entData?.tier === 'premium' ? 75 : entData?.tier === 'free' ? 15 : 5;
+
       // AI Limit is returned via RPC but we don't have a direct GET RPC. 
       // Just fetch the raw table for count if needed, or we can assume limits based on tier.
       const { data: limitData } = await supabase.from('user_ai_limits').select('*').eq('user_id', userId).single();
       if (limitData) {
-        const max = entData?.tier === 'premium_founder' ? 100 : entData?.tier === 'founder' ? 75 : entData?.tier === 'premium' ? 75 : entData?.tier === 'free' ? 15 : 5;
-        setAiLimit({ count: limitData.count, allowed: limitData.count < max, remaining: Math.max(0, max - limitData.count) });
+        setAiLimit({ count: limitData.count, allowed: limitData.count < tierMax, remaining: Math.max(0, tierMax - limitData.count) });
+      } else {
+        // No row yet means user hasn't made any AI requests — show 0 used out of their full limit
+        setAiLimit({ count: 0, allowed: true, remaining: tierMax });
       }
     } catch (e) {
       console.error("Error fetching entitlements", e);
@@ -677,30 +681,36 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                           <Lock size={14} />
                           Manage Subscription
                         </button>
-                      ) : entitlement?.tier === 'free' ? (
-                        <button
-                          onClick={async () => {
-                            const toastId = toast.loading('Redirecting to checkout...');
-                            try {
-                              const res = await fetch('/api/stripe/checkout', {
-                                method: 'POST',
-                                headers: { 
-                                  'Content-Type': 'application/json',
-                                  'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-                                },
-                                body: JSON.stringify({})
-                              });
-                              const data = await res.json();
-                              if (data.url) window.location.href = data.url;
-                            } catch (e) {
-                              toast.error('Checkout error', { id: toastId });
-                            }
-                          }}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
-                        >
-                          <Sparkles size={14} />
-                          Upgrade to Premium
-                        </button>
+                      ) : (entitlement?.tier === 'free' || entitlement?.tier === 'founder') ? (
+                        <>
+                          <button
+                            onClick={async () => {
+                              const toastId = toast.loading('Redirecting to checkout...');
+                              try {
+                                const res = await fetch('/api/stripe/checkout', {
+                                  method: 'POST',
+                                  headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                                  },
+                                  body: JSON.stringify({})
+                                });
+                                const data = await res.json();
+                                if (data.url) window.location.href = data.url;
+                                else toast.error('Checkout failed', { id: toastId });
+                              } catch (e) {
+                                toast.error('Checkout error', { id: toastId });
+                              }
+                            }}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                          >
+                            <Sparkles size={14} />
+                            {entitlement?.tier === 'founder' ? 'Upgrade to Premium Founder ($3.99/mo)' : 'Upgrade to Premium'}
+                          </button>
+                          {entitlement?.tier === 'founder' && (
+                            <p className="text-[10px] text-gray-400 text-center mt-2">You already have lifetime priority AI access (75/day). Upgrading unlocks 100/day + advanced features.</p>
+                          )}
+                        </>
                       ) : (
                         <div className="bg-gray-50 text-gray-500 border border-gray-200 text-xs font-semibold p-4 rounded-xl text-center shadow-inner">
                           You are on a Free for Life Founding Tier. No billing management required!
