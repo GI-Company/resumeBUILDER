@@ -104,7 +104,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
   const [selectedProofTemplate, setSelectedProofTemplate] = useState<"harvard" | "sidebar" | "minimal">("harvard");
 
   const [foundingCount, setFoundingCount] = useState<number | null>(null);
-  const FOUNDING_LIMIT = 500;
+  const FOUNDING_LIMIT = 50;
 
   // Fetch total signed-up user count for founding member counter
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             Meet <strong>Agent Rez</strong>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and 100 AI requests per day available for signed-in users.
           </motion.p>
 
-          {/* Founding Member Counter Banner - Hidden for now
+          {/* Founding Member Counter Banner */}
           {foundingCount !== null && foundingCount < FOUNDING_LIMIT && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -309,25 +309,24 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">Founding Member Offer</span>
                     </div>
                     <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
-                      {FOUNDING_LIMIT - foundingCount} spots left
+                      {FOUNDING_LIMIT - (foundingCount ?? 0)} spots left
                     </span>
                   </div>
-                  <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={foundingCount} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${foundingCount} of ${FOUNDING_LIMIT} founding member spots claimed`}>
+                  <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={foundingCount ?? 0} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${foundingCount ?? 0} of ${FOUNDING_LIMIT} founding member spots claimed`}>
                     <motion.div
                       className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, (foundingCount / FOUNDING_LIMIT) * 100)}%` }}
+                      animate={{ width: `${Math.min(100, ((foundingCount ?? 0) / FOUNDING_LIMIT) * 100)}%` }}
                       transition={{ duration: 1.2, ease: 'easeOut', delay: 0.5 }}
                     />
                   </div>
                   <p className="text-[11px] text-amber-800 font-semibold leading-snug">
-                    <strong className="font-black text-amber-900">{foundingCount}</strong> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">Premium tier free for life</span> <span aria-hidden="true">🎁</span>
+                    <strong className="font-black text-amber-900">{foundingCount ?? 0}</strong> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">Premium tier free for life</span> <span aria-hidden="true">🎁</span>
                   </p>
                 </div>
               </div>
             </motion.div>
           )}
-          */}
 
           {/* Core Call to Actions */}
           <motion.div 
@@ -1198,7 +1197,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className={`grid grid-cols-1 ${foundingCount !== null && foundingCount >= FOUNDING_LIMIT ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-4xl'} gap-8 mx-auto mb-16`}>
             {/* Guest Plan */}
             <div className="border border-gray-200 rounded-2xl p-6 flex flex-col justify-between bg-gray-50/20">
               <div>
@@ -1245,56 +1244,132 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               </Link>
             </div>
 
-            {/* Signed Up Plan */}
-            <div className="border-2 border-blue-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
-              <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
-                Highly Recommended
-              </div>
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">Signed-Up Tier</h3>
-                    <p className="text-xs text-blue-600 font-semibold mt-0.5">Complete digital resume suite</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xl font-black text-blue-600">FREE</span>
-                    <span className="block text-[9px] text-gray-400 font-bold uppercase">No Card Required</span>
-                  </div>
+            {foundingCount === null || foundingCount < FOUNDING_LIMIT ? (
+              /* Founding Member Plan */
+              <div className="border-2 border-blue-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
+                <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
+                  Founding Member
                 </div>
-                <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
-                <ul className="space-y-3.5 text-xs text-gray-700">
-                  <li className="flex items-start gap-2.5 font-semibold text-blue-900">
-                    <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
+                <div>
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <span><strong>AI Included ⚡</strong></span>
-                      <p className="text-[11px] text-gray-500 font-normal mt-0.5">Request capacity adjusts with demand to keep the service fast for everyone.</p>
+                      <h3 className="text-base font-bold text-gray-900">Founding Tier</h3>
+                      <p className="text-xs text-blue-600 font-semibold mt-0.5">Complete digital resume suite</p>
                     </div>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span>Access to all <strong>6 premium templates</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><strong>Unlimited PDF prints</strong> with no watermarks</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><strong>Secure Cloud Saving</strong> for up to 3 drafts</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span>Duplicate, rename, and manage drafts dashboard</span>
-                  </li>
-                </ul>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-blue-600">FREE</span>
+                      <span className="block text-[9px] text-gray-400 font-bold uppercase">For Life</span>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                  <ul className="space-y-3.5 text-xs text-gray-700">
+                    <li className="flex items-start gap-2.5 font-semibold text-blue-900">
+                      <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
+                      <div>
+                        <span><strong>100 Daily AI Requests ⚡</strong></span>
+                        <p className="text-[11px] text-gray-500 font-normal mt-0.5">Maximum priority queue capacity.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>Access to all <strong>6 premium templates</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Unlimited PDF prints</strong> with no watermarks</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Secure Cloud Saving</strong> for up to 3 drafts</span>
+                    </li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => setAuthModalOpen(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
+                >
+                  Claim Founding Spot
+                </button>
               </div>
-              <button 
-                onClick={() => setAuthModalOpen(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
-              >
-                Sign Up 100% Free Now
-              </button>
-            </div>
+            ) : (
+              <>
+                {/* Free Tier */}
+                <div className="border border-gray-200 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-sm">
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">Free Tier</h3>
+                        <p className="text-xs text-gray-500 font-semibold mt-0.5">Basic cloud features</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl font-black text-gray-900">FREE</span>
+                      </div>
+                    </div>
+                    <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                    <ul className="space-y-3.5 text-xs text-gray-700">
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                        <span><strong>10 Daily AI Requests</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                        <span>Access to all premium templates</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                        <span>Secure Cloud Saving</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <button 
+                    onClick={() => setAuthModalOpen(true)}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer"
+                  >
+                    Sign Up Free
+                  </button>
+                </div>
+
+                {/* Premium Tier */}
+                <div className="border-2 border-blue-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
+                  <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
+                    Premium
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">Premium Tier</h3>
+                        <p className="text-xs text-blue-600 font-semibold mt-0.5">High-speed AI priority</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl font-black text-blue-600">$3.99</span>
+                        <span className="block text-[9px] text-gray-400 font-bold uppercase">/ month</span>
+                      </div>
+                    </div>
+                    <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                    <ul className="space-y-3.5 text-xs text-gray-700">
+                      <li className="flex items-start gap-2.5 font-semibold text-blue-900">
+                        <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
+                        <span><strong>50 Daily AI Requests ⚡</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                        <span>Priority model routing</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                        <span>All Free tier features</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <button 
+                    onClick={() => setAuthModalOpen(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
+                  >
+                    Upgrade to Premium
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

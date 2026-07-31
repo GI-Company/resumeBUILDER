@@ -300,11 +300,24 @@ CREATE POLICY "Users can view own ai limit" ON user_ai_limits
 CREATE OR REPLACE FUNCTION check_user_ai_limit(p_user_id UUID)
 RETURNS JSON AS $BODY$
 DECLARE
-    v_limit INT := 100;
+    v_limit INT := 10; -- Default free limit
+    v_tier VARCHAR(50);
     v_limit_window INTERVAL := '24 hours';
     v_record RECORD;
     v_now TIMESTAMPTZ := NOW();
 BEGIN
+    -- Fetch the user's tier
+    SELECT tier INTO v_tier FROM entitlements WHERE user_id = p_user_id;
+    
+    -- Set limit based on tier
+    IF v_tier = 'founder' THEN
+        v_limit := 100;
+    ELSIF v_tier = 'premium' THEN
+        v_limit := 50;
+    ELSE
+        v_limit := 10;
+    END IF;
+
     INSERT INTO user_ai_limits (user_id, count, first_request_time)
     VALUES (p_user_id, 1, v_now)
     ON CONFLICT (user_id) DO UPDATE
@@ -341,6 +354,10 @@ $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TABLE IF NOT EXISTS entitlements (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     tier VARCHAR(50) NOT NULL DEFAULT 'free',
+    stripe_customer_id TEXT UNIQUE,
+    stripe_subscription_id TEXT UNIQUE,
+    subscription_status TEXT DEFAULT 'inactive',
+    current_period_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -352,10 +369,10 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_founder_count INT;
 BEGIN
-    SELECT count(*) INTO v_founder_count FROM entitlements WHERE tier = 'premium';
+    SELECT count(*) INTO v_founder_count FROM entitlements WHERE tier = 'founder';
     
-    IF v_founder_count < 500 THEN
-        INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'premium');
+    IF v_founder_count < 50 THEN
+        INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'founder');
     ELSE
         INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'free');
     END IF;

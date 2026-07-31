@@ -34,6 +34,8 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
   const [trashConfirmId, setTrashConfirmId] = useState<string | null>(null);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editTitleValue, setEditTitleValue] = useState("");
+  const [entitlement, setEntitlement] = useState<{ tier: string; stripe_subscription_id?: string; subscription_status?: string } | null>(null);
+  const [aiLimit, setAiLimit] = useState<{ count: number; allowed: boolean; remaining: number } | null>(null);
 
   const resumes = allResumes.filter((r) => r.status === activeTab);
 
@@ -50,11 +52,29 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
             }
 
             fetchResumes();
+            fetchEntitlements(session.user.id);
         } else {
             setLoading(false);
         }
     });
   }, []);
+
+  const fetchEntitlements = async (userId: string) => {
+    try {
+      const { data: entData } = await supabase.from('entitlements').select('*').eq('user_id', userId).single();
+      if (entData) setEntitlement(entData);
+
+      // AI Limit is returned via RPC but we don't have a direct GET RPC. 
+      // Just fetch the raw table for count if needed, or we can assume limits based on tier.
+      const { data: limitData } = await supabase.from('user_ai_limits').select('*').eq('user_id', userId).single();
+      if (limitData) {
+        const max = entData?.tier === 'founder' ? 100 : entData?.tier === 'premium' ? 50 : 10;
+        setAiLimit({ count: limitData.count, allowed: limitData.count < max, remaining: Math.max(0, max - limitData.count) });
+      }
+    } catch (e) {
+      console.error("Error fetching entitlements", e);
+    }
+  };
 
   const fetchResumes = async () => {
     try {
@@ -330,29 +350,48 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
 
       <main className="max-w-5xl mx-auto px-6 py-10">
         {/* Tier Welcome & Promotion Card */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-sm border border-indigo-950/40 relative overflow-hidden mb-10">
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
-              <div className="inline-flex items-center gap-1.5 bg-blue-500/15 border border-blue-400/20 px-3 py-1 rounded-full text-blue-300 text-[10px] font-bold uppercase tracking-wider">
-                <Sparkles size={12} className="text-blue-400 animate-pulse" />
-                <span>AI Included ⚡</span>
-              </div>
-              <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight">
-                Welcome back to your Career Command Center
-              </h2>
-              <p className="text-xs text-indigo-200/80 leading-relaxed">
-                Request capacity adjusts with demand to keep the service fast for everyone. You get full access to 6 premium templates, watermarks-free prints, and live automatic cloud synchronization for all drafts.
-              </p>
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-sm border border-indigo-950/40 relative overflow-hidden mb-10 flex flex-col md:flex-row justify-between gap-6">
+          <div className="relative z-10 flex flex-col gap-4 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 bg-blue-500/15 border border-blue-400/20 w-fit px-3 py-1 rounded-full text-blue-300 text-[10px] font-bold uppercase tracking-wider">
+              <Sparkles size={12} className="text-blue-400 animate-pulse" />
+              <span>Current Tier: {entitlement?.tier === 'founder' ? 'Founding Member' : entitlement?.tier === 'premium' ? 'Premium' : 'Free'}</span>
             </div>
-
+            <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight">
+              Welcome back to your Career Command Center
+            </h2>
+            <div className="text-xs text-indigo-200/80 leading-relaxed">
+              <p className="mb-2"><strong>AI Request Usage:</strong> {aiLimit ? `${aiLimit.count} used / ${aiLimit.remaining} remaining today` : 'Loading...'}</p>
+              <p>You get full access to premium templates, watermarks-free prints, and live automatic cloud synchronization for all drafts.</p>
+            </div>
+          </div>
+          
+          <div className="relative z-10 flex flex-col justify-center gap-3 shrink-0">
             <button
               onClick={handleCreateNew}
-              className="bg-white hover:bg-blue-50 text-indigo-950 px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all shrink-0 flex items-center justify-center gap-2 group cursor-pointer"
+              className="bg-white hover:bg-blue-50 text-indigo-950 px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
               <Plus size={16} className="text-blue-600" />
               <span>Create New Resume</span>
               <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform text-blue-600" />
             </button>
+            {entitlement?.tier === 'free' && (
+               <button
+                 onClick={async () => {
+                    // Placeholder for Phase 2: Create Checkout Session
+                    const res = await fetch('/api/stripe/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ priceId: 'price_12345' }) // Replace with actual price ID in Phase 2
+                    });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                 }}
+                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+               >
+                 <Sparkles size={16} className="text-white" />
+                 <span>Upgrade to Premium ($3.99/mo)</span>
+               </button>
+            )}
           </div>
 
           {/* Glowing gradient background accents */}
