@@ -69,7 +69,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
 
       // AI Limit is returned via RPC but we don't have a direct GET RPC. 
       // Just fetch the raw table for count if needed, or we can assume limits based on tier.
-      const { data: limitData } = await supabase.from('user_ai_limits').select('*').eq('user_id', userId).single();
+      const { data: limitData } = await supabase.from('user_ai_limits').select('*').eq('user_id', userId).maybeSingle();
       if (limitData) {
         setAiLimit({ count: limitData.count, allowed: limitData.count < tierMax, remaining: Math.max(0, tierMax - limitData.count) });
       } else {
@@ -696,10 +696,13 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                                   body: JSON.stringify({})
                                 });
                                 const data = await res.json();
-                                if (data.url) window.location.href = data.url;
-                                else toast.error('Checkout failed', { id: toastId });
-                              } catch (e) {
-                                toast.error('Checkout error', { id: toastId });
+                                if (res.ok && data.url) {
+                                  window.location.href = data.url;
+                                } else {
+                                  toast.error(`Checkout failed: ${data.error || 'Server Error'}`, { id: toastId });
+                                }
+                              } catch (e: any) {
+                                toast.error(`Checkout error: ${e.message}`, { id: toastId });
                               }
                             }}
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"

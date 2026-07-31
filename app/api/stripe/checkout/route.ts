@@ -60,6 +60,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: checkoutSession.url });
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
-    return new NextResponse(error.message, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
