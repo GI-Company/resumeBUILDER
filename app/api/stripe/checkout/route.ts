@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -10,10 +8,26 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
 
-    if (!session) {
+    const token = authHeader.split(" ")[1];
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+
+    const { data: { user }, error: authError } = await client.auth.getUser(token);
+
+    if (authError || !user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -31,7 +45,7 @@ export async function POST(req: Request) {
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       billing_address_collection: 'auto',
-      customer_email: session.user.email,
+      customer_email: user.email,
       line_items: [
         {
           price: priceId,
@@ -41,7 +55,7 @@ export async function POST(req: Request) {
       mode: 'subscription',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000'}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000'}/dashboard?canceled=true`,
-      client_reference_id: session.user.id,
+      client_reference_id: user.id,
     });
 
     return NextResponse.json({ url: checkoutSession.url });
