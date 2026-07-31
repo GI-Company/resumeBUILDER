@@ -179,7 +179,13 @@ export default function AuthModal({ isOpen, onClose, defaultView = 'signin' }: {
         await handleSuccessfulAuth();
       }
     } catch (err: any) {
-      toast.error(err.message || 'Authentication failed.');
+      console.error('Auth Error Full Object:', err);
+      let msg = 'Authentication failed.';
+      if (err instanceof Error) msg = err.message;
+      else if (typeof err === 'string') msg = err;
+      else if (err && typeof err === 'object') msg = err.message || JSON.stringify(err);
+      if (msg === '{}') msg = 'Internal Server Error (Check Supabase Auth Logs)';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
