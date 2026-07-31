@@ -1304,11 +1304,11 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
         <div className="max-w-4xl mx-auto px-6">
           <h2 id="about-heading" className="text-xl font-bold text-gray-900 mb-3">About Agent Rez AI</h2>
           <p className="text-xs text-gray-600 leading-relaxed max-w-2xl mx-auto mb-6">
-            Agent Rez AI was engineered by executive recruiters and senior cloud architects to eliminate the opaque paywalls and formatting errors of traditional online resume tools. We combine mathematical ATS-layout precision with state-of-the-art Groq AI processing to help professionals present verified, highly competitive career achievements.
+            Agent Rez AI is built by G.Intent Co (Global Intent Company) — an independent, founder-led studio combining a clear product vision with AI-accelerated development to eliminate the opaque paywalls and formatting errors of traditional online resume tools. We combine mathematical ATS-layout precision with state-of-the-art Groq AI processing to help professionals present verified, highly competitive career achievements.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-gray-700">
             <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> ATS Parsing Verified</span>
-            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> WCAG AA Accessible</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> Accessibility Conscious</span>
             <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-blue-600" /> Enterprise Cloud Security</span>
           </div>
         </div>

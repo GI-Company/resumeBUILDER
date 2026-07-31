@@ -173,6 +173,11 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
     }
   }, []);
 
+  const {
+    name, contactLine, summary, experiences, educations, skills, licenses, projects, publications, awards, footer, profilePhoto, design, sections, sectionHeaders, manualBreaks,
+    canvasZoom, printPreviewMode, showMarginGuides, showHeatmapOverlay, activeSidebarTab, sidebarWidth, showOnboarding,
+    idToPageMap, pageBreakElementIds
+  } = store;
 
   // --- Shim Setters for Zustand ---
   const updateDoc = store.updateDocument;
@@ -215,6 +220,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const setPageBreakElementIds = (v: any) => updateLayout({ pageBreakElementIds: typeof v === "function" ? v(useResumeStore.getState().pageBreakElementIds) : v });
 
   const history = store.past;
+  const setHistory = (v: any) => {};
   const historyIndex = store.past.length - 1;
   const setHistoryIndex = (v: any) => {};
 
