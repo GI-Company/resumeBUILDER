@@ -291,44 +291,81 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            Meet <strong>Agent Rez</strong>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and 100 AI requests per day available for signed-in users.
+            Meet <strong>Agent Rez</strong>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with AI requests available for signed-in users, with priority access for founding members.
           </motion.p>
 
-          {/* Founding Member Counter Banner */}
-          {foundingCount !== null && foundingCount < FOUNDING_LIMIT && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.25 }}
-              className="mb-8 max-w-lg mx-auto"
-            >
-              <div className="relative bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300/70 rounded-2xl p-4 shadow-md overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" style={{ animation: 'shimmer 2.5s infinite' }} />
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🔥</span>
-                      <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">Founding Member Offer</span>
+          {/* Founding Member Counter Banners */}
+          <div className="flex flex-col gap-4 mb-8 max-w-lg mx-auto">
+            {/* Free Founding Tier */}
+            {foundingCount !== null && foundingCount < FOUNDING_LIMIT && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.25 }}
+              >
+                <div className="relative bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300/70 rounded-2xl p-4 shadow-md overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" style={{ animation: 'shimmer 2.5s infinite' }} />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🔥</span>
+                        <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">Founding Member Offer</span>
+                      </div>
+                      <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                        {FOUNDING_LIMIT - (foundingCount ?? 0)} spots left
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
-                      {FOUNDING_LIMIT - (foundingCount ?? 0)} spots left
-                    </span>
+                    <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={foundingCount ?? 0} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${foundingCount ?? 0} of ${FOUNDING_LIMIT} founding member spots claimed`}>
+                      <motion.div
+                        className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, ((foundingCount ?? 0) / FOUNDING_LIMIT) * 100)}%` }}
+                        transition={{ duration: 1.2, ease: 'easeOut', delay: 0.5 }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-amber-800 font-semibold leading-snug">
+                      <strong className="font-black text-amber-900">{foundingCount ?? 0}</strong> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">priority AI access (75/day) for life</span> <span aria-hidden="true">🎁</span>
+                    </p>
                   </div>
-                  <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={foundingCount ?? 0} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${foundingCount ?? 0} of ${FOUNDING_LIMIT} founding member spots claimed`}>
-                    <motion.div
-                      className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, ((foundingCount ?? 0) / FOUNDING_LIMIT) * 100)}%` }}
-                      transition={{ duration: 1.2, ease: 'easeOut', delay: 0.5 }}
-                    />
-                  </div>
-                  <p className="text-[11px] text-amber-800 font-semibold leading-snug">
-                    <strong className="font-black text-amber-900">{foundingCount ?? 0}</strong> of {FOUNDING_LIMIT} founding members claimed · First {FOUNDING_LIMIT} get <span className="underline decoration-dotted">Premium tier free for life</span> <span aria-hidden="true">🎁</span>
-                  </p>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
+
+            {/* Paid Founding Tier */}
+            {paidFoundingCount !== null && paidFoundingCount < FOUNDING_LIMIT && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.35 }}
+              >
+                <div className="relative bg-gradient-to-r from-indigo-50 via-blue-50 to-indigo-50 border border-indigo-300/70 rounded-2xl p-4 shadow-md overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" style={{ animation: 'shimmer 2.5s infinite' }} />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">⚡</span>
+                        <span className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider">Founding Premium Offer</span>
+                      </div>
+                      <span className="text-xs font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full">
+                        {FOUNDING_LIMIT - (paidFoundingCount ?? 0)} spots left
+                      </span>
+                    </div>
+                    <div className="w-full bg-indigo-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={paidFoundingCount ?? 0} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${paidFoundingCount ?? 0} of ${FOUNDING_LIMIT} paid founding spots claimed`}>
+                      <motion.div
+                        className="h-2.5 rounded-full bg-gradient-to-r from-indigo-400 to-blue-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, ((paidFoundingCount ?? 0) / FOUNDING_LIMIT) * 100)}%` }}
+                        transition={{ duration: 1.2, ease: 'easeOut', delay: 0.6 }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-indigo-800 font-semibold leading-snug">
+                      <strong className="font-black text-indigo-900">{paidFoundingCount ?? 0}</strong> of {FOUNDING_LIMIT} paid founding spots claimed · First {FOUNDING_LIMIT} subscribers lock in <span className="underline decoration-dotted">$3.99/mo forever + top AI priority (100/day) for life</span> <span aria-hidden="true">🎁</span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
 
           {/* Core Call to Actions */}
           <motion.div 
