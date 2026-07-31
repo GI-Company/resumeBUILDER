@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'dummy_key_for_build');
+
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +42,10 @@ export async function POST(req: Request) {
     }
 
     const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000'}/dashboard`;
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2026-07-29.dahlia' as any,
+    });
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: entData.stripe_customer_id,
