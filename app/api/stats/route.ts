@@ -16,6 +16,7 @@ export async function GET() {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     let total = 0;
+    let paidFoundingCount = 0;
 
     // 1. Primary: Use service role key to count auth.users directly
     if (serviceKey) {
@@ -27,6 +28,15 @@ export async function GET() {
         if (!error && data) {
           total = (data as any)?.total ?? data?.users?.length ?? 0;
         }
+
+        // Fetch paid founding count
+        const { count: paidCount } = await adminClient
+          .from('entitlements')
+          .select('id', { count: 'exact', head: true })
+          .in('tier', ['premium_founder', 'premium']);
+        
+        paidFoundingCount = paidCount ?? 0;
+
       } catch (e) {
         console.warn('[stats] Admin client query failed:', e);
       }
@@ -49,14 +59,14 @@ export async function GET() {
     const displayCount = Math.max(1, total);
 
     return NextResponse.json(
-      { count: displayCount },
+      { count: displayCount, freeFoundingCount: displayCount, paidFoundingCount },
       { status: 200, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
     );
 
   } catch (err) {
     console.error('[stats] Error fetching user count:', err);
     return NextResponse.json(
-      { count: 1 },
+      { count: 1, freeFoundingCount: 1, paidFoundingCount: 0 },
       { status: 200, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
     );
   }

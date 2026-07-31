@@ -43,10 +43,16 @@ export async function POST(req: Request) {
           const customerId = session.customer as string;
           const subscriptionId = session.subscription as string;
 
+          const { count: paidCount } = await supabase
+            .from('entitlements')
+            .select('id', { count: 'exact', head: true })
+            .in('tier', ['premium_founder', 'premium']);
+          const newTier = (paidCount ?? 0) < 50 ? 'premium_founder' : 'premium';
+
           const { error } = await supabase
             .from('entitlements')
             .update({
-              tier: 'premium',
+              tier: newTier,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               subscription_status: 'active',
@@ -83,11 +89,20 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
+        const { data: currentEnt } = await supabase
+          .from('entitlements')
+          .select('tier')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+          
+        const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+        const newTier = isActive ? (currentEnt?.tier === 'premium_founder' ? 'premium_founder' : 'premium') : 'free';
+
         const { error } = await supabase
           .from('entitlements')
           .update({
             subscription_status: subscription.status,
-            tier: subscription.status === 'active' || subscription.status === 'trialing' ? 'premium' : 'free',
+            tier: newTier,
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);

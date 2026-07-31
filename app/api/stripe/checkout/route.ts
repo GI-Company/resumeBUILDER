@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
@@ -16,7 +17,16 @@ export async function POST(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { priceId } = await req.json();
+    // Determine price dynamically based on paid founders count to prevent client tampering
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { count: paidCount } = await supabaseAdmin
+      .from('entitlements')
+      .select('id', { count: 'exact', head: true })
+      .in('tier', ['premium_founder', 'premium']);
+      
+    const priceId = (paidCount ?? 0) < 50 
+      ? 'price_1Tz8RY3z1hyiOMOwVWD4fJiM'  // $3.99 Premium Founder
+      : 'price_1Tz9es3z1hyiOMOw3lqzcqX0'; // $9.99 Premium Standard
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

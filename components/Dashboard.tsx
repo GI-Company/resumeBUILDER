@@ -68,7 +68,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
       // Just fetch the raw table for count if needed, or we can assume limits based on tier.
       const { data: limitData } = await supabase.from('user_ai_limits').select('*').eq('user_id', userId).single();
       if (limitData) {
-        const max = entData?.tier === 'founder' ? 100 : entData?.tier === 'premium' ? 50 : 10;
+        const max = entData?.tier === 'premium_founder' ? 150 : entData?.tier === 'founder' ? 100 : entData?.tier === 'premium' ? 50 : 10;
         setAiLimit({ count: limitData.count, allowed: limitData.count < max, remaining: Math.max(0, max - limitData.count) });
       }
     } catch (e) {
@@ -354,7 +354,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
           <div className="relative z-10 flex flex-col gap-4 max-w-xl">
             <div className="inline-flex items-center gap-1.5 bg-blue-500/15 border border-blue-400/20 w-fit px-3 py-1 rounded-full text-blue-300 text-[10px] font-bold uppercase tracking-wider">
               <Sparkles size={12} className="text-blue-400 animate-pulse" />
-              <span>Current Tier: {entitlement?.tier === 'founder' ? 'Founding Member' : entitlement?.tier === 'premium' ? 'Premium' : 'Free'}</span>
+              <span>Current Tier: {entitlement?.tier === 'founder' ? 'Founding Member' : entitlement?.tier === 'premium' ? 'Premium' : entitlement?.tier === 'premium_founder' ? 'Founding Premium' : 'Free'}</span>
             </div>
             <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight">
               Welcome back to your Career Command Center
@@ -381,7 +381,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                     const res = await fetch('/api/stripe/checkout', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ priceId: 'price_1Tz8RY3z1hyiOMOwVWD4fJiM' })
+                        body: JSON.stringify({}) // Price ID is securely determined server-side
                     });
                     const data = await res.json();
                     if (data.url) window.location.href = data.url;
@@ -389,7 +389,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                >
                  <Sparkles size={16} className="text-white" />
-                 <span>Upgrade to Premium ($3.99/mo)</span>
+                 <span>Upgrade to Premium</span>
                </button>
             )}
           </div>
