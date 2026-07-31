@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { X, ArrowLeft, Mail, ShieldAlert, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -60,8 +60,16 @@ const US_STATES = [
   { code: 'WY', name: 'Wyoming' }
 ];
 
-export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [isSignUp, setIsSignUp] = useState(false);
+export default function AuthModal({ isOpen, onClose, defaultView = 'signin' }: { isOpen: boolean; onClose: () => void; defaultView?: 'signin' | 'signup' }) {
+  const [isSignUp, setIsSignUp] = useState(defaultView === 'signup');
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsSignUp(defaultView === 'signup');
+      setSignUpStep(1);
+      setStep('auth');
+    }
+  }, [isOpen, defaultView]);
   const [signUpStep, setSignUpStep] = useState(1); // 1: Credentials, 2: Profile
   const [step, setStep] = useState<'auth' | 'verify'>('auth');
   

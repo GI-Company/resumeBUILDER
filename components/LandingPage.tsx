@@ -96,6 +96,12 @@ const SANDBOX_PRESETS = {
 
 export default function LandingPage({ onOpenResume }: { onOpenResume: (templateId: string) => void }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalView, setAuthModalView] = useState<'signin' | 'signup'>('signin');
+
+  const openAuth = (view: 'signin' | 'signup' = 'signin') => {
+    setAuthModalView(view);
+    setAuthModalOpen(true);
+  };
   const [activeSandboxTab, setActiveSandboxTab] = useState<"bullets" | "summary" | "keywords">("bullets");
   const [sandboxInput, setSandboxInput] = useState("");
   const [sandboxOutput, setSandboxOutput] = useState("");
@@ -243,13 +249,13 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               Explore Capabilities
             </Link>
             <button 
-              onClick={() => setAuthModalOpen(true)}
+              onClick={() => openAuth('signin')}
               className="text-xs font-bold text-gray-700 hover:text-gray-900 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
             >
               Sign In
             </button>
             <button 
-              onClick={() => setAuthModalOpen(true)}
+              onClick={() => openAuth('signup')}
               className="hidden sm:inline-flex bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
             >
               Create Free Account
@@ -388,7 +394,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </Link>
 
             <button 
-              onClick={() => setAuthModalOpen(true)} 
+              onClick={() => openAuth('signup')} 
               className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200/80 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Cloud size={16} className="text-blue-500" />
@@ -453,7 +459,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
 
       {/* Public ATS Scanner Section */}
       <section id="scanner" className="bg-white border-b border-gray-200/80">
-        <PublicATSScanner onSignupClick={() => setAuthModalOpen(true)} />
+        <PublicATSScanner onSignupClick={() => openAuth('signup')} />
       </section>
 
       {/* NEW SECTION: Pristine PDF Export & ATS Proof Showcase (Aesthetic and Functional trust proof) */}
@@ -1320,7 +1326,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </ul>
                 </div>
                 <button 
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => openAuth('signup')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
                 >
                   Claim Free Founding Spot
@@ -1355,7 +1361,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </ul>
                 </div>
                 <button 
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => openAuth('signup')}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer"
                 >
                   Sign Up Free
@@ -1397,7 +1403,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </ul>
                 </div>
                 <button 
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => openAuth('signup')}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
                 >
                   Upgrade to Premium
@@ -1436,7 +1442,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </ul>
                 </div>
                 <button 
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => openAuth('signup')}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
                 >
                   Upgrade to Premium
@@ -1499,7 +1505,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
       </main>
 
       {/* Authentication Modal */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} defaultView={authModalView} />
     </div>
   );
 }
