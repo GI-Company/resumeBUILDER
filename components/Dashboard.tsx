@@ -380,7 +380,10 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
                     // Placeholder for Phase 2: Create Checkout Session
                     const res = await fetch('/api/stripe/checkout', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                        },
                         body: JSON.stringify({}) // Price ID is securely determined server-side
                     });
                     const data = await res.json();
