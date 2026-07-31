@@ -310,12 +310,16 @@ BEGIN
     SELECT tier INTO v_tier FROM entitlements WHERE user_id = p_user_id;
     
     -- Set limit based on tier
-    IF v_tier = 'founder' THEN
+    IF v_tier = 'premium_founder' THEN
         v_limit := 100;
+    ELSIF v_tier = 'founder' THEN
+        v_limit := 75;
     ELSIF v_tier = 'premium' THEN
-        v_limit := 50;
+        v_limit := 75;
+    ELSIF v_tier = 'free' THEN
+        v_limit := 15;
     ELSE
-        v_limit := 10;
+        v_limit := 5;
     END IF;
 
     INSERT INTO user_ai_limits (user_id, count, first_request_time)

@@ -1347,7 +1347,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   <ul className="space-y-3.5 text-xs text-gray-700">
                     <li className="flex items-start gap-2.5 font-semibold text-indigo-900">
                       <CheckCircle size={14} className="text-indigo-600 mt-0.5 shrink-0 animate-pulse" />
-                      <span><strong>150 Daily AI Requests ⚡</strong></span>
+                      <span><strong>100 Daily AI Requests ⚡</strong></span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />

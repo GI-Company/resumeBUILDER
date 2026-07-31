@@ -69,7 +69,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
       // Just fetch the raw table for count if needed, or we can assume limits based on tier.
       const { data: limitData } = await supabase.from('user_ai_limits').select('*').eq('user_id', userId).single();
       if (limitData) {
-        const max = entData?.tier === 'premium_founder' ? 150 : entData?.tier === 'founder' ? 100 : entData?.tier === 'premium' ? 50 : 10;
+        const max = entData?.tier === 'premium_founder' ? 100 : entData?.tier === 'founder' ? 75 : entData?.tier === 'premium' ? 75 : entData?.tier === 'free' ? 15 : 5;
         setAiLimit({ count: limitData.count, allowed: limitData.count < max, remaining: Math.max(0, max - limitData.count) });
       }
     } catch (e) {

@@ -1,7 +1,7 @@
 // ============================================================
 //  lib/rateLimit.ts — Tiered Rate Limiting
 //  Guests:     5 AI requests per 24 hours (Supabase RPC)
-//  Auth users: 100 AI requests per 24 hours (Supabase RPC)
+//  Auth users: Based on plan tier (15 - 100) per 24 hours (Supabase RPC)
 // ============================================================
 import { supabase } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,7 +9,6 @@ import type { User } from '@supabase/supabase-js';
 import type { RateLimitResult } from '@/lib/types';
 
 const GUEST_DAILY_LIMIT = 5;
-const USER_DAILY_LIMIT = 100;
 
 // ---------------------------------------------------------------------------
 // Guest rate limiting via Supabase RPC (IP-based)
@@ -61,7 +60,7 @@ export async function checkUserRateLimit(userId: string): Promise<RateLimitResul
       console.warn('check_user_ai_limit RPC failed, failing closed for auth user:', error.message);
       return {
         allowed: false,
-        count: USER_DAILY_LIMIT,
+        count: 15,
         remaining: 0,
         resetTime: new Date(Date.now() + 60 * 1000), // Check again in 1 min
         isAuthenticated: true,
@@ -70,7 +69,7 @@ export async function checkUserRateLimit(userId: string): Promise<RateLimitResul
     if (!data) {
       return {
         allowed: false,
-        count: USER_DAILY_LIMIT,
+        count: 15,
         remaining: 0,
         resetTime: new Date(Date.now() + 60 * 1000),
         isAuthenticated: true,
@@ -87,7 +86,7 @@ export async function checkUserRateLimit(userId: string): Promise<RateLimitResul
     console.error('User rate limit exception:', err);
     return {
       allowed: false,
-      count: USER_DAILY_LIMIT,
+      count: 15,
       remaining: 0,
       resetTime: new Date(Date.now() + 60 * 1000),
       isAuthenticated: true,
@@ -125,7 +124,7 @@ export async function enforceRateLimit(
     }
   }
 
-  // Authenticated users: generous limit (100/day)
+  // Authenticated users: generous limit (based on tier)
   if (userObj) {
     const result = await checkUserRateLimit(userObj.id);
     if (!result.allowed) {
@@ -133,7 +132,7 @@ export async function enforceRateLimit(
         errorResponse: NextResponse.json(
           {
             success: false,
-            error: `Daily AI limit reached. Authenticated users get ${USER_DAILY_LIMIT} AI requests per day. Resets at ${result.resetTime.toUTCString()}.`,
+            error: `Daily AI limit reached. Upgrade or check your plan for details. Resets at ${result.resetTime.toUTCString()}.`,
             remaining: 0,
             resetTime: result.resetTime.toISOString(),
           },
@@ -154,7 +153,7 @@ export async function enforceRateLimit(
       errorResponse: NextResponse.json(
         {
           success: false,
-          error: `AI Rate limit exceeded. Guest tier allows ${GUEST_DAILY_LIMIT} requests per 24 hours. Log in or sign up to unlock ${USER_DAILY_LIMIT} daily AI requests. Resets at ${result.resetTime.toUTCString()}.`,
+          error: `AI Rate limit exceeded. Guest tier allows ${GUEST_DAILY_LIMIT} requests per 24 hours. Log in or sign up to unlock more daily AI requests. Resets at ${result.resetTime.toUTCString()}.`,
           remaining: 0,
           resetTime: result.resetTime.toISOString(),
         },
