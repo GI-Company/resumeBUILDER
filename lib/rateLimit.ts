@@ -19,12 +19,12 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
     const { data, error } = await supabase.rpc('check_guest_ai_limit', { p_ip: ip });
     if (error || !data) {
       console.error('Supabase guest rate limit RPC failed:', error);
-      // Fail open gracefully — log the error but don't block the user
+      // Fail closed to prevent free-tier abuse during DB outages
       return {
-        allowed: true,
-        count: 1,
-        remaining: GUEST_DAILY_LIMIT - 1,
-        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        allowed: false,
+        count: GUEST_DAILY_LIMIT,
+        remaining: 0,
+        resetTime: new Date(Date.now() + 60 * 1000), // Check again in 1 min
         isAuthenticated: false,
       };
     }
@@ -38,10 +38,10 @@ export async function checkGuestRateLimit(ip: string): Promise<RateLimitResult> 
   } catch (err) {
     console.error('Rate limit exception:', err);
     return {
-      allowed: true,
-      count: 1,
-      remaining: GUEST_DAILY_LIMIT - 1,
-      resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      allowed: false,
+      count: GUEST_DAILY_LIMIT,
+      remaining: 0,
+      resetTime: new Date(Date.now() + 60 * 1000),
       isAuthenticated: false,
     };
   }
@@ -57,22 +57,22 @@ export async function checkUserRateLimit(userId: string): Promise<RateLimitResul
   try {
     const { data, error } = await supabase.rpc('check_user_ai_limit', { p_user_id: userId });
     if (error) {
-      // RPC doesn't exist yet (PGRST202) or other DB error — fail open for auth users
-      console.warn('check_user_ai_limit RPC not available, failing open for auth user:', error.message);
+      // DB error — fail closed for auth users
+      console.warn('check_user_ai_limit RPC failed, failing closed for auth user:', error.message);
       return {
-        allowed: true,
-        count: 0,
-        remaining: USER_DAILY_LIMIT,
-        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        allowed: false,
+        count: USER_DAILY_LIMIT,
+        remaining: 0,
+        resetTime: new Date(Date.now() + 60 * 1000), // Check again in 1 min
         isAuthenticated: true,
       };
     }
     if (!data) {
       return {
-        allowed: true,
-        count: 0,
-        remaining: USER_DAILY_LIMIT,
-        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        allowed: false,
+        count: USER_DAILY_LIMIT,
+        remaining: 0,
+        resetTime: new Date(Date.now() + 60 * 1000),
         isAuthenticated: true,
       };
     }
@@ -86,10 +86,10 @@ export async function checkUserRateLimit(userId: string): Promise<RateLimitResul
   } catch (err) {
     console.error('User rate limit exception:', err);
     return {
-      allowed: true,
-      count: 0,
-      remaining: USER_DAILY_LIMIT,
-      resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      allowed: false,
+      count: USER_DAILY_LIMIT,
+      remaining: 0,
+      resetTime: new Date(Date.now() + 60 * 1000),
       isAuthenticated: true,
     };
   }

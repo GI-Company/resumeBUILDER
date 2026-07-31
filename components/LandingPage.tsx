@@ -193,7 +193,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
       toast.success("AI suggestion generated! ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
-      setSandboxOutput(`⚠️ LIMITATION NOTICE: ${err.message || "AI engine request failed. Guest tier is limited to 5 daily requests. Sign up to unlock unlimited high-speed requests."}`);
+      setSandboxOutput(`⚠️ LIMITATION NOTICE: ${err.message || "AI engine request failed. Guest tier is limited to 5 daily requests. Sign up to unlock 100 high-speed requests per day."}`);
     } finally {
       setSandboxLoading(false);
     }
@@ -289,10 +289,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            Meet <strong>Agent Rez</strong>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and unlimited AI usage available for signed-in users.
+            Meet <strong>Agent Rez</strong>—your smart career assistant. Build high-converting, ATS-optimized professional resumes live via an interactive conversational chat, or use our smart career tools to refine your experience. Get started for free, with advanced features and 100 AI requests per day available for signed-in users.
           </motion.p>
 
-          {/* Founding Member Counter Banner */}
+          {/* Founding Member Counter Banner - Hidden for now
           {foundingCount !== null && foundingCount < FOUNDING_LIMIT && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -301,7 +301,6 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               className="mb-8 max-w-lg mx-auto"
             >
               <div className="relative bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300/70 rounded-2xl p-4 shadow-md overflow-hidden">
-                {/* Animated shimmer */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" style={{ animation: 'shimmer 2.5s infinite' }} />
                 <div className="relative">
                   <div className="flex items-center justify-between mb-2">
@@ -313,7 +312,6 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       {FOUNDING_LIMIT - foundingCount} spots left
                     </span>
                   </div>
-                  {/* Progress bar */}
                   <div className="w-full bg-amber-100 rounded-full h-2.5 mb-2.5 overflow-hidden" role="progressbar" aria-valuenow={foundingCount} aria-valuemin={0} aria-valuemax={FOUNDING_LIMIT} aria-label={`${foundingCount} of ${FOUNDING_LIMIT} founding member spots claimed`}>
                     <motion.div
                       className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
@@ -329,6 +327,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               </div>
             </motion.div>
           )}
+          */}
 
           {/* Core Call to Actions */}
           <motion.div 
@@ -355,7 +354,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200/80 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Cloud size={16} className="text-blue-500" />
-              <span>Sign Up for Unlimited AI</span>
+              <span>Sign Up Free</span>
             </button>
           </motion.div>
 
@@ -371,7 +370,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               100% Free to Start
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:block" aria-hidden="true" />
-            <span className="text-gray-500">Free daily limits; sign up for unlimited access.</span>
+            <span className="text-gray-500">Free daily limits; sign up to increase your limits.</span>
           </motion.div>
           
           {/* Live Activity Feed */}
@@ -403,7 +402,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mt-0.5">Compliant Layouts</span>
             </div>
             <div className="flex flex-col items-center">
-              <span className="text-xl md:text-2xl font-black text-gray-900">Unlimited</span>
+              <span className="text-xl md:text-2xl font-black text-gray-900">Up to 3</span>
               <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mt-0.5">Saves for Users</span>
             </div>
           </motion.div>
@@ -1281,7 +1280,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><strong>Secure Cloud Saving</strong> for unlimited drafts</span>
+                    <span><strong>Secure Cloud Saving</strong> for up to 3 drafts</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />

@@ -6,8 +6,10 @@ import {
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import posthog from 'posthog-js';
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/useResumeStore";
+import { useShallow } from 'zustand/react/shallow';
 import { StructuralParser, GazeProfiler, LayoutRebalancer } from "@/lib/agent-rez";
 
 interface AISidebarProps {
@@ -123,7 +125,27 @@ const ATSScoreDisplay = ({ store, jobDescription }: any) => {
 
 export default function AISidebar({
  user, setAuthModalOpen, isHistoryActionRef }: AISidebarProps) {
-  const store = useResumeStore();
+  const store = useResumeStore(useShallow(state => ({
+    activeSidebarTab: state.activeSidebarTab,
+    aiPresetType: state.aiPresetType,
+    aiAgentTab: state.aiAgentTab,
+    interviewStep: state.interviewStep,
+    interviewAnswers: state.interviewAnswers,
+    agentMessages: state.agentMessages,
+    jobDescription: state.jobDescription,
+    experiences: state.experiences,
+    design: state.design,
+    summary: state.summary,
+    contactLine: state.contactLine,
+    educations: state.educations,
+    projects: state.projects,
+    publications: state.publications,
+    awards: state.awards,
+    skills: state.skills,
+    licenses: state.licenses,
+    updateDocument: state.updateDocument,
+    updateUI: state.updateUI
+  })));
   const updateDoc = store.updateDocument;
   const updateUI = store.updateUI;
   
@@ -133,25 +155,25 @@ export default function AISidebar({
     experiences, design, summary, contactLine, educations, projects, publications, awards, skills, licenses
   } = store;
 
-  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(store.activeSidebarTab) : v });
-  const setAiPresetType = (v: any) => updateUI({ aiPresetType: typeof v === "function" ? v(store.aiPresetType) : v });
-  const setAiAgentTab = (v: any) => updateUI({ aiAgentTab: typeof v === "function" ? v(store.aiAgentTab) : v });
-  const setJobDescription = (v: any) => updateUI({ jobDescription: typeof v === "function" ? v(store.jobDescription) : v });
-  const setInterviewStep = (v: any) => updateUI({ interviewStep: typeof v === "function" ? v(store.interviewStep) : v });
-  const setInterviewAnswers = (v: any) => updateUI({ interviewAnswers: typeof v === "function" ? v(store.interviewAnswers) : v });
-  const setAgentMessages = (v: any) => updateUI({ agentMessages: typeof v === "function" ? v(store.agentMessages) : v });
-  const setShowHeatmapOverlay = (v: any) => updateUI({ showHeatmapOverlay: typeof v === "function" ? v(store.showHeatmapOverlay) : v });
+  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(useResumeStore.getState().activeSidebarTab) : v });
+  const setAiPresetType = (v: any) => updateUI({ aiPresetType: typeof v === "function" ? v(useResumeStore.getState().aiPresetType) : v });
+  const setAiAgentTab = (v: any) => updateUI({ aiAgentTab: typeof v === "function" ? v(useResumeStore.getState().aiAgentTab) : v });
+  const setJobDescription = (v: any) => updateUI({ jobDescription: typeof v === "function" ? v(useResumeStore.getState().jobDescription) : v });
+  const setInterviewStep = (v: any) => updateUI({ interviewStep: typeof v === "function" ? v(useResumeStore.getState().interviewStep) : v });
+  const setInterviewAnswers = (v: any) => updateUI({ interviewAnswers: typeof v === "function" ? v(useResumeStore.getState().interviewAnswers) : v });
+  const setAgentMessages = (v: any) => updateUI({ agentMessages: typeof v === "function" ? v(useResumeStore.getState().agentMessages) : v });
+  const setShowHeatmapOverlay = (v: any) => updateUI({ showHeatmapOverlay: typeof v === "function" ? v(useResumeStore.getState().showHeatmapOverlay) : v });
 
-  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(store.name) : v });
-  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(store.contactLine) : v });
-  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(store.summary) : v });
-  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(store.experiences) : v });
-  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(store.educations) : v });
-  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(store.skills) : v });
-  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(store.licenses) : v });
-  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(store.projects) : v });
-  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(store.publications) : v });
-  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(store.awards) : v });
+  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(useResumeStore.getState().name) : v });
+  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(useResumeStore.getState().contactLine) : v });
+  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(useResumeStore.getState().summary) : v });
+  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(useResumeStore.getState().experiences) : v });
+  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(useResumeStore.getState().educations) : v });
+  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(useResumeStore.getState().skills) : v });
+  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(useResumeStore.getState().licenses) : v });
+  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(useResumeStore.getState().projects) : v });
+  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(useResumeStore.getState().publications) : v });
+  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(useResumeStore.getState().awards) : v });
 
   // Missing local state from ResumeBuilder
   const [aiRemaining, setAiRemaining] = useState<number | null>(5);

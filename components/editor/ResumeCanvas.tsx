@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/useResumeStore";
+import { useShallow } from 'zustand/react/shallow';
 import { ContentEditableField } from "../ContentEditableField";
 import { Reorder } from "framer-motion";
 import { SectionRenderer } from "./SectionRenderers";
@@ -76,7 +77,32 @@ export default function ResumeCanvas({
   showMarginGuides,
   spellcheckEnabled
 }: ResumeCanvasProps) {
-  const store = useResumeStore();
+  const store = useResumeStore(useShallow(state => ({
+    printPreviewMode: state.printPreviewMode,
+    design: state.design,
+    profilePhoto: state.profilePhoto,
+    sections: state.sections,
+    name: state.name,
+    contactLine: state.contactLine,
+    footer: state.footer,
+    activeSidebarTab: state.activeSidebarTab,
+    summary: state.summary,
+    licenses: state.licenses,
+    skills: state.skills,
+    experiences: state.experiences,
+    educations: state.educations,
+    projects: state.projects,
+    publications: state.publications,
+    awards: state.awards,
+    sectionHeaders: state.sectionHeaders,
+    manualBreaks: state.manualBreaks,
+    pageBreakElementIds: state.pageBreakElementIds,
+    gapHeights: state.gapHeights,
+    showHeatmapOverlay: state.showHeatmapOverlay,
+    updateDocument: state.updateDocument,
+    updateUI: state.updateUI
+  })));
+  
   const { 
     printPreviewMode, design, profilePhoto, sections, name, contactLine, footer, activeSidebarTab,
     summary, licenses, skills, experiences, educations, projects, publications, awards, sectionHeaders, manualBreaks, pageBreakElementIds, gapHeights, showHeatmapOverlay
@@ -86,22 +112,23 @@ export default function ResumeCanvas({
   const updateDoc = store.updateDocument;
   const updateUI = store.updateUI;
   
-  const setSections = (v: any) => updateDoc({ sections: typeof v === "function" ? v(store.sections) : v });
-  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(store.name) : v });
-  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(store.contactLine) : v });
-  const setFooter = (v: any) => updateDoc({ footer: typeof v === "function" ? v(store.footer) : v });
+  const setSections = (v: any) => updateDoc({ sections: typeof v === "function" ? v(useResumeStore.getState().sections) : v });
+  const setName = (v: any) => updateDoc({ name: typeof v === "function" ? v(useResumeStore.getState().name) : v });
+  const setContactLine = (v: any) => updateDoc({ contactLine: typeof v === "function" ? v(useResumeStore.getState().contactLine) : v });
+  const setFooter = (v: any) => updateDoc({ footer: typeof v === "function" ? v(useResumeStore.getState().footer) : v });
   
-  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(store.summary) : v });
-  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(store.licenses) : v });
-  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(store.skills) : v });
-  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(store.experiences) : v });
-  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(store.educations) : v });
-  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(store.projects) : v });
-  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(store.publications) : v });
-  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(store.awards) : v });
-  const setSectionHeaders = (v: any) => updateDoc({ sectionHeaders: typeof v === "function" ? v(store.sectionHeaders) : v });
-  const setManualBreaks = (v: any) => updateDoc({ manualBreaks: typeof v === "function" ? v(store.manualBreaks) : v });
-  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(store.activeSidebarTab) : v });
+  const setSummary = (v: any) => updateDoc({ summary: typeof v === "function" ? v(useResumeStore.getState().summary) : v });
+  const setLicenses = (v: any) => updateDoc({ licenses: typeof v === "function" ? v(useResumeStore.getState().licenses) : v });
+  const setSkills = (v: any) => updateDoc({ skills: typeof v === "function" ? v(useResumeStore.getState().skills) : v });
+  const setExperiences = (v: any) => updateDoc({ experiences: typeof v === "function" ? v(useResumeStore.getState().experiences) : v });
+  const setEducations = (v: any) => updateDoc({ educations: typeof v === "function" ? v(useResumeStore.getState().educations) : v });
+  const setProjects = (v: any) => updateDoc({ projects: typeof v === "function" ? v(useResumeStore.getState().projects) : v });
+  const setPublications = (v: any) => updateDoc({ publications: typeof v === "function" ? v(useResumeStore.getState().publications) : v });
+  const setAwards = (v: any) => updateDoc({ awards: typeof v === "function" ? v(useResumeStore.getState().awards) : v });
+  const setSectionHeaders = (v: any) => updateDoc({ sectionHeaders: typeof v === "function" ? v(useResumeStore.getState().sectionHeaders) : v });
+  const setManualBreaks = (v: any) => updateDoc({ manualBreaks: typeof v === "function" ? v(useResumeStore.getState().manualBreaks) : v });
+  
+  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(useResumeStore.getState().activeSidebarTab) : v });
 
 
   // Auto-balance Layout
@@ -216,11 +243,15 @@ export default function ResumeCanvas({
                 const isMainSecOnPage = (s: any) => {
                   const hp = idToPageMap?.[`heading-${s.id}`];
                   if (s.id === "summary") return (idToPageMap?.["summary-content"] ?? hp ?? 0) === pageIndex;
-                  if (s.id === "experience") return (idToPageMap?.["exp-1"] ?? hp ?? 0) === pageIndex;
-                  if (s.id === "projects") return (idToPageMap?.["proj-1"] ?? hp ?? 0) === pageIndex;
-                
-
-  return (hp ?? 0) === pageIndex;
+                  if (s.id === "experience") {
+                    const onThisPage = experiences.some((e: any) => (idToPageMap?.[`exp-${e.id}`] === pageIndex) || (e.bullets?.some((b: any) => idToPageMap?.[`bullet-${b.id}`] === pageIndex)));
+                    return onThisPage || (hp ?? 0) === pageIndex;
+                  }
+                  if (s.id === "projects") {
+                    const onThisPage = projects.some((p: any) => (idToPageMap?.[`proj-${p.id}`] === pageIndex) || (p.bullets?.some((b: any) => idToPageMap?.[`proj-bullet-${b.id}`] === pageIndex)));
+                    return onThisPage || (hp ?? 0) === pageIndex;
+                  }
+                  return (hp ?? 0) === pageIndex;
                 };
 
                 const hasSidebarOnPage = sidebarSecs.some(isSidebarSecOnPage);

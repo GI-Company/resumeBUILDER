@@ -14,11 +14,7 @@ export default function LiveActivityFeed() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
 
   useEffect(() => {
-    // Initial dummy events to make it look alive immediately
-    setEvents([
-      { id: '1', display_message: '📄 Someone just exported an ATS-optimized PDF resume', created_at: new Date().toISOString() },
-      { id: '2', display_message: '⚡ Someone just optimized a resume bullet with AI', created_at: new Date(Date.now() - 5000).toISOString() },
-    ]);
+    // Wait for real events from Supabase Realtime
 
     const channel = supabase
       .channel('public_activity_feed_changes')

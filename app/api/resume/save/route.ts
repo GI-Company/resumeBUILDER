@@ -34,16 +34,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, content, status, clientId } = await req.json();
+    const { id, content, status, clientId, is_public } = await req.json();
 
     const { data, error } = await client.rpc("save_resume", {
       p_id: id,
       p_content: content,
       p_client_id: clientId,
-      p_status: status || 'active'
+      p_status: status || 'active',
+      p_is_public: typeof is_public === 'boolean' ? is_public : false
     });
 
     if (error) {
+      if (error.message?.includes('already has 3 active resumes')) {
+        return NextResponse.json({ success: false, error: "You've reached the 3 active resume limit. Move a resume to trash first." }, { status: 409 });
+      }
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 

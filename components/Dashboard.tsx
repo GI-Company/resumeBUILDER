@@ -381,6 +381,12 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
             </h3>
             <p className="text-[11px] text-gray-500 mt-1">Auto-saves every single edit live to secure database.</p>
           </div>
+          {activeTab === 'active' && (
+            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200 shadow-inner">
+              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Storage</div>
+              <div className="text-xs font-black text-blue-600">{resumes.length} <span className="text-gray-400 font-normal">/ 3</span></div>
+            </div>
+          )}
         </div>
 
         {/* Resumes Grid / Empty State */}

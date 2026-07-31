@@ -43,6 +43,21 @@ export const SectionRenderer = memo(({
   spellcheckEnabled,
   isPrint,
 }: any) => {
+
+  const handleReorderSlice = (newActiveSlice: any[], originalArray: any[], setter: (val: any) => void) => {
+    if (targetPageIndex === undefined) {
+      setter(newActiveSlice);
+    } else {
+      const newFull = [...originalArray];
+      const indices = newActiveSlice.map(item => originalArray.findIndex(orig => orig.id === item.id)).sort((a, b) => a - b);
+      indices.forEach((origIdx, i) => {
+        if (origIdx !== -1) {
+          newFull[origIdx] = newActiveSlice[i];
+        }
+      });
+      setter(newFull);
+    }
+  };
   const getPageIndex = (id: string | null | undefined): number => {
     if (!id) return 0;
     return idToPageMap?.[id] ?? 0;
@@ -173,7 +188,7 @@ export const SectionRenderer = memo(({
                       <PageBreakGap id="lic-list" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                       <SafeReorderGroup isPrint={isPrint}
                         values={licenses}
-                        onReorder={setLicenses}
+                        onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, licenses, setLicenses)}
                         as="ul"
                         className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300"
                         id="lic-list"
@@ -232,7 +247,7 @@ export const SectionRenderer = memo(({
                       <PageBreakGap id="skills-grid" pageBreakElementIds={pageBreakElementIds} gapHeights={gapHeights} pageMargin={design.pageMargin} pageMarginX={design.pageMarginLeftRight ?? design.pageMargin} pageMarginY={design.pageMarginTopBottom ?? design.pageMargin} disabled={targetPageIndex !== undefined} />
                       <SafeReorderGroup isPrint={isPrint}
                         values={skills}
-                        onReorder={setSkills}
+                        onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, skills, setSkills)}
                         className={`skills-grid flex flex-wrap gap-y-3 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300 ${
                           design.layout === "sidebar"
                             ? "gap-x-0 p-3 [&>*]:w-full"
@@ -362,7 +377,7 @@ export const SectionRenderer = memo(({
                   {section.id === "experience" && (
                     <SafeReorderGroup isPrint={isPrint}
                       values={activeExperiences}
-                      onReorder={setExperiences}
+                      onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, experiences, setExperiences)}
                     >
                       {activeExperiences.map((exp: any) => {
                         const jobHeaderPage = getPageIndex(`exp-${exp.id}`);
@@ -607,7 +622,7 @@ export const SectionRenderer = memo(({
                   {section.id === "education" && (
                     <SafeReorderGroup isPrint={isPrint}
                       values={activeEducations}
-                      onReorder={setEducations}
+                      onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, educations, setEducations)}
                     >
                       {activeEducations.map((edu: any) => {
                         const eduHeaderPage = getPageIndex(`edu-${edu.id}`);
@@ -810,7 +825,7 @@ export const SectionRenderer = memo(({
                   {section.id === "projects" && (
                     <SafeReorderGroup isPrint={isPrint}
                       values={activeProjects}
-                      onReorder={setProjects}
+                      onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, projects, setProjects)}
                     >
                       {activeProjects?.map((proj: any) => {
                         const projHeaderPage = getPageIndex(`proj-${proj.id}`);
@@ -962,7 +977,7 @@ export const SectionRenderer = memo(({
                   {section.id === "publications" && (
                     <SafeReorderGroup isPrint={isPrint}
                       values={publications}
-                      onReorder={setPublications}
+                      onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, publications, setPublications)}
                       as="ul"
                       className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300"
                       id="pub-list"
@@ -1016,7 +1031,7 @@ export const SectionRenderer = memo(({
                   {section.id === "awards" && (
                     <SafeReorderGroup isPrint={isPrint}
                       values={awards}
-                      onReorder={setAwards}
+                      onReorder={(newSlice: any[]) => handleReorderSlice(newSlice, awards, setAwards)}
                       as="ul"
                       className="bullet-list m-0 p-4 md:p-5 pl-9 rounded-[var(--radius)] mb-[var(--section-gap)] transition-all duration-300"
                       id="award-list"

@@ -5,4 +5,4 @@ Disallow: /dashboard
 Disallow: /editor
 
 # Sitemap
-Sitemap: https://resume-builder-pi-coral.vercel.app/sitemap.xml
+Sitemap: https://agentrez.space/sitemap.xml

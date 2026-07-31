@@ -6,6 +6,7 @@ import {
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/useResumeStore";
+import { useShallow } from "zustand/react/shallow";
 import { motion } from "framer-motion"; // Changed from motion/react as motion/react is typically framer-motion
 
 interface ToolbarProps {
@@ -37,12 +38,16 @@ export default function Toolbar({
   spellcheckEnabled, setSpellcheckEnabled, atsHealthBreakdown, setAtsScoreModalOpen,
   lastSavedAt, handleSaveToCloud, isSaving, setExportModalOpen, onBack
 }: ToolbarProps) {
-  const store = useResumeStore();
+  const store = useResumeStore(useShallow(state => ({
+    activeSidebarTab: state.activeSidebarTab,
+    printPreviewMode: state.printPreviewMode,
+    updateUI: state.updateUI
+  })));
   const { activeSidebarTab, printPreviewMode } = store;
   const updateUI = store.updateUI;
 
-  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(store.activeSidebarTab) : v });
-  const setPrintPreviewMode = (v: any) => updateUI({ printPreviewMode: typeof v === "function" ? v(store.printPreviewMode) : v });
+  const setActiveSidebarTab = (v: any) => updateUI({ activeSidebarTab: typeof v === "function" ? v(useResumeStore.getState().activeSidebarTab) : v });
+  const setPrintPreviewMode = (v: any) => updateUI({ printPreviewMode: typeof v === "function" ? v(useResumeStore.getState().printPreviewMode) : v });
 
   return (
             <div className="h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-6 z-20 no-print shrink-0 shadow-sm relative gap-2">
@@ -69,6 +74,7 @@ export default function Toolbar({
                 disabled={historyIndex <= 0}
                 className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
                 title="Undo (Ctrl+Z)"
+                aria-label="Undo"
               >
                 <Undo size={15} />
               </button>
@@ -77,6 +83,7 @@ export default function Toolbar({
                 disabled={historyIndex >= history.length - 1}
                 className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
                 title="Redo (Ctrl+Y)"
+                aria-label="Redo"
               >
                 <Redo size={15} />
               </button>
@@ -85,6 +92,7 @@ export default function Toolbar({
                 onClick={handleResetToBlank}
                 className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors flex items-center justify-center cursor-pointer"
                 title="Reset/Clear to Blank Custom Template"
+                aria-label="Reset to blank template"
               >
                 <Eraser size={15} />
               </button>
@@ -136,7 +144,7 @@ export default function Toolbar({
                 </button>
                 
                 <div className="w-px h-5 bg-gray-200 mx-1" />
-                <button onClick={() => setIsTopMenuMinimized(true)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer" title="Collapse Menu">
+                <button onClick={() => setIsTopMenuMinimized(true)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer" title="Collapse Menu" aria-label="Collapse Menu">
                   <CloseIcon size={16} />
                 </button>
               </>
@@ -227,6 +235,7 @@ export default function Toolbar({
             <button
               onClick={() => setActiveSidebarTab(activeSidebarTab === "account" ? null : "account")}
               className="relative rounded-full hover:ring-2 hover:ring-blue-100 transition-all ml-1"
+              aria-label="Account Menu"
             >
               {user ? (
                 <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border border-blue-200 bg-blue-50 flex items-center justify-center">

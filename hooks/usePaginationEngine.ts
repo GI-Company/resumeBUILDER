@@ -1,8 +1,23 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useResumeStore } from '../lib/store/useResumeStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export function usePaginationEngine(containerRef: React.RefObject<HTMLElement | null>) {
-  const store = useResumeStore();
+  const store = useResumeStore(useShallow(state => ({
+    design: state.design,
+    sections: state.sections,
+    experiences: state.experiences,
+    educations: state.educations,
+    skills: state.skills,
+    projects: state.projects,
+    publications: state.publications,
+    awards: state.awards,
+    summary: state.summary,
+    name: state.name,
+    contactLine: state.contactLine,
+    footer: state.footer,
+    manualBreaks: state.manualBreaks
+  })));
 
   const calcPages = useCallback(() => {
     if (!containerRef.current) return;

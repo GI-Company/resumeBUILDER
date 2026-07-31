@@ -21,7 +21,15 @@ function getAllowedOrigins(): Set<string> {
   const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) {
     try {
-      origins.add(new URL(appUrl).origin);
+      const parsedUrl = new URL(appUrl);
+      origins.add(parsedUrl.origin);
+      
+      // Also allow the www/apex variant automatically
+      if (parsedUrl.hostname.startsWith('www.')) {
+        origins.add(`https://${parsedUrl.hostname.replace('www.', '')}`);
+      } else {
+        origins.add(`https://www.${parsedUrl.hostname}`);
+      }
     } catch {
       // Invalid URL format — skip
     }

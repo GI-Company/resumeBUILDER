@@ -75,7 +75,7 @@ DROP POLICY IF EXISTS "No direct delete" ON resumes;
 CREATE POLICY "No direct delete" ON resumes FOR DELETE USING (false);
 
 -- RPC: Save Resume (ACID compliant with Leaky Bucket Rate Limiting)
-CREATE OR REPLACE FUNCTION save_resume(p_id UUID, p_content JSONB, p_client_id TEXT, p_status TEXT DEFAULT 'active')
+CREATE OR REPLACE FUNCTION save_resume(p_id UUID, p_content JSONB, p_client_id TEXT, p_status TEXT DEFAULT 'active', p_is_public BOOLEAN DEFAULT false)
 RETURNS JSON AS $BODY$
 DECLARE
     v_tokens INT;
@@ -139,12 +139,19 @@ BEGIN
     END IF;
 
     -- 3. Save Data (Upsert)
-    INSERT INTO resumes (id, user_id, content, status, updated_at)
-    VALUES (v_final_id, v_user_id, p_content, p_status, v_now)
+    INSERT INTO resumes (id, user_id, content, status, updated_at, is_public)
+    VALUES (v_final_id, v_user_id, p_content, p_status, v_now, p_is_public)
     ON CONFLICT (id) DO UPDATE
     SET content = EXCLUDED.content, 
         status = EXCLUDED.status,
+        is_public = EXCLUDED.is_public,
         updated_at = v_now;
+
+    IF p_is_public THEN
+        INSERT INTO public_activity_feed (event_type, display_message)
+        VALUES ('RESUME_SHARED', 'A user just published a new resume design.')
+        ON CONFLICT DO NOTHING;
+    END IF;
 
     -- 4. Audit Log
     INSERT INTO audit_logs (action, details)
@@ -329,3 +336,34 @@ BEGIN
     );
 END;
 $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Entitlements for Founders
+CREATE TABLE IF NOT EXISTS entitlements (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    tier VARCHAR(50) NOT NULL DEFAULT 'free',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE entitlements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own entitlements" ON entitlements FOR SELECT USING (auth.uid() = user_id);
+
+CREATE OR REPLACE FUNCTION handle_new_user_entitlement()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_founder_count INT;
+BEGIN
+    SELECT count(*) INTO v_founder_count FROM entitlements WHERE tier = 'premium';
+    
+    IF v_founder_count < 500 THEN
+        INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'premium');
+    ELSE
+        INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'free');
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION handle_new_user_entitlement();
