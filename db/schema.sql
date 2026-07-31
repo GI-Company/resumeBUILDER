@@ -307,7 +307,7 @@ DECLARE
     v_now TIMESTAMPTZ := NOW();
 BEGIN
     -- Fetch the user's tier
-    SELECT tier INTO v_tier FROM entitlements WHERE user_id = p_user_id;
+    SELECT tier INTO v_tier FROM public.entitlements WHERE user_id = p_user_id;
     
     -- Set limit based on tier
     IF v_tier = 'premium_founder' THEN
@@ -322,7 +322,7 @@ BEGIN
         v_limit := 5;
     END IF;
 
-    INSERT INTO user_ai_limits (user_id, count, first_request_time)
+    INSERT INTO public.user_ai_limits (user_id, count, first_request_time)
     VALUES (p_user_id, 1, v_now)
     ON CONFLICT (user_id) DO UPDATE
     SET 
@@ -352,7 +352,7 @@ BEGIN
         'resetTime', v_record.first_request_time + v_limit_window
     );
 END;
-$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 7. Entitlements for Founders
 CREATE TABLE IF NOT EXISTS entitlements (
@@ -374,16 +374,16 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_founder_count INT;
 BEGIN
-    SELECT count(*) INTO v_founder_count FROM entitlements WHERE tier = 'founder';
+    SELECT count(*) INTO v_founder_count FROM public.entitlements WHERE tier = 'founder';
     
     IF v_founder_count < 50 THEN
-        INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'founder');
+        INSERT INTO public.entitlements (user_id, tier) VALUES (NEW.id, 'founder');
     ELSE
-        INSERT INTO entitlements (user_id, tier) VALUES (NEW.id, 'free');
+        INSERT INTO public.entitlements (user_id, tier) VALUES (NEW.id, 'free');
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

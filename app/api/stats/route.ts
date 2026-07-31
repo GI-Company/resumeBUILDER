@@ -32,7 +32,7 @@ export async function GET() {
         // Fetch paid founding count
         const { count: paidCount } = await adminClient
           .from('entitlements')
-          .select('id', { count: 'exact', head: true })
+          .select('user_id', { count: 'exact', head: true })
           .in('tier', ['premium_founder', 'premium']);
         
         paidFoundingCount = paidCount ?? 0;
