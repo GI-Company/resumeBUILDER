@@ -98,7 +98,12 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'signin' | 'signup'>('signin');
 
-  const openAuth = (view: 'signin' | 'signup' = 'signin') => {
+  const openAuth = (view: 'signin' | 'signup' = 'signin', intent?: 'upgrade') => {
+    if (intent) {
+      sessionStorage.setItem('authIntent', intent);
+    } else {
+      sessionStorage.removeItem('authIntent');
+    }
     setAuthModalView(view);
     setAuthModalOpen(true);
   };
@@ -1403,7 +1408,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </ul>
                 </div>
                 <button 
-                  onClick={() => openAuth('signup')}
+                  onClick={() => openAuth('signup', 'upgrade')}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
                 >
                   Upgrade to Premium
@@ -1442,7 +1447,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </ul>
                 </div>
                 <button 
-                  onClick={() => openAuth('signup')}
+                  onClick={() => openAuth('signup', 'upgrade')}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
                 >
                   Upgrade to Premium

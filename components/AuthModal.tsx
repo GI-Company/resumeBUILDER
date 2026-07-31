@@ -89,6 +89,35 @@ export default function AuthModal({ isOpen, onClose, defaultView = 'signin' }: {
 
   if (!isOpen) return null;
 
+  const handleSuccessfulAuth = async () => {
+    const intent = sessionStorage.getItem('authIntent');
+    if (intent === 'upgrade') {
+      sessionStorage.removeItem('authIntent');
+      const toastId = toast.loading('Redirecting to secure checkout...');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (res.ok) {
+          const { url } = await res.json();
+          window.location.href = url;
+          return; // Skip onClose to let browser navigate
+        } else {
+          toast.error('Checkout failed. Please upgrade from Dashboard.', { id: toastId });
+        }
+      } catch (err) {
+        toast.error('Checkout failed. Please upgrade from Dashboard.', { id: toastId });
+      }
+    }
+    onClose();
+  };
+
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -147,7 +176,7 @@ export default function AuthModal({ isOpen, onClose, defaultView = 'signin' }: {
           posthog.capture('user_signed_in', { auth_provider: 'email' });
         }
         toast.success('Welcome back.');
-        onClose();
+        await handleSuccessfulAuth();
       }
     } catch (err: any) {
       toast.error(err.message || 'Authentication failed.');
@@ -183,7 +212,7 @@ export default function AuthModal({ isOpen, onClose, defaultView = 'signin' }: {
       }
 
       toast.success('Account verified successfully.');
-      onClose();
+      await handleSuccessfulAuth();
     } catch (err: any) {
       toast.error(err.message || 'Verification failed.');
     } finally {
