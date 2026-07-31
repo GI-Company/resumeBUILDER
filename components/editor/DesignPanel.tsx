@@ -5,6 +5,56 @@ import { cn } from "@/lib/utils";
 import { TEMPLATES } from "@/lib/resume-constants";
 import { DEFAULT_DESIGN } from "@/lib/store/useResumeStore";
 
+const isValidHex = (hex: string) => /^#[0-9A-Fa-f]{6}$/i.test(hex);
+
+function HexColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const [localValue, setLocalValue] = useState(value);
+
+  React.useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const commit = (hex: string) => {
+    if (isValidHex(hex)) {
+      onChange(hex);
+    } else {
+      setLocalValue(value); // revert if invalid on blur
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
+        {label}
+      </label>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="color"
+          className="w-7 h-7 rounded cursor-pointer border-0 p-0 shrink-0"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <input
+          type="text"
+          maxLength={7}
+          className="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none uppercase font-mono"
+          value={localValue}
+          onChange={(e) => {
+            let newVal = e.target.value;
+            if (!newVal.startsWith('#')) newVal = '#' + newVal.replace(/#/g, '');
+            setLocalValue(newVal);
+            if (isValidHex(newVal)) onChange(newVal);
+          }}
+          onBlur={() => commit(localValue)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit(localValue);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 interface DesignPanelProps {
   activeSidebarTab: string | null;
   setActiveSidebarTab: (tab: string | null) => void;
@@ -267,46 +317,22 @@ export default function DesignPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
-                Accent
-              </label>
-              <input
-                type="color"
-                className="w-full h-8 rounded cursor-pointer border-0 p-0"
-                value={design.accent}
-                onChange={(e) =>
-                  setDesign((p: any) => ({ ...p, accent: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
-                Panel
-              </label>
-              <input
-                type="color"
-                className="w-full h-8 rounded cursor-pointer border-0 p-0"
-                value={design.panel}
-                onChange={(e) =>
-                  setDesign((p: any) => ({ ...p, panel: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
-                Paper
-              </label>
-              <input
-                type="color"
-                className="w-full h-8 rounded cursor-pointer border-0 p-0"
-                value={design.paper}
-                onChange={(e) =>
-                  setDesign((p: any) => ({ ...p, paper: e.target.value }))
-                }
-              />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <HexColorInput
+              label="Accent"
+              value={design.accent}
+              onChange={(val) => setDesign((p: any) => ({ ...p, accent: val }))}
+            />
+            <HexColorInput
+              label="Panel"
+              value={design.panel}
+              onChange={(val) => setDesign((p: any) => ({ ...p, panel: val }))}
+            />
+            <HexColorInput
+              label="Paper"
+              value={design.paper}
+              onChange={(val) => setDesign((p: any) => ({ ...p, paper: val }))}
+            />
           </div>
         </div>
 
