@@ -69,14 +69,14 @@ export async function POST(req: Request) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        if (invoice.parent?.subscription_details?.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(invoice.parent.subscription_details.subscription as string);
           
           const { error } = await supabase
             .from('entitlements')
             .update({
               subscription_status: 'active',
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              current_period_end: new Date(subscription.items.data[0].current_period_end * 1000).toISOString(),
             })
             .eq('stripe_subscription_id', subscription.id);
 
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
           .update({
             subscription_status: subscription.status,
             tier: newTier,
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_end: new Date(subscription.items.data[0].current_period_end * 1000).toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
 
