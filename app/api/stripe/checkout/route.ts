@@ -36,8 +36,8 @@ export async function POST(req: Request) {
       .in('tier', ['premium_founder', 'premium']);
       
     const priceId = (paidCount ?? 0) < 50 
-      ? 'price_1Tz8RY3z1hyiOMOwVWD4fJiM'  // $3.99 Premium Founder
-      : 'price_1Tz9es3z1hyiOMOw3lqzcqX0'; // $9.99 Premium Standard
+      ? 'price_1Tz9Tc3z1hyiOMOwwrdfM6mi'  // $3.99 Premium Founder (Live)
+      : 'price_1Tz9vb3z1hyiOMOwDF6P5mxJ'; // $9.99 Premium Standard (Live)
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
       apiVersion: '2026-07-29.dahlia' as any, // Bypass TS error gracefully, though it expects this literal
