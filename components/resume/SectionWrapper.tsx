@@ -65,6 +65,10 @@ export const SectionWrapper = memo(({
   hideHeading,
 }: SectionWrapperProps) => {
   const dragControls = useDragControls();
+
+  const localSpacing = design.sectionSpacing?.[id];
+  const spacingStyle = localSpacing !== undefined ? { "--item-spacing": `${localSpacing}px` } as React.CSSProperties : {};
+
   const content = (
     <>
       {!hideHeading && (
@@ -259,6 +263,7 @@ export const SectionWrapper = memo(({
           "section mt-0 relative",
           manualBreaks[id] && "manual-break",
         )}
+        style={spacingStyle}
       >
         {!hideHeading && (
           <div
@@ -302,6 +307,7 @@ export const SectionWrapper = memo(({
       dragListener={false}
       dragControls={dragControls}
       data-section={id}
+      style={spacingStyle}
       className={cn(
         "section mt-0 relative",
         manualBreaks[id] && "manual-break",

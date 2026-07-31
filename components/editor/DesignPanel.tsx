@@ -3,7 +3,7 @@ import { X, RotateCcw } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { TEMPLATES } from "@/lib/resume-constants";
-import { DEFAULT_DESIGN } from "@/lib/store/useResumeStore";
+import { DEFAULT_DESIGN, useResumeStore } from "@/lib/store/useResumeStore";
 
 const isValidHex = (hex: string) => /^#[0-9A-Fa-f]{6}$/i.test(hex);
 
@@ -77,6 +77,7 @@ export default function DesignPanel({
   setShowHeatmapOverlay,
 }: DesignPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const sections = useResumeStore((state) => state.sections);
 
   const handleReset = () => {
     const activeTemplate = TEMPLATES.find((t) => t.id === design.template);
@@ -431,6 +432,74 @@ export default function DesignPanel({
                 setDesign((p: any) => ({ ...p, itemSpacing: parseInt(e.target.value) }))
               }
             />
+          </div>
+
+          {/* Per-Section Spacing Overrides */}
+          <div className="space-y-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100 mb-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                Per-Section Spacing
+              </span>
+              {design.sectionSpacing && Object.keys(design.sectionSpacing).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDesign((p: any) => ({ ...p, sectionSpacing: {} }))}
+                  className="text-[10px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-1.5 py-0.5 rounded transition-all cursor-pointer"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+            {/* Note: When a section is deleted, its entry in sectionSpacing may become orphaned dead data. This is intentionally left as harmless clutter in the JSON rather than actively cleaned up to avoid unnecessary side effects. */}
+            <div className="space-y-3 mt-2">
+              {sections.map((section) => {
+                const isOverridden = design.sectionSpacing?.[section.id] !== undefined;
+                const value = isOverridden ? design.sectionSpacing[section.id] : design.itemSpacing;
+                
+                return (
+                  <div key={section.id}>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[10px] font-bold text-gray-700 truncate w-40">
+                        {section.title || section.id}
+                      </label>
+                      {isOverridden && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDesign((p: any) => {
+                              const newOverrides = { ...p.sectionSpacing };
+                              delete newOverrides[section.id];
+                              return { ...p, sectionSpacing: newOverrides };
+                            });
+                          }}
+                          className="text-[9px] font-semibold text-gray-500 hover:text-red-500 px-1 hover:bg-gray-200 rounded cursor-pointer transition-all"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="40"
+                      step="2"
+                      className="w-full accent-blue-600 h-1.5"
+                      value={value}
+                      onChange={(e) => {
+                        const newVal = parseInt(e.target.value);
+                        setDesign((p: any) => ({
+                          ...p,
+                          sectionSpacing: {
+                            ...(p.sectionSpacing || {}),
+                            [section.id]: newVal,
+                          },
+                        }));
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
           {/* Preset Margins */}
           <div className="space-y-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100 mb-2">

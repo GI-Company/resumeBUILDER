@@ -91,6 +91,7 @@ export interface DesignConfig {
   borderStyle: string;
   backdropBlur: number;
   autoBalanceLayout?: boolean;
+  sectionSpacing?: Record<string, number>;
 }
 
 // --- Section Headers (user-editable heading text) ---
