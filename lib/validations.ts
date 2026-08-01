@@ -34,6 +34,7 @@ export const parseResumeSchema = z.object({
     .string()
     .min(10, 'Text is too short to parse')
     .max(20000, 'Text exceeds parsing limits (max 20,000 characters)'),
+  existingResume: z.any().optional(),
 });
 
 // --- Cover Letter ---

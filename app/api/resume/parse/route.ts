@@ -12,6 +12,8 @@ const MODEL_CHAIN = [
 ];
 const SYSTEM_PROMPT = `You are an elite, world-class resume-writing expert. Based on the user's input (which could be an old resume, a prompt describing their career, list of achievements, or unstructured text), write a high-impact, professional resume.
 
+MERGE RULE: If the user provides an "EXISTING RESUME STATE" section, you MUST merge the new request into that existing data. Do NOT drop, omit, or replace any existing entries unless the user explicitly asks to remove something. Always return the COMPLETE, combined resume with all existing entries preserved alongside any new additions. New entries should be added in the appropriate section at a logical position (e.g., most recent experience first).
+
 You MUST return a JSON object with EXACTLY the following format:
 {
   "name": "Jane Doe",
@@ -75,7 +77,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { rawText } = parsedBody.data;
+    const { rawText, existingResume } = parsedBody.data;
+
+    // Build the user message: include existing resume state if provided
+    let userMessage = rawText;
+    if (existingResume && typeof existingResume === 'object') {
+      userMessage = `EXISTING RESUME STATE (preserve all existing entries, merge new request into this):\n${JSON.stringify(existingResume)}\n\nUSER REQUEST:\n${rawText}`;
+    }
+
     let lastError: Error | null = null;
 
     for (const model of MODEL_CHAIN) {
@@ -92,7 +101,7 @@ export async function POST(req: NextRequest) {
             temperature: 0.2,
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: rawText },
+              { role: 'user', content: userMessage },
             ],
           }),
         });

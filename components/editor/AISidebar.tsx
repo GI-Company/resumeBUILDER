@@ -898,7 +898,29 @@ Output:
       if (!token) throw new Error("Unauthorized");
 
       const apiUrl = aiPresetType === "linkedin" ? "/api/resume/parse-linkedin" : "/api/resume/parse";
-      const payload = aiPresetType === "linkedin" ? { input: rawText } : { rawText };
+
+      // For non-LinkedIn builds, include the current resume state so the AI can merge
+      let payload: any;
+      if (aiPresetType === "linkedin") {
+        payload = { input: rawText };
+      } else {
+        const currentState = useResumeStore.getState();
+        payload = {
+          rawText,
+          existingResume: {
+            name: currentState.name,
+            contactLine: currentState.contactLine,
+            summary: currentState.summary,
+            experiences: currentState.experiences,
+            educations: currentState.educations,
+            skills: currentState.skills,
+            licenses: currentState.licenses,
+            projects: currentState.projects,
+            publications: currentState.publications,
+            awards: currentState.awards,
+          },
+        };
+      }
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -930,20 +952,22 @@ Output:
       if (data.name) setName(data.name);
       if (data.contactLine) setContactLine(data.contactLine);
       if (data.summary) setSummary(data.summary);
-      if (data.experiences) setExperiences(sanitizeItems(data.experiences, 'exp'));
-      if (data.educations) setEducations(sanitizeItems(data.educations, 'edu'));
-      if (data.projects) setProjects(sanitizeItems(data.projects, 'proj'));
-      if (data.publications) setPublications(sanitizeItems(data.publications, 'pub'));
-      if (data.awards) setAwards(sanitizeItems(data.awards, 'award'));
-      if (data.licenses) {
-        const sanitizedLicenses = (Array.isArray(data.licenses) ? data.licenses : []).map((l: any, idx: number) => ({
+      // Defensive: only overwrite array fields if the AI returned a non-empty array,
+      // preventing an accidental empty array from clearing real user data.
+      if (Array.isArray(data.experiences) && data.experiences.length > 0) setExperiences(sanitizeItems(data.experiences, 'exp'));
+      if (Array.isArray(data.educations) && data.educations.length > 0) setEducations(sanitizeItems(data.educations, 'edu'));
+      if (Array.isArray(data.projects) && data.projects.length > 0) setProjects(sanitizeItems(data.projects, 'proj'));
+      if (Array.isArray(data.publications) && data.publications.length > 0) setPublications(sanitizeItems(data.publications, 'pub'));
+      if (Array.isArray(data.awards) && data.awards.length > 0) setAwards(sanitizeItems(data.awards, 'award'));
+      if (Array.isArray(data.licenses) && data.licenses.length > 0) {
+        const sanitizedLicenses = data.licenses.map((l: any, idx: number) => ({
           ...l,
           id: `lic-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
         }));
         setLicenses(sanitizedLicenses);
       }
-      if (data.skills) {
-        const sanitizedSkills = (Array.isArray(data.skills) ? data.skills : [data.skills]).map((s: any, idx: number) => ({
+      if (Array.isArray(data.skills) && data.skills.length > 0) {
+        const sanitizedSkills = data.skills.map((s: any, idx: number) => ({
           ...s,
           id: `sk-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 5)}`
         }));
