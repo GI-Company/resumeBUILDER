@@ -252,6 +252,14 @@ export default function DesignPanel({
               <option value="'Kalam',cursive">Kalam</option>
               <option value="'Playfair Display',serif">Playfair</option>
               <option value="'Poppins',sans-serif">Poppins</option>
+              <option value="'Montserrat',sans-serif">Montserrat</option>
+              <option value="'Oswald',sans-serif">Oswald</option>
+              <option value="'Merriweather',serif">Merriweather</option>
+              <option value="'Roboto',sans-serif">Roboto</option>
+              <option value="'Open Sans',sans-serif">Open Sans</option>
+              <option value="'Lato',sans-serif">Lato</option>
+              <option value="'Nunito',sans-serif">Nunito</option>
+              <option value="'Raleway',sans-serif">Raleway</option>
               <option value="Georgia,serif">Georgia</option>
             </select>
           </div>
@@ -268,6 +276,39 @@ export default function DesignPanel({
             >
               <option value="'Lora',serif">Lora</option>
               <option value="'Inter',sans-serif">Inter</option>
+              <option value="'Source Serif 4',serif">Source Serif 4</option>
+              <option value="'Roboto',sans-serif">Roboto</option>
+              <option value="'Open Sans',sans-serif">Open Sans</option>
+              <option value="'Lato',sans-serif">Lato</option>
+              <option value="'Montserrat',sans-serif">Montserrat</option>
+              <option value="'Nunito',sans-serif">Nunito</option>
+              <option value="'Merriweather',serif">Merriweather</option>
+              <option value="Georgia,serif">Georgia</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600 mb-1">
+              Accent Font
+            </label>
+            <select
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={design.fontAccent || "'Inter',sans-serif"}
+              onChange={(e) =>
+                setDesign((p: any) => ({ ...p, fontAccent: e.target.value }))
+              }
+            >
+              <option value="'Inter',sans-serif">Inter</option>
+              <option value="'Poppins',sans-serif">Poppins</option>
+              <option value="'Montserrat',sans-serif">Montserrat</option>
+              <option value="'Roboto',sans-serif">Roboto</option>
+              <option value="'Open Sans',sans-serif">Open Sans</option>
+              <option value="'Lato',sans-serif">Lato</option>
+              <option value="'Kalam',cursive">Kalam</option>
+              <option value="'Playfair Display',serif">Playfair</option>
+              <option value="'Oswald',sans-serif">Oswald</option>
+              <option value="'Merriweather',serif">Merriweather</option>
+              <option value="'Nunito',sans-serif">Nunito</option>
+              <option value="'Raleway',sans-serif">Raleway</option>
               <option value="'Source Serif 4',serif">Source Serif 4</option>
               <option value="Georgia,serif">Georgia</option>
             </select>

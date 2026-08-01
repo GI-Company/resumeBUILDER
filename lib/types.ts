@@ -91,7 +91,20 @@ export interface DesignConfig {
   borderStyle: string;
   backdropBlur: number;
   autoBalanceLayout?: boolean;
-  sectionSpacing?: Record<string, number>;
+
+  // Expanded typography
+  fontAccent?: string;
+  sectionFonts?: Record<string, {
+    heading?: string;
+    body?: string;
+    weight?: number;
+    size?: number;
+  }>;
+  fontWeights?: {
+    heading: number;
+    body: number;
+    accent: number;
+  };
 }
 
 // --- Section Headers (user-editable heading text) ---

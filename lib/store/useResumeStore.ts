@@ -171,7 +171,14 @@ const initialDocumentState: DocumentState = {
     boxShadow: "none",
     borderStyle: "none",
     backdropBlur: 0,
-    autoBalanceLayout: false
+    autoBalanceLayout: false,
+    fontAccent: "'Inter',sans-serif",
+    sectionFonts: {},
+    fontWeights: {
+      heading: 700,
+      body: 400,
+      accent: 600
+    }
   } as DesignConfig,
   sections: [
     { id: "summary", title: "Summary", type: "summary" },
