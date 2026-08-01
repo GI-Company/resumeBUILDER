@@ -91,6 +91,7 @@ export interface DesignConfig {
   borderStyle: string;
   backdropBlur: number;
   autoBalanceLayout?: boolean;
+  customCss?: string;
 
   // Expanded typography
   fontAccent?: string;

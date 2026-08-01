@@ -180,7 +180,10 @@ export default function ResumeCanvas({
             }}
           >
             <style dangerouslySetInnerHTML={{
-              __html: `@media print { @page { size: ${design.pageSize === "letter" ? "letter" : "A4"} portrait; margin: 0; } }`
+              __html: `
+                @media print { @page { size: ${design.pageSize === "letter" ? "letter" : "A4"} portrait; margin: 0; } }
+                ${design.customCss || ""}
+              `
             }} />
             <div
               ref={resumeRef}
