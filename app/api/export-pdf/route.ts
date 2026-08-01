@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { validateCsrfOrigin } from '@/lib/csrf';
+import { checkAndLogPdfLimit } from '@/lib/pdfLimit';
 import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 
@@ -44,6 +45,15 @@ export async function POST(request: NextRequest) {
   try {
     const csrfError = validateCsrfOrigin(request);
     if (csrfError) return csrfError;
+
+    // Apply PDF export rate limit (this will also log the export if allowed)
+    const limitResult = await checkAndLogPdfLimit(request, false);
+    if (!limitResult.allowed) {
+      return NextResponse.json(
+        { error: limitResult.error, code: limitResult.code },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json();
     const { html, viewport } = body;

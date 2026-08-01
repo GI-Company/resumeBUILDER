@@ -528,3 +528,74 @@ CREATE TRIGGER trg_set_job_updated_at
 BEFORE UPDATE ON job_applications
 FOR EACH ROW EXECUTE FUNCTION set_job_updated_at();
 
+
+-- =================================================================
+-- 7. IP-Based Rate Limits (1 PDF export / month for Guests)
+-- =================================================================
+
+-- RPC to bypass RLS for logging a guest PDF export by IP
+CREATE OR REPLACE FUNCTION log_guest_pdf_export(p_ip TEXT)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO audit_logs (user_id, action, details)
+  VALUES (NULL, 'pdf_export', jsonb_build_object('ip', p_ip));
+END;
+$$;
+
+-- RPC to bypass RLS for checking IP action limits (monthly)
+CREATE OR REPLACE FUNCTION check_guest_pdf_export_limit(p_ip TEXT, p_limit INT)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  action_count INT;
+BEGIN
+  SELECT COUNT(*)
+  INTO action_count
+  FROM audit_logs
+  WHERE user_id IS NULL
+    AND action = 'pdf_export'
+    AND details->>'ip' = p_ip
+    AND date_trunc('month', created_at) = date_trunc('month', now());
+    
+  RETURN action_count < p_limit;
+END;
+$$;
+
+-- =================================================================
+-- 8. Authenticated User PDF Export Limits
+-- =================================================================
+
+CREATE OR REPLACE FUNCTION log_user_pdf_export(p_user_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO audit_logs (user_id, action, details)
+  VALUES (p_user_id, 'pdf_export', '{}'::jsonb);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION check_user_pdf_export_limit(p_user_id UUID, p_limit INT)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  action_count INT;
+BEGIN
+  SELECT COUNT(*)
+  INTO action_count
+  FROM audit_logs
+  WHERE user_id = p_user_id
+    AND action = 'pdf_export'
+    AND date_trunc('month', created_at) = date_trunc('month', now());
+    
+  RETURN action_count < p_limit;
+END;
+$$;

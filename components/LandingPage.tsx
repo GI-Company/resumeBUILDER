@@ -397,15 +397,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             </Link>
 
             <Link 
-              href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}&mode=interview`}
-              onClick={(e) => {
-                e.preventDefault();
-                onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id);
-                // The router push will handle ?mode=interview below if we use Next Router, 
-                // but onOpenResume directly pushes to /editor?id=new.
-                // We should ensure it includes mode=interview.
-                window.location.href = `/editor?id=new&mode=interview`;
-              }} 
+              href="/interview"
               className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Users size={16} className="text-indigo-600" />

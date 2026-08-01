@@ -378,6 +378,11 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => ({ error: 'Unknown server error' }));
+      if (response.status === 429 && errorPayload.code === 'RATE_LIMIT_EXCEEDED') {
+        const e = new Error(errorPayload.error);
+        (e as any).code = 'RATE_LIMIT_EXCEEDED';
+        throw e;
+      }
       throw new Error(errorPayload.error || `Server responded with status ${response.status}`);
     }
 
@@ -398,6 +403,11 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
 
     onProgress?.('completed', 'High-quality vector PDF downloaded successfully!');
   } catch (serverError: any) {
+    if (serverError.code === 'RATE_LIMIT_EXCEEDED') {
+      onProgress?.('error', serverError.message);
+      throw serverError; // Do not fallback to client side
+    }
+    
     console.warn('[PDF Engine] Server vector rendering failed. Initiating high-DPI client canvas fallback:', serverError);
     onProgress?.('client_fallback', 'Server busy. Switching to high-DPI client retina rendering engine...');
 

@@ -386,7 +386,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
               <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform text-blue-600" />
             </button>
             <Link
-              href="/editor?id=new&mode=interview"
+              href="/interview"
               className="bg-indigo-800/50 hover:bg-indigo-800/70 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-inner transition-all flex items-center justify-center gap-2 cursor-pointer border border-indigo-700/50"
             >
               <span>Start Guided Interview</span>
