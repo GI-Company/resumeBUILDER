@@ -67,7 +67,13 @@ export const SectionWrapper = memo(({
   const dragControls = useDragControls();
 
   const localSpacing = design.sectionSpacing?.[id];
-  const spacingStyle = localSpacing !== undefined ? { "--item-spacing": `${localSpacing}px` } as React.CSSProperties : {};
+  const sectionFonts = design.sectionFonts?.[id];
+  const sectionStyle: any = {};
+  if (localSpacing !== undefined) sectionStyle["--item-spacing"] = `${localSpacing}px`;
+  if (sectionFonts?.heading) sectionStyle["--font-heading"] = sectionFonts.heading;
+  if (sectionFonts?.body) sectionStyle["--font-body"] = sectionFonts.body;
+  if (sectionFonts?.weight) sectionStyle["--font-weight-heading"] = sectionFonts.weight;
+  if (sectionFonts?.size && sectionFonts.size !== 100) sectionStyle["--text-scale"] = sectionFonts.size / 100;
 
   const content = (
     <>
@@ -263,7 +269,7 @@ export const SectionWrapper = memo(({
           "section mt-0 relative",
           manualBreaks[id] && "manual-break",
         )}
-        style={spacingStyle}
+        style={sectionStyle}
       >
         {!hideHeading && (
           <div
@@ -307,7 +313,7 @@ export const SectionWrapper = memo(({
       dragListener={false}
       dragControls={dragControls}
       data-section={id}
-      style={spacingStyle}
+      style={sectionStyle}
       className={cn(
         "section mt-0 relative",
         manualBreaks[id] && "manual-break",
