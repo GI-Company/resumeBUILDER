@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 import { useShallow } from 'zustand/react/shallow';
 import { ContentEditableField } from "../ContentEditableField";
+import { FloatingToolbar } from "./FloatingToolbar";
 import { Reorder } from "framer-motion";
 import { SectionRenderer } from "./SectionRenderers";
 import { LayoutRebalancer } from "@/lib/agent-rez";
@@ -157,7 +158,9 @@ export default function ResumeCanvas({
   const appliedSectionSpacing = optimalLayout ? optimalLayout.sectionSpacing : design.gap;
 
   return (
-            <div
+    <>
+      <FloatingToolbar />
+      <div
           className={cn(
             "flex-1 overflow-y-auto overflow-x-auto px-2 py-4 md:px-4 md:py-10 flex justify-start md:justify-center canvas-wrap",
             layoutClasses,
@@ -537,5 +540,6 @@ export default function ResumeCanvas({
             </div>
           </div>
         </div>
+      </>
   );
 }
