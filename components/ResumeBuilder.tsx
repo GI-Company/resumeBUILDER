@@ -1215,8 +1215,12 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 
     } catch (err: any) {
       console.error("PDF export failed:", err);
-      toast.error("PDF export failed. Opening system print as fallback...");
-      window.print();
+      if (err.code === 'RATE_LIMIT_EXCEEDED' || (err.message && err.message.includes('limit reached'))) {
+        toast.error(err.message, { id: toastId, duration: 6000 });
+      } else {
+        toast.error("PDF export failed. Opening system print as fallback...", { id: toastId });
+        window.print();
+      }
     } finally {
       setIsExportingPdf(false);
     }

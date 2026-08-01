@@ -103,7 +103,7 @@ export default function InterviewPage() {
         
         You MUST wrap the complete resume JSON inside <UPDATE_RESUME> and </UPDATE_RESUME> XML tags.
         
-        The structure MUST EXACTLY be:
+        The structure MUST EXACTLY MATCH the following keys. Do NOT invent new keys (e.g. do NOT use 'jobTitle' or 'company', use ONLY the keys shown below):
         <UPDATE_RESUME>
         {
           "name": "[User's Name]",
@@ -142,6 +142,7 @@ export default function InterviewPage() {
         </UPDATE_RESUME>
         
         CRITICAL: Do NOT use placeholder names like 'Jane Doe' or placeholder companies. If the user did not provide a specific piece of information, leave it blank or omit it, but NEVER invent fake personal details.
+        CRITICAL: You MUST use the exact JSON keys shown above: "title", "date", "bullets", "text", "meta", "degree", "items". If you use different keys, the resume will break and render empty!
         
         Provide a friendly, conversational message before the XML block congratulating the user on finishing their career interview and explaining how their resume was crafted.`;
 
@@ -224,28 +225,34 @@ export default function InterviewPage() {
               name: parsed.name || storeState.name,
               contactLine: newContactLine || storeState.contactLine,
               summary: parsed.summary || storeState.summary,
-              experiences: parsed.experiences?.length > 0 ? parsed.experiences.map((exp: any, i: number) => ({
-                id: exp.id || `exp-ai-${i}-${Date.now()}`,
-                title: exp.title || "",
-                date: exp.date || "",
-                bullets: Array.isArray(exp.bullets) ? exp.bullets.map((b: any, j: number) => ({
-                  id: b.id || `b-ai-${i}-${j}-${Date.now()}`,
-                  text: typeof b === "string" ? b : (b.text || ""),
-                })) : [],
-                meta: exp.meta || "",
-              })) : storeState.experiences,
-              educations: parsed.educations?.length > 0 ? parsed.educations.map((edu: any, i: number) => ({
-                id: edu.id || `edu-ai-${i}-${Date.now()}`,
-                degree: edu.degree || "",
-                bullets: Array.isArray(edu.bullets) ? edu.bullets.map((b: any, j: number) => ({
-                  id: b.id || `eb-ai-${i}-${j}-${Date.now()}`,
-                  text: typeof b === "string" ? b : (b.text || ""),
-                })) : [],
-              })) : storeState.educations,
+              experiences: parsed.experiences?.length > 0 ? parsed.experiences.map((exp: any, i: number) => {
+                const rawBullets = exp.bullets || exp.responsibilities || exp.achievements || [];
+                return {
+                  id: exp.id || `exp-ai-${i}-${Date.now()}`,
+                  title: exp.title || exp.jobTitle || exp.role || exp.company || "",
+                  date: exp.date || exp.duration || exp.timeframe || "",
+                  bullets: Array.isArray(rawBullets) ? rawBullets.map((b: any, j: number) => ({
+                    id: b.id || `b-ai-${i}-${j}-${Date.now()}`,
+                    text: typeof b === "string" ? b : (b.text || b.description || b.content || ""),
+                  })) : [],
+                  meta: exp.meta || exp.location || "",
+                };
+              }) : storeState.experiences,
+              educations: parsed.educations?.length > 0 ? parsed.educations.map((edu: any, i: number) => {
+                const rawBullets = edu.bullets || edu.details || [];
+                return {
+                  id: edu.id || `edu-ai-${i}-${Date.now()}`,
+                  degree: edu.degree || edu.school || edu.institution || "",
+                  bullets: Array.isArray(rawBullets) ? rawBullets.map((b: any, j: number) => ({
+                    id: b.id || `eb-ai-${i}-${j}-${Date.now()}`,
+                    text: typeof b === "string" ? b : (b.text || b.description || ""),
+                  })) : [],
+                };
+              }) : storeState.educations,
               skills: parsed.skills?.length > 0 ? parsed.skills.map((s: any, i: number) => ({
                 id: s.id || `sk-ai-${i}-${Date.now()}`,
                 title: s.title || s.name || s.category || "",
-                items: Array.isArray(s.items) ? s.items.join(", ") : (s.items || s.details || ""),
+                items: Array.isArray(s.items) ? s.items.join(", ") : (s.items || s.details || s.skills || ""),
               })) : storeState.skills,
             });
 
