@@ -183,7 +183,7 @@ export default function ResumeCanvas({
               __html: `
                 @media print { @page { size: ${design.pageSize === "letter" ? "letter" : "A4"} portrait; margin: 0; } }
                 .canvas-wrap {
-                  ${(design.customCss || "").replace(/<\/style>/gi, '')}
+                  ${(design.customCss || "").replace(/<\/\s*style\s*>/gi, '')}
                 }
               `
             }} />
