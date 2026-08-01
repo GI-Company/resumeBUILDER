@@ -285,6 +285,7 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
 .canvas-wrap .text-sm { font-size: calc(0.875rem * var(--text-scale, 1)) !important; }
 .canvas-wrap .text-base { font-size: calc(1rem * var(--text-scale, 1)) !important; }
 .canvas-wrap .text-lg { font-size: calc(1.125rem * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-3xl { font-size: calc(1.875rem * var(--text-scale, 1)) !important; }
 .canvas-wrap .text-\[10px\] { font-size: calc(10px * var(--text-scale, 1)) !important; }
 .canvas-wrap .text-\[11px\] { font-size: calc(11px * var(--text-scale, 1)) !important; }
 .canvas-wrap .text-\[12px\] { font-size: calc(12px * var(--text-scale, 1)) !important; }
@@ -303,15 +304,7 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   font-weight: var(--font-weight-heading, 700) !important;
 }
 
-/* Body Weights */
-.canvas-wrap .summary,
-.canvas-wrap .cat-items,
-.canvas-wrap .exp-line2,
-.canvas-wrap .exp-meta,
-.canvas-wrap .proj-date {
-  font-weight: var(--font-weight-body, 400);
-}
-
+/* Base Utility Overrides */
 .canvas-wrap .font-semibold {
   font-weight: var(--font-weight-accent, 600) !important;
 }
@@ -321,5 +314,15 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
 }
 
 .canvas-wrap .font-normal {
+  font-weight: var(--font-weight-body, 400) !important;
+}
+
+/* Body Weights (High specificity overrides to beat Tailwind base utilities like .font-semibold) */
+.canvas-wrap .summary,
+.canvas-wrap .cat-items,
+.canvas-wrap .exp-line2.font-semibold,
+.canvas-wrap .exp-line2,
+.canvas-wrap .exp-meta,
+.canvas-wrap .proj-date {
   font-weight: var(--font-weight-body, 400) !important;
 }
