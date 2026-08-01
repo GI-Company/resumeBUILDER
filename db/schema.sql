@@ -38,10 +38,43 @@ FOR EACH ROW EXECUTE FUNCTION check_resume_limit();
 -- 2. Audit Logs (Defense-in-depth tracking)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
     action VARCHAR(255) NOT NULL,
     details JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- RPC to bypass RLS for logging AI actions
+CREATE OR REPLACE FUNCTION log_ai_action(p_user_id UUID, p_action VARCHAR)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO audit_logs (user_id, action, details)
+  VALUES (p_user_id, p_action, '{}'::jsonb);
+END;
+$$;
+
+-- RPC to bypass RLS for checking AI action limits (monthly)
+CREATE OR REPLACE FUNCTION check_action_limit(p_user_id UUID, p_action VARCHAR, p_limit INT)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  action_count INT;
+BEGIN
+  SELECT COUNT(*)
+  INTO action_count
+  FROM audit_logs
+  WHERE user_id = p_user_id
+    AND action = p_action
+    AND date_trunc('month', created_at) = date_trunc('month', now());
+    
+  RETURN action_count < p_limit;
+END;
+$$;
 
 -- 3. Rate Limits (Leaky Bucket)
 CREATE TABLE IF NOT EXISTS rate_limits (

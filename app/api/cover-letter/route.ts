@@ -8,6 +8,11 @@ import { validateCsrfOrigin } from '@/lib/csrf';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { coverLetterSchema } from '@/lib/validations';
 import { env } from '@/lib/env';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const MODEL_CHAIN = [
   'llama-3.3-70b-versatile', // 1K RPD — primary
@@ -36,9 +41,6 @@ export async function POST(req: NextRequest) {
     const csrfError = validateCsrfOrigin(req);
     if (csrfError) return csrfError;
 
-    const { errorResponse, rateLimitResult } = await enforceRateLimit(req);
-    if (errorResponse) return errorResponse;
-
     const body = await req.json();
     const parsed = coverLetterSchema.safeParse(body);
 
@@ -47,6 +49,27 @@ export async function POST(req: NextRequest) {
         { success: false, error: parsed.error.issues[0].message },
         { status: 400 }
       );
+    }
+
+    const { errorResponse, user, rateLimitResult } = await enforceRateLimit(req);
+    if (errorResponse) return errorResponse;
+
+    if (user) {
+      const { data: canProceed, error: rpcError } = await supabase.rpc('check_action_limit', {
+        p_user_id: user.id,
+        p_action: 'cover_letter',
+        p_limit: 3 // 3 per month
+      });
+
+      if (rpcError || !canProceed) {
+         return NextResponse.json(
+          { 
+            success: false, 
+            error: "You have reached your monthly limit of 3 Cover Letter requests. Please wait until next month or upgrade your account." 
+          },
+          { status: 429 }
+        );
+      }
     }
 
     const { resumeState, jobDescription, role, company } = parsed.data;
@@ -148,6 +171,13 @@ Generate the tailored cover letter now.
               const { done, value } = await reader.read();
               if (done) break;
               await writer.write(value);
+            }
+            // Stream complete, log the successful action
+            if (user) {
+              await supabase.rpc('log_ai_action', {
+                p_user_id: user.id,
+                p_action: 'cover_letter'
+              });
             }
           } catch (e) {
             console.error('[cover-letter] Stream pipe error:', e);

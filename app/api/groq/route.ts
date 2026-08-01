@@ -63,9 +63,6 @@ export async function POST(req: NextRequest) {
     const csrfError = validateCsrfOrigin(req);
     if (csrfError) return csrfError;
 
-    const { errorResponse, user, rateLimitResult } = await enforceRateLimit(req);
-    if (errorResponse) return errorResponse;
-
     const body = await req.json();
     const parsed = groqPromptSchema.safeParse(body);
 
@@ -75,8 +72,31 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
     const { prompt, systemPrompt, temperature, aiAction } = parsed.data;
+
+    // Enforce volume limits FIRST
+    const { errorResponse, user, rateLimitResult } = await enforceRateLimit(req);
+    if (errorResponse) return errorResponse;
+
+    // Then enforce per-action limits for premium features
+    if (aiAction === 'tailor_to_job' && user) {
+      const { data: canProceed, error: rpcError } = await supabase.rpc('check_action_limit', {
+        p_user_id: user.id,
+        p_action: aiAction,
+        p_limit: 3 // 3 per month
+      });
+
+      if (rpcError || !canProceed) {
+         return NextResponse.json(
+          { 
+            success: false, 
+            error: "You have reached your monthly limit of 3 Job Tailoring requests. Please wait until next month or upgrade your account." 
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const modelChain = getModelChain(aiAction);
 
     const defaultSystemPrompt =
@@ -161,6 +181,13 @@ export async function POST(req: NextRequest) {
             await supabase.from('public_activity_feed').insert([
               { event_type: 'AI_USED', display_message: activityMsg }
             ]);
+
+            if (user) {
+              await supabase.rpc('log_ai_action', {
+                p_user_id: user.id,
+                p_action: aiAction
+              });
+            }
           } catch (e) {
             console.error('[groq] Failed to log activity:', e);
           }

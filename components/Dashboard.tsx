@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import posthog from 'posthog-js';
@@ -384,6 +385,18 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
               <span>Create New Resume</span>
               <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform text-blue-600" />
             </button>
+            <Link
+              href="/editor?id=new&mode=interview"
+              className="bg-indigo-800/50 hover:bg-indigo-800/70 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-inner transition-all flex items-center justify-center gap-2 cursor-pointer border border-indigo-700/50"
+            >
+              <span>Start Guided Interview</span>
+            </Link>
+            <Link
+              href="/audit"
+              className="bg-indigo-800/50 hover:bg-indigo-800/70 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-inner transition-all flex items-center justify-center gap-2 cursor-pointer border border-indigo-700/50"
+            >
+              <span>Instant Resume Audit</span>
+            </Link>
             {entitlement?.tier === 'free' && (
                <button
                  onClick={async () => {

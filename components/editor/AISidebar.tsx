@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 import { useShallow } from 'zustand/react/shallow';
 import { StructuralParser, GazeProfiler, LayoutRebalancer } from "@/lib/agent-rez";
+import { boostVerbs } from "@/lib/agent-rez/verb-booster";
 
 interface AISidebarProps {
   user: any;
@@ -318,45 +319,41 @@ export default function AISidebar({
 
   const handleStartInterview = () => {
     setInterviewStep(0);
+    setAiAgentTab('chat');
     setInterviewAnswers({});
+    const userName = useResumeStore.getState().name || 'there';
+    const initialQuestion = `Hi ${userName}! I'm Agent Rez, your personal career strategist. Let's build your resume step-by-step. What's the exact title of the role you're targeting?`;
     setAgentMessages([
-      {
-        role: "assistant",
-        content: "🚀 **Let's start your Guided Career Interview!** I'll ask you a series of 5 quick questions to capture everything we need to build your perfect resume.\n\n**Step 1/5:** What is your **Full Name** and **Target Job Title**? (e.g., 'Jane Doe, Senior Product Manager')",
-      }
+      { role: "assistant", content: initialQuestion }
     ]);
     toast.success("Guided Interview started! 🎙️");
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") === "interview") {
+        const hasStarted = agentMessages.length > 0;
+        if (!hasStarted) {
+          setTimeout(() => {
+            handleStartInterview();
+          }, 100);
+        }
+      }
+    }
+  }, []);
+
   const handleActionVerbBooster = () => {
     isHistoryActionRef.current = true;
-    const verbReplacements: Record<string, string> = {
-      "worked on": "engineered",
-      "did": "executed",
-      "helped": "spearheaded",
-      "helped with": "collaborated to engineer",
-      "built": "architected and deployed",
-      "made": "designed and developed",
-      "created": "pioneered",
-      "managed": "orchestrated",
-      "improved": "optimized",
-      "added": "integrated",
-    };
-
     let count = 0;
+
     setExperiences((prev: any[]) =>
       prev.map((exp) => ({
         ...exp,
         bullets: (exp.bullets || []).map((b: any) => {
-          let text = b.text || "";
-          Object.keys(verbReplacements).forEach((weak) => {
-            const regex = new RegExp(`\\b${weak}\\b`, "gi");
-            if (regex.test(text)) {
-              text = text.replace(regex, verbReplacements[weak]);
-              count++;
-            }
-          });
-          return { ...b, text };
+          const result = boostVerbs(b.text || "");
+          count += result.replacements;
+          return { ...b, text: result.text };
         }),
       }))
     );
@@ -519,7 +516,7 @@ export default function AISidebar({
               prompt: compilePrompt,
               systemPrompt,
               temperature: 0.3,
-              aiAction: "general"
+              aiAction: "guided_interview"
             })
           });
 
@@ -668,7 +665,7 @@ export default function AISidebar({
           prompt: rawInput,
           systemPrompt,
           temperature: 0.4,
-          aiAction: "general"
+          aiAction: "guided_interview"
         })
       });
 

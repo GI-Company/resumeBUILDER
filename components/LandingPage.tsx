@@ -378,12 +378,11 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             )}
           </div>
 
-          {/* Core Call to Actions */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-center"
           >
             <Link 
               href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}`}
@@ -394,17 +393,32 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
               className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
               <Play size={16} />
-              <span>Launch Builder as Guest</span>
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              <span>Launch Editor (Blank)</span>
             </Link>
 
-            <button 
-              onClick={() => openAuth('signup')} 
-              className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200/80 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            <Link 
+              href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}&mode=interview`}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id);
+                // The router push will handle ?mode=interview below if we use Next Router, 
+                // but onOpenResume directly pushes to /editor?id=new.
+                // We should ensure it includes mode=interview.
+                window.location.href = `/editor?id=new&mode=interview`;
+              }} 
+              className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Cloud size={16} className="text-blue-500" />
-              <span>Sign Up Free</span>
-            </button>
+              <Users size={16} className="text-indigo-600" />
+              <span>Start Guided Interview</span>
+            </Link>
+
+            <Link 
+              href="/audit"
+              className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <FileText size={16} className="text-emerald-600" />
+              <span>Instant Resume Audit</span>
+            </Link>
           </motion.div>
 
           {/* Transparency Guarantee under CTAs */}

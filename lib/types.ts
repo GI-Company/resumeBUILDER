@@ -152,6 +152,7 @@ export type AiAction =
   | 'tailor_to_job'
   | 'suggest_skills'
   | 'autoformat'
+  | 'guided_interview'
   | 'general';
 
 // --- API Response Types ---
