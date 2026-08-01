@@ -277,3 +277,49 @@ ul.bullet-list, ul.exp-bullets, ul.edu-bullets {
   text-decoration: none !important;
   background-color: transparent !important;
 }
+
+/* ── Typography Scale & Weight Consumption ── */
+
+/* Text Scale (applies global or section-level --text-scale to specific Tailwind text sizes) */
+.canvas-wrap .text-xs { font-size: calc(0.75rem * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-sm { font-size: calc(0.875rem * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-base { font-size: calc(1rem * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-lg { font-size: calc(1.125rem * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[10px\] { font-size: calc(10px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[11px\] { font-size: calc(11px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[12px\] { font-size: calc(12px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[13px\] { font-size: calc(13px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[14px\] { font-size: calc(14px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[15px\] { font-size: calc(15px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[16px\] { font-size: calc(16px * var(--text-scale, 1)) !important; }
+.canvas-wrap .text-\[18px\] { font-size: calc(18px * var(--text-scale, 1)) !important; }
+
+/* Heading Weights */
+.canvas-wrap .section-heading,
+.canvas-wrap .cat-title,
+.canvas-wrap .exp-line1,
+.canvas-wrap .edu-degree,
+.canvas-wrap .proj-title {
+  font-weight: var(--font-weight-heading, 700) !important;
+}
+
+/* Body Weights */
+.canvas-wrap .summary,
+.canvas-wrap .cat-items,
+.canvas-wrap .exp-line2,
+.canvas-wrap .exp-meta,
+.canvas-wrap .proj-date {
+  font-weight: var(--font-weight-body, 400);
+}
+
+.canvas-wrap .font-semibold {
+  font-weight: var(--font-weight-accent, 600) !important;
+}
+
+.canvas-wrap .font-bold {
+  font-weight: var(--font-weight-heading, 700) !important;
+}
+
+.canvas-wrap .font-normal {
+  font-weight: var(--font-weight-body, 400) !important;
+}
