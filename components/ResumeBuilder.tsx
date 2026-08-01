@@ -1189,14 +1189,20 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       const canvasWrapElement = document.querySelector(".canvas-wrap") as HTMLElement | null;
 
       const toastId = toast.loading("Initializing high-fidelity PDF engine...");
+      const { data: { session } } = await supabase.auth.getSession();
 
       await exportResumeToPdf({
         resumeElement,
         canvasWrapElement,
-        filename: name || "Resume",
-        pageSize: design.pageSize === "a4" ? "a4" : "letter",
+        filename: `${name.replace(/\s+/g, '_') || 'Resume'}.pdf`,
+        pageSize: design.pageSize === 'a4' ? 'a4' : 'letter',
+        token: session?.access_token,
         onProgress: (stage, message) => {
-          toast.loading(message, { id: toastId });
+          if (stage === 'error') {
+            toast.error(message, { id: toastId, duration: 5000 });
+          } else {
+            toast.loading(message, { id: toastId });
+          }
         },
       });
 

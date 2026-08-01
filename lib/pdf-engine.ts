@@ -24,6 +24,8 @@ export interface PdfExportOptions {
   filename: string;
   /** Target page size: 'letter' (8.5x11 in) or 'a4' (210x297 mm) */
   pageSize: 'letter' | 'a4';
+  /** Optional auth token for rate limit tiers */
+  token?: string;
   /** Optional callback to report export status and progress to UI */
   onProgress?: (stage: 'extracting' | 'server_rendering' | 'client_fallback' | 'completed' | 'error', message: string) => void;
 }
@@ -361,9 +363,14 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
 
     let response: Response;
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (options.token) {
+        headers['Authorization'] = `Bearer ${options.token}`;
+      }
+
       response = await fetch('/api/export-pdf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           html: selfContainedHtml,
           filename: cleanFilename,
