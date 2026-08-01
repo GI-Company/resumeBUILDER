@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { TEMPLATES } from "@/lib/resume-constants";
 import { DEFAULT_DESIGN, useResumeStore } from "@/lib/store/useResumeStore";
+import { supabase } from "@/lib/supabase";
 
 const isValidHex = (hex: string) => /^#[0-9A-Fa-f]{6}$/i.test(hex);
 
@@ -77,6 +78,8 @@ export default function DesignPanel({
   setShowHeatmapOverlay,
 }: DesignPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [customTemplateName, setCustomTemplateName] = useState("");
+  const [savingCustomTemplate, setSavingCustomTemplate] = useState(false);
   const sections = useResumeStore((state) => state.sections);
 
   const handleReset = () => {
@@ -113,6 +116,44 @@ export default function DesignPanel({
     const templateName = activeTemplate?.name ?? "Default";
     toast.success(`Reset to ${templateName} defaults! 🔄`);
     setConfirmReset(false);
+  };
+
+  const handleSaveCustomTemplate = async () => {
+    if (!customTemplateName.trim()) {
+      toast.error("Please enter a name for your custom template.");
+      return;
+    }
+    
+    setSavingCustomTemplate(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("You must be logged in to save custom templates.");
+      setSavingCustomTemplate(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("custom_design_presets")
+      .insert({
+        user_id: session.user.id,
+        name: customTemplateName.trim(),
+        design: design,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.message.includes("limit of 10")) {
+        toast.error("Limit reached: You can save up to 10 custom templates.");
+      } else {
+        toast.error("Failed to save custom template.");
+      }
+    } else if (data) {
+      toast.success("Custom template saved! 🎉");
+      setCustomTemplateName("");
+      setDesign((p: any) => ({ ...p, template: `custom-${data.id}` })); // Mark as custom to deselect standard template badges
+    }
+    setSavingCustomTemplate(false);
   };
 
   if (activeSidebarTab !== "design") return null;
@@ -764,6 +805,34 @@ export default function DesignPanel({
             />
           </div>
         </div>
+
+        {/* Save as Custom Template */}
+        <div className="pt-4 border-t border-gray-200 mt-6">
+          <h3 className="text-xs font-semibold text-gray-900 mb-2">Save as Custom Template</h3>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Template name..."
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={customTemplateName}
+              onChange={(e) => setCustomTemplateName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveCustomTemplate();
+              }}
+            />
+            <button
+              onClick={handleSaveCustomTemplate}
+              disabled={savingCustomTemplate || !customTemplateName.trim()}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingCustomTemplate ? "Saving..." : "Save"}
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-500 mt-1.5 leading-snug">
+            Save your current layout, colors, and margins. Custom templates appear in the Templates tab.
+          </p>
+        </div>
+
       </div>
     </div>
   );

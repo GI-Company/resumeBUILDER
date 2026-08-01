@@ -389,3 +389,66 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION handle_new_user_entitlement();
+-- 1. Create the Table
+CREATE TABLE IF NOT EXISTS custom_design_presets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    design JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2. Enforce the limit of 10 presets per user
+CREATE OR REPLACE FUNCTION check_preset_limit()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (
+        SELECT count(*) 
+        FROM custom_design_presets 
+        WHERE user_id = NEW.user_id 
+    ) >= 10 THEN
+        RAISE EXCEPTION 'User has reached the limit of 10 custom templates.';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_enforce_preset_limit ON custom_design_presets;
+CREATE TRIGGER trg_enforce_preset_limit
+BEFORE INSERT ON custom_design_presets
+FOR EACH ROW EXECUTE FUNCTION check_preset_limit();
+
+-- 3. Enable RLS
+ALTER TABLE custom_design_presets ENABLE ROW LEVEL SECURITY;
+
+-- 4. RLS Policies (Users can fully manage their own presets)
+DROP POLICY IF EXISTS "Users can read their own presets" ON custom_design_presets;
+CREATE POLICY "Users can read their own presets" ON custom_design_presets
+    FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own presets" ON custom_design_presets;
+CREATE POLICY "Users can insert their own presets" ON custom_design_presets
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own presets" ON custom_design_presets;
+CREATE POLICY "Users can update their own presets" ON custom_design_presets
+    FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own presets" ON custom_design_presets;
+CREATE POLICY "Users can delete their own presets" ON custom_design_presets
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 5. Automatically update the updated_at timestamp
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_set_preset_updated_at ON custom_design_presets;
+CREATE TRIGGER trg_set_preset_updated_at
+BEFORE UPDATE ON custom_design_presets
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();

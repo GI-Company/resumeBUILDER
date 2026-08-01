@@ -2194,6 +2194,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
             activeSidebarTab={activeSidebarTab}
             setActiveSidebarTab={setActiveSidebarTab}
             design={design}
+            setDesign={setDesign}
             applyTemplate={applyTemplate}
           />
 
