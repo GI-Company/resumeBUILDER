@@ -203,6 +203,10 @@ export default function InterviewPage() {
 
         if (updateMatch) {
           try {
+            // BUG 2 LOGGING
+            console.log(`[DEBUG INTERVIEW] compilePrompt sent to AI:\n`, compilePrompt);
+            console.log(`[DEBUG INTERVIEW] Full raw textResponse from AI:\n`, textResponse);
+
             const parsed = JSON.parse(updateMatch[1].trim());
             
             // Replicate applyParsedResumeToState logic

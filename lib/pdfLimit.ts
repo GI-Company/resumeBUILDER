@@ -10,9 +10,17 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
 
   let userObj: any = null;
   const authHeader = request.headers.get('Authorization');
+  
+  // LOG: Raw Authorization header
+  console.log(`[DEBUG PDF LIMIT] Auth header present: ${!!authHeader}, Format: ${authHeader ? authHeader.substring(0, 15) + '...' : 'none'}`);
+
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    // LOG: Result of getUser
+    console.log(`[DEBUG PDF LIMIT] getUser error:`, error?.message || 'none', `| User found:`, !!user);
+    
     if (!error && user) {
       userObj = user;
     }
@@ -25,6 +33,9 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
       .select('tier')
       .eq('user_id', userObj.id)
       .single();
+      
+    // LOG: Entitlements query result
+    console.log(`[DEBUG PDF LIMIT] Entitlements lookup for user ${userObj.id} -> tier: ${entitlement?.tier}`);
       
     const tier = entitlement?.tier || 'free';
     
