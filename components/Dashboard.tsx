@@ -18,15 +18,17 @@ import {
   ArrowRight,
   Compass,
   FileCode,
-  UserCheck
+  UserCheck,
+  Briefcase
 } from 'lucide-react';
 import AuthModal from './AuthModal';
 import { User } from '@supabase/supabase-js';
+import { JobTracker } from './JobTracker';
 
 export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string) => void }) {
   const [allResumes, setAllResumes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'active' | 'trash'>('active');
-  const [currentView, setCurrentView] = useState<'resumes' | 'settings'>('resumes');
+  const [currentView, setCurrentView] = useState<'resumes' | 'tracker' | 'settings'>('resumes');
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -414,19 +416,29 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
         <div className="flex items-center gap-4 mb-8">
           <button 
             onClick={() => setCurrentView('resumes')}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${currentView === 'resumes' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${currentView === 'resumes' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
           >
-            Cloud Resumes
+            <FileText size={16} /> Cloud Resumes
+          </button>
+          <button 
+            onClick={() => setCurrentView('tracker')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${currentView === 'tracker' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+          >
+            <Briefcase size={16} /> Job Tracker
           </button>
           <button 
             onClick={() => setCurrentView('settings')}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${currentView === 'settings' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${currentView === 'settings' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
           >
-            Account Settings
+            <UserCheck size={16} /> Account Settings
           </button>
         </div>
 
-        {currentView === 'resumes' ? (
+        {currentView === 'tracker' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[600px] flex flex-col">
+            <JobTracker />
+          </div>
+        ) : currentView === 'resumes' ? (
           <>
             {/* Resumes Header */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">

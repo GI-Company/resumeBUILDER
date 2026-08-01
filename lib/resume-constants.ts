@@ -153,7 +153,7 @@ export const TEMPLATES = [
 export const TUTORIAL_STEPS = [
   {
     eyebrow: "Step 1 of 5",
-    title: "Welcome to MYresume",
+    title: "Welcome to Agent Rez AI",
     body: "This whole page is your resume. There's no separate form — click directly on any text (like your name, up top) and start typing.",
   },
   {

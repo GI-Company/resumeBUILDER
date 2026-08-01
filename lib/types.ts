@@ -1,5 +1,5 @@
 // ============================================================
-//  MYresume — Strict Domain Types
+//  Agent Rez AI — Strict Domain Types
 //  All data structures used across the app are defined here.
 //  Do NOT use `any` — if you need flexibility, use `unknown`
 //  and narrow it with a type guard.

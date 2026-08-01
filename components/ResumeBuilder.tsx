@@ -13,6 +13,10 @@ import { SectionRenderer } from "./editor/SectionRenderers";
 import { usePaginationEngine } from "../hooks/usePaginationEngine";
 import { StructuralParser, GazeProfiler, LayoutRebalancer } from "@/lib/agent-rez";
 import { ContentEditableField } from "./ContentEditableField";
+import { useProfilePhotoEditor } from "@/hooks/useProfilePhotoEditor";
+import { ExportModal } from "./modals/ExportModal";
+import { ShareModal } from "./modals/ShareModal";
+import { EraseModal } from "./modals/EraseModal";
 import { Reorder, useDragControls, motion } from "motion/react";
 import {
   GripVertical, GripHorizontal,
@@ -240,7 +244,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       }
     }
   }
-
+  
   // --- UI State ---
   const [templateGalleryOpen, setTemplateGalleryOpen] = useState(true);
   const [tutorialOpen, setTutorialOpen] = useState(() => {
@@ -265,226 +269,18 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   // --- Design State ---
 
   // --- Profile Photo State ---
-
-  const [eraseModalOpen, setEraseModalOpen] = useState(false);
-  const [bgRemoveSensitivity, setBgRemoveSensitivity] = useState(40);
-  const [bgRemoveColor, setBgRemoveColor] = useState("#ffffff");
-  const [brushSize, setBrushSize] = useState(20);
-  const isDrawingRef = useRef(false);
-  const eraserCanvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  // Load image onto eraser canvas when modal opens
-  useEffect(() => {
-    if (eraseModalOpen) {
-      setTimeout(() => {
-        const canvas = eraserCanvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        
-        const img = new window.Image();
-        img.crossOrigin = "anonymous";
-        img.src = profilePhoto.rawUploadedUrl || profilePhoto.url;
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-        };
-      }, 100);
-    }
-  }, [eraseModalOpen, profilePhoto.url, profilePhoto.rawUploadedUrl]);
-
-  const getCoordinates = (e: any) => {
-    const canvas = eraserCanvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
-    };
-  };
-
-  const startDrawing = (e: any) => {
-    e.preventDefault();
-    isDrawingRef.current = true;
-    const coords = getCoordinates(e);
-    if (!coords) return;
-    const canvas = eraserCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.beginPath();
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.arc(coords.x, coords.y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-  };
-
-  const draw = (e: any) => {
-    if (!isDrawingRef.current) return;
-    e.preventDefault();
-    const coords = getCoordinates(e);
-    if (!coords) return;
-    const canvas = eraserCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.lineTo(coords.x, coords.y);
-    ctx.strokeStyle = "rgba(0,0,0,1)";
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(coords.x, coords.y);
-  };
-
-  const stopDrawing = () => {
-    isDrawingRef.current = false;
-    const canvas = eraserCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (ctx) ctx.beginPath();
-  };
-
-  const resetEraserCanvas = () => {
-    const canvas = eraserCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.src = profilePhoto.rawUploadedUrl || "https://picsum.photos/seed/portrait/150/150";
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(img, 0, 0);
-    };
-  };
-
-  const saveErasedImage = () => {
-    const canvas = eraserCanvasRef.current;
-    if (!canvas) return;
-    const resultUrl = canvas.toDataURL("image/png");
-    setProfilePhoto((p: any) => ({
-      ...p,
-      url: resultUrl
-    }));
-    setEraseModalOpen(false);
-    toast.success("Erase touch-up applied! 🎨");
-  };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const b64 = event.target?.result as string;
-      setProfilePhoto((p: any) => ({
-        ...p,
-        enabled: true,
-        url: b64,
-        rawUploadedUrl: b64,
-      }));
-      toast.success("Profile photo uploaded successfully!");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveBackground = (targetColorHex: string, sensitivity: number) => {
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.src = profilePhoto.rawUploadedUrl || profilePhoto.url;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imgData.data;
-      const rTarget = parseInt(targetColorHex.slice(1, 3), 16);
-      const gTarget = parseInt(targetColorHex.slice(3, 5), 16);
-      const bTarget = parseInt(targetColorHex.slice(5, 7), 16);
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i+1];
-        const b = data[i+2];
-        const a = data[i+3];
-        if (a === 0) continue;
-        const distance = Math.sqrt(
-          Math.pow(r - rTarget, 2) +
-          Math.pow(g - gTarget, 2) +
-          Math.pow(b - bTarget, 2)
-        );
-        if (distance < sensitivity) {
-          data[i+3] = 0;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      const resultUrl = canvas.toDataURL("image/png");
-      setProfilePhoto((p: any) => ({
-        ...p,
-        url: resultUrl
-      }));
-      toast.success("Background color removed! 🪄");
-    };
-    img.onerror = () => {
-      toast.error("Could not load image.");
-    };
-  };
-
-  const handleAutoRemoveBackground = (sensitivity: number) => {
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.src = profilePhoto.rawUploadedUrl || profilePhoto.url;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imgData.data;
-      const rTarget = data[0];
-      const gTarget = data[1];
-      const bTarget = data[2];
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i+1];
-        const b = data[i+2];
-        const a = data[i+3];
-        if (a === 0) continue;
-        const distance = Math.sqrt(
-          Math.pow(r - rTarget, 2) +
-          Math.pow(g - gTarget, 2) +
-          Math.pow(b - bTarget, 2)
-        );
-        if (distance < sensitivity) {
-          data[i+3] = 0;
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      const resultUrl = canvas.toDataURL("image/png");
-      setProfilePhoto((p: any) => ({
-        ...p,
-        url: resultUrl
-      }));
-      toast.success("Background auto-removed! ✨");
-    };
-    img.onerror = () => {
-      toast.error("Could not load image.");
-    };
-  };
-
-
-
+  const {
+    eraseModalOpen, setEraseModalOpen,
+    bgRemoveSensitivity, setBgRemoveSensitivity,
+    bgRemoveColor, setBgRemoveColor,
+    brushSize, setBrushSize,
+    eraserCanvasRef,
+    startDrawing, draw, stopDrawing,
+    resetEraserCanvas, saveErasedImage,
+    handlePhotoUpload,
+    handleRemoveBackground,
+    handleAutoRemoveBackground
+  } = useProfilePhotoEditor(profilePhoto, setProfilePhoto);
 
   // --- Content State ---
   const [aiRemaining, setAiRemaining] = useState<number | null>(5);
@@ -1732,74 +1528,15 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       )}
 
       {/* Share Modal */}
-      {shareModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Share Resume</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              {resumeId ? "Anyone with this link can view your resume." : "Please save your resume to the cloud first to generate a shareable link."}
-            </p>
-            {resumeId ? (
-              <div className="flex flex-col gap-4 mb-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${window.location.origin}/share/${resumeId}`}
-                    className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono text-gray-600 focus:outline-none"
-                  />
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/share/${resumeId}`);
-                      toast.success("Link copied to clipboard! 📋");
-                    }}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
-                  >
-                    Copy
-                  </button>
-                </div>
-                
-                <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
-                  <div className="relative inline-block w-10 h-5 align-middle select-none">
-                    <input 
-                      type="checkbox" 
-                      className="peer sr-only" 
-                      checked={isPublic}
-                      onChange={(e) => {
-                        setIsPublic(e.target.checked);
-                        // Trigger a save immediately when toggled
-                        setTimeout(() => executeSaveToCloud(), 0);
-                      }}
-                    />
-                    <div className="w-10 h-5 bg-gray-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 transition-colors"></div>
-                    <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-900">Make Link Public</span>
-                    <span className="text-[11px] text-gray-500 leading-tight">If disabled, the share link will return a 404 for visitors.</span>
-                  </div>
-                </label>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setShareModalOpen(false);
-                  setSaveModalOpen(true);
-                }}
-                className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all"
-              >
-                Save Resume Now
-              </button>
-            )}
-            <button
-              onClick={() => setShareModalOpen(false)}
-              className="w-full mt-2 px-3 py-2 text-gray-500 hover:text-gray-900 text-xs font-bold transition-all"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      <ShareModal 
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        resumeId={resumeId}
+        isPublic={isPublic}
+        setIsPublic={setIsPublic}
+        onSaveNow={() => setSaveModalOpen(true)}
+        executeSaveToCloud={executeSaveToCloud}
+      />
 
       {/* ATS Readiness & AI Optimization Modal */}
       {atsScoreModalOpen && (
@@ -1934,81 +1671,12 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       )}
 
       {/* Export PDF Modal */}
-      {exportModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4 no-print">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  <FileDown size={20} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 leading-tight">Export Resume to PDF</h2>
-                  <p className="text-xs text-gray-500">Choose the format that best fits your needs</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setExportModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-              >
-                <CloseIcon size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3 my-5">
-              <button
-                onClick={handleDownloadPdf}
-                disabled={isExportingPdf}
-                className="w-full text-left p-4 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 transition-all group flex items-start gap-3 cursor-pointer disabled:opacity-60"
-              >
-                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-all">
-                  {isExportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm text-gray-900 flex items-center justify-between">
-                    <span>Direct Download (.pdf)</span>
-                    <span className="text-[10px] uppercase tracking-wider bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full">Recommended</span>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                    Instantly downloads a WYSIWYG multi-page PDF directly to your device. No system print margins or dialogs required.
-                  </p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setExportModalOpen(false);
-                  setTimeout(() => window.print(), 150);
-                }}
-                disabled={isExportingPdf}
-                className="w-full text-left p-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all group flex items-start gap-3 cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-all">
-                  <Printer size={16} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm text-gray-900 flex items-center justify-between">
-                    <span>System Print / ATS Vector</span>
-                    <span className="text-[10px] uppercase tracking-wider bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">ATS Selectable</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                    Opens system print dialog (`Save as PDF`). Essential for ATS text parsers. Note: Set Margins to `None` and uncheck Headers/Footers.
-                  </p>
-                </div>
-              </button>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-gray-100">
-              <button
-                onClick={() => setExportModalOpen(false)}
-                className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 transition-all cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ExportModal 
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onDownloadPdf={handleDownloadPdf}
+        isExportingPdf={isExportingPdf}
+      />
 
       {/* Format Bar */}
       {formatBar.visible && (
@@ -3266,73 +2934,18 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         </div>
       </div>
 
-      {/* Manual Touch Up Eraser Modal */}
-      {eraseModalOpen && (
-        <div className="fixed inset-0 bg-black/80 z-[200] flex flex-col items-center justify-center p-4 font-sans no-print backdrop-blur-sm">
-          <div className="bg-neutral-900 border border-neutral-800 text-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
-              <div className="flex items-center gap-2">
-                <Eraser className="text-[#00f0ff] animate-pulse" size={18} />
-                <h3 className="font-bold text-lg">Erase & Touch Up Brush</h3>
-              </div>
-              <button onClick={() => setEraseModalOpen(false)} className="text-gray-400 hover:text-white">
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Workspace */}
-            <div className="flex-1 bg-black/50 p-6 flex flex-col items-center justify-center min-h-[350px]">
-              <p className="text-xs text-neutral-400 mb-4 flex items-center gap-1">
-                <span className="text-[#00f0ff] font-bold">💡 Tip:</span> Click and drag directly on the image below to erase backgrounds or unwanted objects manually.
-              </p>
-              <div className="relative border-2 border-dashed border-neutral-700/50 rounded-xl p-2 bg-neutral-950 flex items-center justify-center">
-                <canvas
-                  ref={eraserCanvasRef}
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
-                  className="cursor-crosshair max-w-full max-h-[400px] object-contain rounded-lg"
-                />
-              </div>
-            </div>
-            
-            {/* Controls */}
-            <div className="px-6 py-4 bg-neutral-950 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4 flex-1 min-w-[200px]">
-                <span className="text-xs text-neutral-300 font-medium whitespace-nowrap">Brush Size: {brushSize}px</span>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  value={brushSize}
-                  onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                  className="accent-[#00f0ff] flex-1"
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={resetEraserCanvas}
-                  className="px-4 py-2 text-xs font-semibold border border-neutral-700 rounded-lg hover:bg-neutral-800 transition-colors"
-                >
-                  Reset Original
-                </button>
-                <button
-                  onClick={saveErasedImage}
-                  className="px-5 py-2 text-xs font-bold bg-[#00f0ff] text-neutral-950 rounded-lg hover:bg-[#33f5ff] transition-colors flex items-center gap-1.5"
-                >
-                  Apply Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <EraseModal 
+        isOpen={eraseModalOpen}
+        onClose={() => setEraseModalOpen(false)}
+        eraserCanvasRef={eraserCanvasRef}
+        startDrawing={startDrawing}
+        draw={draw}
+        stopDrawing={stopDrawing}
+        brushSize={brushSize}
+        setBrushSize={setBrushSize}
+        resetEraserCanvas={resetEraserCanvas}
+        saveErasedImage={saveErasedImage}
+      />
     </div>
   );
 }

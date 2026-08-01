@@ -61,7 +61,7 @@ export default function Toolbar({
               </button>
             )}
             <span className="font-[family:'Kalam',cursive] font-bold text-base md:text-lg text-gray-800">
-              MYresume
+              Agent Rez AI
             </span>
             {resumeId && (
               <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-[11px] md:text-xs font-medium text-gray-600">
@@ -158,7 +158,7 @@ export default function Toolbar({
                 setTutorialOpen(true);
               }}
               className="p-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all hover:bg-amber-100 text-amber-800 bg-amber-50 border border-amber-200/40 hidden md:flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0"
-              title="Take an optional interactive tour of MYresume"
+              title="Take an optional interactive tour of Agent Rez AI"
             >
               <HelpCircle size={14} className="text-amber-500 animate-pulse" /> <span className="hidden lg:inline">Take Tour</span>
             </button>

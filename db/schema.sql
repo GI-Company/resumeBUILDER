@@ -452,3 +452,46 @@ DROP TRIGGER IF EXISTS trg_set_preset_updated_at ON custom_design_presets;
 CREATE TRIGGER trg_set_preset_updated_at
 BEFORE UPDATE ON custom_design_presets
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Phase 2: Job Tracker (Kanban Board)
+CREATE TABLE IF NOT EXISTS job_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    company_name TEXT NOT NULL,
+    role_title TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected')),
+    url TEXT,
+    salary_range TEXT,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- RLS
+ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own jobs" ON job_applications;
+CREATE POLICY "Users can read own jobs" ON job_applications FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own jobs" ON job_applications;
+CREATE POLICY "Users can insert own jobs" ON job_applications FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own jobs" ON job_applications;
+CREATE POLICY "Users can update own jobs" ON job_applications FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own jobs" ON job_applications;
+CREATE POLICY "Users can delete own jobs" ON job_applications FOR DELETE USING (auth.uid() = user_id);
+
+CREATE OR REPLACE FUNCTION set_job_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_set_job_updated_at ON job_applications;
+CREATE TRIGGER trg_set_job_updated_at
+BEFORE UPDATE ON job_applications
+FOR EACH ROW EXECUTE FUNCTION set_job_updated_at();
+

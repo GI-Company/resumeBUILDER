@@ -1,5 +1,5 @@
 {
-  "name": "ai-studio-applet",
+  "name": "agent-rez-ai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,8 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
     "@sparticuz/chromium-min": "^149.0.0",
-    "@supabase/supabase-js": "^2.110.2",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.111.0",
     "@vercel/analytics": "^2.0.1",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",

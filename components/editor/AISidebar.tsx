@@ -764,7 +764,7 @@ export default function AISidebar({
       setExperiences((prev: any[]) => prev.map(exp => {
         if (exp.id === targetId) {
           // Parse lines starting with •, -, *, or normal lines
-          const lines = aiOutput.split(/[\n•\-*]/).map(l => l.trim()).filter(Boolean);
+          const lines = aiOutput.split('\n').map(l => l.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
           const newBullets = lines.map((text, idx) => {
             // Strict allowlist: strip all HTML tags except <strong> and </strong>
             const safeText = text.replace(/<(?!strong>|\/strong>)[^>]+>/gi, "");
@@ -785,7 +785,7 @@ export default function AISidebar({
       setExperiences((prev: any[]) => prev.map(exp => {
         if (exp.id === targetId) {
           // Parse lines starting with •, -, *, or normal lines
-          const lines = aiOutput.split(/[\n•\-*]/).map(l => l.trim()).filter(Boolean);
+          const lines = aiOutput.split('\n').map(l => l.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
           const newBullets = lines.map((text, idx) => {
             // Strict allowlist: strip all HTML tags except <strong> and </strong>
             const safeText = text.replace(/<(?!strong>|\/strong>)[^>]+>/gi, "");
