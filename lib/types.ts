@@ -150,6 +150,7 @@ export type AiAction =
   | 'cover_letter'
   | 'tailor_to_job'
   | 'suggest_skills'
+  | 'autoformat'
   | 'general';
 
 // --- API Response Types ---

@@ -765,10 +765,14 @@ export default function AISidebar({
         if (exp.id === targetId) {
           // Parse lines starting with •, -, *, or normal lines
           const lines = aiOutput.split(/[\n•\-*]/).map(l => l.trim()).filter(Boolean);
-          const newBullets = lines.map((text, idx) => ({
-            id: `b-ai-${Date.now()}-${idx}`,
-            text
-          }));
+          const newBullets = lines.map((text, idx) => {
+            // Strict allowlist: strip all HTML tags except <strong> and </strong>
+            const safeText = text.replace(/<(?!strong>|\/strong>)[^>]+>/gi, "");
+            return {
+              id: `b-ai-${Date.now()}-${idx}`,
+              text: safeText
+            };
+          });
           return {
             ...exp,
             bullets: [...exp.bullets, ...newBullets]
@@ -777,6 +781,27 @@ export default function AISidebar({
         return exp;
       }));
       toast.success("Appended bullet points to job entry! ✨");
+    } else if (targetType === "experience-bullets-replace" && targetId) {
+      setExperiences((prev: any[]) => prev.map(exp => {
+        if (exp.id === targetId) {
+          // Parse lines starting with •, -, *, or normal lines
+          const lines = aiOutput.split(/[\n•\-*]/).map(l => l.trim()).filter(Boolean);
+          const newBullets = lines.map((text, idx) => {
+            // Strict allowlist: strip all HTML tags except <strong> and </strong>
+            const safeText = text.replace(/<(?!strong>|\/strong>)[^>]+>/gi, "");
+            return {
+              id: `b-ai-${Date.now()}-${idx}`,
+              text: safeText
+            };
+          });
+          return {
+            ...exp,
+            bullets: newBullets
+          };
+        }
+        return exp;
+      }));
+      toast.success("Replaced bullet points for job entry! ✨");
     } else if (targetType === "experience-title" && targetId) {
       setExperiences((prev: any[]) => prev.map(exp => {
         if (exp.id === targetId) {
@@ -854,6 +879,13 @@ Output:
 Input: "fixed bugs in the app"
 Output:
 • Resolved 100+ critical software defects, increasing application stability by 25% and significantly improving end-user satisfaction.`;
+      } else if (aiPresetType === "autoformat") {
+        systemPrompt = `You are an elite resume editor. Auto-format the user's bullet points by adding <strong> tags to key metrics, technologies, and action verbs. Do not change the original text, only add the HTML tags. Start each line with a bullet symbol (•). Return ONLY the formatted bullet points. Do not write introductory or conversational text.
+
+Examples:
+Input: "Increased sales by 50% using React and Node"
+Output:
+• Increased sales by <strong>50%</strong> using <strong>React</strong> and <strong>Node</strong>`;
       } else {
         systemPrompt = "You are an expert resume writer. Help the user with their custom request regarding their resume content. Be concise, impact-oriented, and return ONLY the relevant rewritten resume text or direct suggestions without any conversational chat.";
       }
@@ -869,6 +901,7 @@ Output:
       // Determine aiAction from the current preset type
       const aiActionForMode = aiPresetType === "bullets" ? "rewrite_bullet" as const
         : aiPresetType === "summary" ? "generate_summary" as const
+        : aiPresetType === "autoformat" ? "autoformat" as const
         : aiPresetType === "custom" ? "general" as const
         : "general" as const;
 
@@ -1506,6 +1539,21 @@ Output:
                       <button
                         type="button"
                         onClick={() => {
+                          setAiPresetType("autoformat");
+                          setAiOutput("");
+                        }}
+                        className={cn(
+                          "flex-1 py-1.5 px-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer",
+                          aiPresetType === "autoformat"
+                            ? "bg-white text-blue-600 shadow-sm border border-gray-100"
+                            : "text-gray-600 hover:text-gray-800"
+                        )}
+                      >
+                        Auto-Format
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
                           setAiPresetType("parser");
                           setAiOutput("");
                         }}
@@ -1562,6 +1610,7 @@ Output:
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
                           {aiPresetType === "summary" && "Polish Professional Summary"}
                           {aiPresetType === "bullets" && "Optimize Experience Bullet Points"}
+                          {aiPresetType === "autoformat" && "Auto-Format Highlight Tags"}
                           {aiPresetType === "parser" && "Build Resume from Prompt / Text"}
                           {aiPresetType === "custom" && "Custom AI Prompt / Query"}
                           {aiPresetType === "linkedin" && "Import from LinkedIn"}
@@ -1633,6 +1682,8 @@ Output:
                             ? "Enter your current summary draft, background, or goals."
                             : aiPresetType === "bullets"
                             ? "Paste experience bullet points to rewrite... (using STAR methodology)"
+                            : aiPresetType === "autoformat"
+                            ? "Paste bullet points here to automatically bold key metrics, skills, and action verbs..."
                             : aiPresetType === "parser"
                             ? "Describe your experience, paste an old resume, or provide unstructured notes..."
                             : aiPresetType === "linkedin"
@@ -1713,17 +1764,25 @@ Output:
                             {experiences.length > 0 && (
                               <div className="space-y-1">
                                 <span className="block text-[8px] font-bold uppercase tracking-widest text-gray-600 pl-1 mt-1">
-                                  Append Bullets to Professional Job:
+                                  Apply Bullets to Professional Job:
                                 </span>
-                                {experiences.map((exp) => (
-                                  <button
-                                    key={exp.id}
-                                    onClick={() => handleApplyToTarget("experience-bullets", exp.id)}
-                                    className="w-full text-left p-1.5 text-[11px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate block cursor-pointer"
-                                    title={`Append as bullet points to ${exp.title}`}
-                                  >
-                                    + Append to: {exp.title.split("|")[0].trim()}
-                                  </button>
+                                {experiences.map((exp: any) => (
+                                  <div key={exp.id} className="flex gap-1">
+                                    <button
+                                      onClick={() => handleApplyToTarget("experience-bullets", exp.id)}
+                                      className="flex-1 text-left p-1.5 text-[11px] bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 font-semibold rounded transition-all truncate cursor-pointer"
+                                      title={`Append as bullet points to ${exp.title}`}
+                                    >
+                                      + Append to: {exp.title.split("|")[0].trim()}
+                                    </button>
+                                    <button
+                                      onClick={() => handleApplyToTarget("experience-bullets-replace", exp.id)}
+                                      className="px-2 py-1.5 text-[11px] bg-amber-50 border border-amber-200 hover:border-amber-400 hover:bg-amber-100 text-amber-700 font-semibold rounded transition-all cursor-pointer"
+                                      title={`Replace existing bullets in ${exp.title}`}
+                                    >
+                                      Replace
+                                    </button>
+                                  </div>
                                 ))}
                               </div>
                             )}
