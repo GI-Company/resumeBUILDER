@@ -1179,6 +1179,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   };
 
   const handleDownloadPdf = async () => {
+    let toastId: string | undefined = undefined;
     try {
       setExportModalOpen(false);
       setIsExportingPdf(true);
@@ -1188,7 +1189,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 
       const canvasWrapElement = document.querySelector(".canvas-wrap") as HTMLElement | null;
 
-      const toastId = toast.loading("Initializing high-fidelity PDF engine...");
+      toastId = toast.loading("Initializing high-fidelity PDF engine...");
       const { data: { session } } = await supabase.auth.getSession();
 
       await exportResumeToPdf({

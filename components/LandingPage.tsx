@@ -206,7 +206,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
       toast.success("AI suggestion generated! ✨");
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
-      setSandboxOutput(`⚠️ LIMITATION NOTICE: ${err.message || "AI engine request failed. Guest tier is limited to 5 daily requests. Sign up to unlock 100 high-speed requests per day."}`);
+      setSandboxOutput(`⚠️ LIMITATION NOTICE: ${err.message || "AI engine request failed. Guest tier is limited to 5 daily requests. Sign up to unlock more daily AI requests, with priority access for founding members"}`);
     } finally {
       setSandboxLoading(false);
     }
@@ -1276,7 +1276,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><strong>Unlimited PDF prints</strong> with no watermarks</span>
+                    <span><strong>1 free PDF export/month</strong>, no watermarks</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
@@ -1334,6 +1334,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
                       <span><strong>Secure Cloud Saving</strong> for up to 3 drafts</span>
                     </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>3 PDF exports/month</strong>, no watermarks</span>
+                    </li>
                   </ul>
                 </div>
                 <button 
@@ -1368,6 +1372,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     <li className="flex items-start gap-2.5">
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
                       <span>Secure Cloud Saving</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>3 PDF exports/month</strong>, no watermarks</span>
                     </li>
                   </ul>
                 </div>
@@ -1411,6 +1419,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
                       <span>All Free tier features</span>
                     </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Unlimited PDF exports</strong></span>
+                    </li>
                   </ul>
                 </div>
                 <button 
@@ -1449,6 +1461,10 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                     <li className="flex items-start gap-2.5">
                       <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
                       <span>All Free tier features</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Unlimited PDF exports</strong></span>
                     </li>
                   </ul>
                 </div>
