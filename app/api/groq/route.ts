@@ -49,7 +49,7 @@ const MODEL_CHAINS: Record<'complex' | 'quick', string[]> = {
   ],
 };
 
-const COMPLEX_ACTIONS: AiAction[] = ['cover_letter', 'tailor_to_job', 'generate_summary'];
+const COMPLEX_ACTIONS: AiAction[] = ['cover_letter', 'tailor_to_job', 'generate_summary', 'guided_interview'];
 
 function getModelChain(action: AiAction): string[] {
   return COMPLEX_ACTIONS.includes(action) ? MODEL_CHAINS.complex : MODEL_CHAINS.quick;

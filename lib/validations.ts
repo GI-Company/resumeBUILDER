@@ -9,6 +9,8 @@ const aiActionSchema = z.enum([
   'cover_letter',
   'tailor_to_job',
   'suggest_skills',
+  'autoformat',
+  'guided_interview',
   'general',
 ] satisfies [AiAction, ...AiAction[]]);
 
