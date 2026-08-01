@@ -88,14 +88,16 @@ export default function InterviewPage() {
         };
         setAgentMessages([...updatedMessages, generatingMsg]);
 
-        const compilePrompt = `Please compile a complete, highly professional, impact-driven resume based on these career interview answers:
-        - Name & Target Role: ${currentAnswers.step0}
+        const userName = useResumeStore.getState().name || 'Candidate';
+        const compilePrompt = `Please compile a complete, highly professional, impact-driven resume based on these career interview answers. Tailor the content, skills, and bullet points specifically for the target role:
+        - User's Name: ${userName}
+        - Target Role / Target Job Title: ${currentAnswers.step0}
         - Contact Details: ${currentAnswers.step1}
         - Work Experience: ${currentAnswers.step2}
         - Education & Certifications: ${currentAnswers.step3}
         - Skills & Competencies: ${rawInput}
         
-        Generate the professional experience with high-impact STAR method bullet points. Return the full resume in our specialized JSON format.`;
+        Generate the professional experience with high-impact STAR method bullet points tailored to the target role. Return the full resume in our specialized JSON format.`;
 
         const systemPrompt = `You are an elite, world-class resume-writing expert. Based on the user's answers, write an exceptional resume.
         
@@ -392,6 +394,27 @@ export default function InterviewPage() {
                   }}
                   disabled={isAgentResponding}
                 />
+                
+                {/* Sample Fill Button */}
+                {!agentChatInput && !isAgentResponding && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const SAMPLE_ANSWERS = [
+                        "Senior Full Stack Software Engineer",
+                        "San Francisco, CA | (415) 555-0198 | dev@example.com | linkedin.com/in/sampledev",
+                        "Tech Lead at Acme Corp (2020-Present): Led a team of 5 engineers to rebuild the core React dashboard, reducing load times by 40%. Previously Frontend Developer at Globex (2018-2020): Built standard UI components and integrated REST APIs.",
+                        "B.S. Computer Science from University of California, Berkeley (2018). AWS Certified Solutions Architect (2021).",
+                        "React, Next.js, Node.js, TypeScript, PostgreSQL, AWS, Docker, Agile/Scrum"
+                      ];
+                      setAgentChatInput(SAMPLE_ANSWERS[interviewStep] || "Sample answer");
+                    }}
+                    className="absolute bottom-4 left-4 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                  >
+                    ✨ Fill Sample Answer
+                  </button>
+                )}
+
                 <button
                   type="submit"
                   disabled={!agentChatInput.trim() || isAgentResponding}
