@@ -19,6 +19,13 @@ export function usePaginationEngine(containerRef: React.RefObject<HTMLElement | 
     manualBreaks: state.manualBreaks
   })));
 
+  // Track whether the user is actively editing a contenteditable field inside the canvas.
+  // While true, we suppress dispatching layout updates to the store to prevent
+  // React from unmounting/remounting ContentEditableField components (which destroys
+  // cursor position and drops keystrokes).
+  const isEditingRef = useRef(false);
+  const blurRecalcTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const calcPages = useCallback(() => {
     if (!containerRef.current) return;
     
@@ -51,12 +58,15 @@ export function usePaginationEngine(containerRef: React.RefObject<HTMLElement | 
     });
 
     if (units.length === 0) {
-      state.updateLayout({
-        pageBreaks: [],
-        pageBreakElementIds: [],
-        idToPageMap: {},
-        gapHeights: {}
-      });
+      // Only dispatch if not editing
+      if (!isEditingRef.current) {
+        state.updateLayout({
+          pageBreaks: [],
+          pageBreakElementIds: [],
+          idToPageMap: {},
+          gapHeights: {}
+        });
+      }
       return;
     }
 
@@ -237,11 +247,75 @@ export function usePaginationEngine(containerRef: React.RefObject<HTMLElement | 
       layoutUpdates.gapHeights = newGapHeights;
     }
 
-    // Dispatch a single batched update to Zustand if anything changed!
+    // Dispatch a single batched update to Zustand if anything changed —
+    // BUT suppress while the user is actively editing a contenteditable field,
+    // to prevent React unmount/remount that destroys cursor position.
     if (Object.keys(layoutUpdates).length > 0) {
-      state.updateLayout(layoutUpdates);
+      if (!isEditingRef.current) {
+        state.updateLayout(layoutUpdates);
+      }
+      // If editing, the update is intentionally dropped — the post-blur
+      // recalc (below) will catch up with the correct final layout.
     }
   }, []);
+
+  // Focus tracking: detect when the user is actively editing inside the canvas
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.contentEditable === "true" || target.closest("[contenteditable='true']"))
+      ) {
+        isEditingRef.current = true;
+        // Cancel any pending post-blur recalc since focus returned
+        if (blurRecalcTimeoutRef.current) {
+          clearTimeout(blurRecalcTimeoutRef.current);
+          blurRecalcTimeoutRef.current = null;
+        }
+      }
+    };
+
+    const handleFocusOut = (e: FocusEvent) => {
+      // Check if focus moved to another editable element within the same container
+      // Use setTimeout(0) to let the browser settle relatedTarget
+      setTimeout(() => {
+        const active = document.activeElement as HTMLElement | null;
+        if (
+          active &&
+          container.contains(active) &&
+          (active.contentEditable === "true" || active.closest("[contenteditable='true']"))
+        ) {
+          // Focus moved to another editable field within the container — stay suppressed
+          return;
+        }
+        // Focus left the container or moved to a non-editable element
+        isEditingRef.current = false;
+        // Schedule a deferred recalc to catch up on any suppressed layout changes
+        if (blurRecalcTimeoutRef.current) {
+          clearTimeout(blurRecalcTimeoutRef.current);
+        }
+        blurRecalcTimeoutRef.current = setTimeout(() => {
+          calcPages();
+          blurRecalcTimeoutRef.current = null;
+        }, 150);
+      }, 0);
+    };
+
+    container.addEventListener("focusin", handleFocusIn);
+    container.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      container.removeEventListener("focusin", handleFocusIn);
+      container.removeEventListener("focusout", handleFocusOut);
+      if (blurRecalcTimeoutRef.current) {
+        clearTimeout(blurRecalcTimeoutRef.current);
+      }
+    };
+  }, [containerRef, calcPages]);
 
   // Set up the ResizeObserver
   useEffect(() => {
