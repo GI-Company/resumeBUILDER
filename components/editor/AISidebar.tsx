@@ -219,7 +219,9 @@ export default function AISidebar({
     if (constructedContact) setContactLine(constructedContact);
     if (data.summary) setSummary(data.summary);
     
-    if (data.experiences && Array.isArray(data.experiences)) {
+    // Defensive: only overwrite array fields if the AI returned a non-empty array,
+    // preventing an accidental empty array from clearing real user data.
+    if (Array.isArray(data.experiences) && data.experiences.length > 0) {
       const sanitizedExps = data.experiences.map((exp: any, i: number) => ({
         id: exp.id || `exp-ai-${i}-${Date.now()}`,
         title: exp.title || "",
@@ -235,7 +237,7 @@ export default function AISidebar({
       setExperiences(sanitizedExps);
     }
     
-    if (data.educations && Array.isArray(data.educations)) {
+    if (Array.isArray(data.educations) && data.educations.length > 0) {
       const sanitizedEdus = data.educations.map((edu: any, i: number) => ({
         id: edu.id || `edu-ai-${i}-${Date.now()}`,
         degree: edu.degree || "",
@@ -249,14 +251,68 @@ export default function AISidebar({
       setEducations(sanitizedEdus);
     }
     
-    if (data.skills) {
-      const skillArray = Array.isArray(data.skills) ? data.skills : [data.skills];
-      const sanitizedSkills = skillArray.map((sk: any, i: number) => ({
+    if (Array.isArray(data.skills) && data.skills.length > 0) {
+      const sanitizedSkills = data.skills.map((sk: any, i: number) => ({
         id: sk.id || `sk-ai-${i}-${Date.now()}`,
         title: sk.title || "Skills",
         items: sk.items || "",
       }));
       setSkills(sanitizedSkills);
+    }
+
+    if (Array.isArray(data.projects) && data.projects.length > 0) {
+      const sanitizedProjects = data.projects.map((p: any, i: number) => ({
+        id: p.id || `proj-ai-${i}-${Date.now()}`,
+        title: p.title || "",
+        date: p.date || "",
+        bullets: Array.isArray(p.bullets)
+          ? p.bullets.map((b: any, j: number) => ({
+              id: b.id || `bp-ai-${i}-${j}-${Date.now()}`,
+              text: typeof b === "string" ? b : (b.text || ""),
+            }))
+          : [],
+      }));
+      setProjects(sanitizedProjects);
+    }
+
+    if (Array.isArray(data.publications) && data.publications.length > 0) {
+      const sanitizedPubs = data.publications.map((p: any, i: number) => ({
+        id: p.id || `pub-ai-${i}-${Date.now()}`,
+        title: p.title || "",
+        date: p.date || "",
+        bullets: Array.isArray(p.bullets)
+          ? p.bullets.map((b: any, j: number) => ({
+              id: b.id || `bpub-ai-${i}-${j}-${Date.now()}`,
+              text: typeof b === "string" ? b : (b.text || ""),
+            }))
+          : [],
+      }));
+      setPublications(sanitizedPubs);
+    }
+
+    if (Array.isArray(data.awards) && data.awards.length > 0) {
+      const sanitizedAwards = data.awards.map((a: any, i: number) => ({
+        id: a.id || `award-ai-${i}-${Date.now()}`,
+        title: a.title || "",
+        date: a.date || "",
+        bullets: Array.isArray(a.bullets)
+          ? a.bullets.map((b: any, j: number) => ({
+              id: b.id || `ba-ai-${i}-${j}-${Date.now()}`,
+              text: typeof b === "string" ? b : (b.text || ""),
+            }))
+          : [],
+      }));
+      setAwards(sanitizedAwards);
+    }
+
+    if (Array.isArray(data.licenses) && data.licenses.length > 0) {
+      const sanitizedLicenses = data.licenses.map((l: any, i: number) => ({
+        id: l.id || `lic-ai-${i}-${Date.now()}`,
+        title: l.title || l.name || "",
+        issuer: l.issuer || "",
+        date: l.date || "",
+      }));
+      setLicenses(sanitizedLicenses);
     }
   };
 
