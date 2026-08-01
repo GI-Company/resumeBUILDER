@@ -17,6 +17,10 @@ export const ContentEditableField = memo(({
   const elementRef = useRef<HTMLElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastHtmlRef = useRef(html);
+  
+  // Store the initial HTML to prevent React from diffing/updating it on re-renders,
+  // which causes the cursor to jump to the left.
+  const initialHtmlRef = useRef(html);
 
   useEffect(() => {
     if (elementRef.current && html !== lastHtmlRef.current) {
@@ -52,7 +56,7 @@ export const ContentEditableField = memo(({
       suppressContentEditableWarning
       onInput={handleInput}
       onBlur={handleBlur}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: initialHtmlRef.current }}
       {...props}
     />
   );
