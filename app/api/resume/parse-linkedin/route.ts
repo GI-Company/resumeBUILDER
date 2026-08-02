@@ -45,7 +45,8 @@ Return ONLY a valid, raw, minified JSON object with EXACTLY this structure:
   ]
 }
 
-CRITICAL: No markdown, no code blocks, no commentary. Raw valid JSON only.`;
+CRITICAL: No markdown, no code blocks, no commentary. Raw valid JSON only.
+CRITICAL INSTRUCTION: Do NOT put degrees, education, or schools into the "experiences" array. Educations must be strictly placed ONLY in the "educations" array.`;
 
 export async function POST(req: NextRequest) {
   try {

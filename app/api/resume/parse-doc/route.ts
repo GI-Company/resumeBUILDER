@@ -25,6 +25,7 @@ CRITICAL INSTRUCTIONS:
 1. Do NOT summarize or shorten anything.
 2. Extract EVERY SINGLE job, experience, education, certification, and bullet point.
 3. If the resume is 4+ pages long, you MUST extract all 4 pages of data. Be completely exhaustive.
+4. Do NOT put degrees, education, or schools into the "experiences" array. Educations must go ONLY in the "educations" array.
 
 Return ONLY a valid, raw, minified JSON object with EXACTLY this structure:
 {

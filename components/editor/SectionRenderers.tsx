@@ -129,6 +129,10 @@ export const SectionRenderer = memo(({
     : projects;
 
   if (targetPageIndex !== undefined) {
+    if (isPrint && section.id === "experience" && experiences.length === 0) return null;
+    if (isPrint && section.id === "education" && educations.length === 0) return null;
+    if (isPrint && section.id === "projects" && projects.length === 0) return null;
+
     if (section.id === "experience" && activeExperiences.length === 0 && headingPage !== targetPageIndex) return null;
     if (section.id === "education" && activeEducations.length === 0 && headingPage !== targetPageIndex) return null;
     if (section.id === "projects" && activeProjects.length === 0 && headingPage !== targetPageIndex) return null;
