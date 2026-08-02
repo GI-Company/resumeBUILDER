@@ -26,8 +26,7 @@ export default function InterviewPage() {
   }, [agentMessages, isAgentResponding]);
 
   useEffect(() => {
-    const userName = useResumeStore.getState().name || 'there';
-    const initialQuestion = `Hi ${userName}! I'm Agent Rez, your personal career strategist. Let's build your resume step-by-step. What's the exact title of the role you're targeting?`;
+    const initialQuestion = `Hi there! I'm Agent Rez, your personal career strategist. Let's build your resume step-by-step. What's your full name?`;
     setAgentMessages([
       { role: "assistant", content: initialQuestion }
     ]);
@@ -55,28 +54,35 @@ export default function InterviewPage() {
       if (nextStepNum === 1) {
         setAgentMessages([...updatedMessages, {
           role: "assistant",
-          content: "Great! 📬 **Step 2/5:** What are your preferred **contact details**? (e.g., city/state, phone, email, LinkedIn link)"
+          content: "Great to meet you! 🎯 **Step 2/6:** What's the exact title of the role you're targeting?"
         }]);
         setIsAgentResponding(false);
         return;
       } else if (nextStepNum === 2) {
         setAgentMessages([...updatedMessages, {
           role: "assistant",
-          content: "Excellent. 💼 **Step 3/5:** Tell me about your **Work Experience**. Mention your recent job titles, company names, dates, and what you achieved or did there. (Feel free to write informal notes or paste bullet points!)"
+          content: "Got it. 📬 **Step 3/6:** What are your preferred **contact details**? (e.g., city/state, phone, email, LinkedIn link)"
         }]);
         setIsAgentResponding(false);
         return;
       } else if (nextStepNum === 3) {
         setAgentMessages([...updatedMessages, {
           role: "assistant",
-          content: "Got it. 🎓 **Step 4/5:** What about your **Education & Certifications**? (e.g., B.S. in CS from UC Berkeley, Certifications from AWS/Scrum)"
+          content: "Excellent. 💼 **Step 4/6:** Tell me about your **Work Experience**. Mention your recent job titles, company names, dates, and what you achieved or did there. (Feel free to write informal notes or paste bullet points!)"
         }]);
         setIsAgentResponding(false);
         return;
       } else if (nextStepNum === 4) {
         setAgentMessages([...updatedMessages, {
           role: "assistant",
-          content: "Wonderful! 🛠️ **Step 5/5:** What are your **Core Skills & Technologies**? (e.g., React, Node.js, Python, Project Management, Agile)"
+          content: "Got it. 🎓 **Step 5/6:** What about your **Education & Certifications**? (e.g., B.S. in CS from UC Berkeley, Certifications from AWS/Scrum)"
+        }]);
+        setIsAgentResponding(false);
+        return;
+      } else if (nextStepNum === 5) {
+        setAgentMessages([...updatedMessages, {
+          role: "assistant",
+          content: "Wonderful! 🛠️ **Step 6/6:** What are your **Core Skills & Technologies**? (e.g., React, Node.js, Python, Project Management, Agile)"
         }]);
         setIsAgentResponding(false);
         return;
@@ -89,13 +95,13 @@ export default function InterviewPage() {
         };
         setAgentMessages([...updatedMessages, generatingMsg]);
 
-        const userName = useResumeStore.getState().name || 'Candidate';
+        const userName = currentAnswers.step0 || 'Candidate';
         const compilePrompt = `Please compile a complete, highly professional, impact-driven resume based on these career interview answers. Tailor the content, skills, and bullet points specifically for the target role:
         - name: ${userName}
-        - contactLine: ${currentAnswers.step1}
-        - summary: (Draft a professional summary for a ${currentAnswers.step0})
-        - experiences: ${currentAnswers.step2}
-        - educations: ${currentAnswers.step3}
+        - contactLine: ${currentAnswers.step2}
+        - summary: (Draft a professional summary for a ${currentAnswers.step1})
+        - experiences: ${currentAnswers.step3}
+        - educations: ${currentAnswers.step4}
         - skills: ${rawInput}
         
         Generate the professional experience with high-impact STAR method bullet points tailored to the target role. Return the full resume in our specialized JSON format.`;
@@ -204,9 +210,7 @@ export default function InterviewPage() {
 
         if (updateMatch) {
           try {
-            // BUG 2 LOGGING
-            console.log(`[DEBUG INTERVIEW] compilePrompt sent to AI:\n`, compilePrompt);
-            console.log(`[DEBUG INTERVIEW] Full raw textResponse from AI:\n`, textResponse);
+            // BUG 2 LOGGING removed
 
             const parsed = JSON.parse(updateMatch[1].trim());
             
@@ -271,16 +275,16 @@ export default function InterviewPage() {
         </div>
 
         {/* Progress Bar */}
-        {interviewStep >= 0 && interviewStep < 5 && (
+        {interviewStep >= 0 && interviewStep < 6 && (
           <div className="w-full bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-6 shadow-sm">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-indigo-700">
               <span>🎙️ Progress</span>
-              <span>Step {interviewStep + 1} of 5</span>
+              <span>Step {interviewStep + 1} of 6</span>
             </div>
             <div className="w-full bg-indigo-200/55 h-2 rounded-full mt-3 overflow-hidden">
               <div
                 className="bg-indigo-600 h-full transition-all duration-300"
-                style={{ width: `${((interviewStep + 1) / 5) * 100}%` }}
+                style={{ width: `${((interviewStep + 1) / 6) * 100}%` }}
               />
             </div>
           </div>
@@ -367,6 +371,7 @@ export default function InterviewPage() {
                     type="button"
                     onClick={() => {
                       const SAMPLE_ANSWERS = [
+                        "Alex Morgan",
                         "Senior Full Stack Software Engineer",
                         "San Francisco, CA | (415) 555-0198 | dev@example.com | linkedin.com/in/sampledev",
                         "Tech Lead at Acme Corp (2020-Present): Led a team of 5 engineers to rebuild the core React dashboard, reducing load times by 40%. Previously Frontend Developer at Globex (2018-2020): Built standard UI components and integrated REST APIs.",

@@ -483,10 +483,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         const loadedSummary = c.summary !== undefined ? c.summary : "Innovative Full-Stack Software Engineer with over 5 years of experience designing, building, and deploying highly scalable web applications. Proven track record of optimizing application performance, leading cross-functional teams, and implementing cloud-native solutions to drive business outcomes.";
         const loadedFooter = c.footer !== undefined ? c.footer : "Alex Morgan";
 
-        if (c.name !== undefined) setName(c.name);
-        if (c.contactLine !== undefined) setContactLine(c.contactLine);
-        if (c.summary !== undefined) setSummary(c.summary);
-        if (c.footer !== undefined) setFooter(c.footer);
+        setName(loadedName);
+        setContactLine(loadedContactLine);
+        setSummary(loadedSummary);
+        setFooter(loadedFooter);
         if (c.design) setDesign(c.design);
         if (c.sections) setSections(c.sections);
         if (c.manualBreaks) setManualBreaks(c.manualBreaks);
@@ -612,6 +612,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       setLicenses([]);
       setFooter("");
       setManualBreaks({});
+      setProjects([]);
+      setPublications([]);
+      setAwards([]);
+      setSectionHeaders({});
       setDesign((prev: any) => ({
         ...prev,
         template: "blank",

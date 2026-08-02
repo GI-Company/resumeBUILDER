@@ -400,17 +400,26 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
             {entitlement?.tier === 'free' && (
                <button
                  onClick={async () => {
-                    // Placeholder for Phase 2: Create Checkout Session
-                    const res = await fetch('/api/stripe/checkout', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-                        },
-                        body: JSON.stringify({}) // Price ID is securely determined server-side
-                    });
-                    const data = await res.json();
-                    if (data.url) window.location.href = data.url;
+                    const toastId = toast.loading('Redirecting to checkout...');
+                    try {
+                      // Placeholder for Phase 2: Create Checkout Session
+                      const res = await fetch('/api/stripe/checkout', {
+                          method: 'POST',
+                          headers: { 
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                          },
+                          body: JSON.stringify({}) // Price ID is securely determined server-side
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.url) {
+                        window.location.href = data.url;
+                      } else {
+                        toast.error(`Checkout failed: ${data.error || 'Server Error'}`, { id: toastId });
+                      }
+                    } catch (e: any) {
+                      toast.error(`Checkout failed: ${e.message || 'Network error'}`, { id: toastId });
+                    }
                  }}
                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                >

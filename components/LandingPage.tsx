@@ -158,7 +158,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: sandboxInput,
+          prompt: sandboxInput.slice(0, 10000),
           systemPrompt: SANDBOX_PRESETS[activeSandboxTab].systemPrompt,
           temperature: 0.4
         })

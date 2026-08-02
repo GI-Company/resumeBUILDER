@@ -12,15 +12,13 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
   let userObj: any = null;
   const authHeader = request.headers.get('Authorization');
   
-  // LOG: Raw Authorization header
-  console.log(`[DEBUG PDF LIMIT] Auth header present: ${!!authHeader}, Format: ${authHeader ? authHeader.substring(0, 15) + '...' : 'none'}`);
+  // Removed LOG
 
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
-    // LOG: Result of getUser
-    console.log(`[DEBUG PDF LIMIT] getUser error:`, error?.message || 'none', `| User found:`, !!user);
+    // Removed LOG
     
     if (!error && user) {
       userObj = user;
@@ -31,7 +29,7 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
     // Create an authenticated client to bypass RLS on entitlements
     const userClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key',
       {
         global: {
           headers: {
@@ -48,8 +46,7 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
       .eq('user_id', userObj.id)
       .single();
       
-    // LOG: Entitlements query result
-    console.log(`[DEBUG PDF LIMIT] Entitlements lookup for user ${userObj.id} -> tier: ${entitlement?.tier}`);
+    // Removed LOG
       
     const tier = entitlement?.tier || 'free';
     

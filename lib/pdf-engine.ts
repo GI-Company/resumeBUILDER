@@ -190,8 +190,7 @@ export function buildSelfContainedHtml(
         page-break-inside: avoid !important;
       }
 
-      .physical-page-container:empty,
-      .physical-page-container:not(:has([data-page-break-id])) {
+      .physical-page-container:empty {
         display: none !important;
       }
 
