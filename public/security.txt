@@ -1,5 +1,5 @@
-Contact: mailto:security@agentrez.ai
+Contact: mailto:security@agentrez.space
 Expires: 2027-12-31T23:59:59.000Z
 Preferred-Languages: en
-Canonical: https://resume-builder-pi-coral.vercel.app/.well-known/security.txt
-Policy: https://resume-builder-pi-coral.vercel.app/privacy
+Canonical: https://agentrez.space/.well-known/security.txt
+Policy: https://agentrez.space/privacy

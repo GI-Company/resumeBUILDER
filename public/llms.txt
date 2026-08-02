@@ -19,8 +19,9 @@ Agent Rez AI is a free, AI-powered resume builder that helps professionals creat
 
 ## Pricing
 
-- **Guest Tier (Free)**: 5 daily AI requests, all 6 templates, unlimited PDF prints, local autosave
-- **Signed-Up Tier (Free)**: Unlimited AI usage, cloud saving, draft management, shareable links — no credit card required
+- **Guest Tier (Free)**: 1 free PDF export/month, 5 daily AI requests
+- **Founding Tier (Free with Signup)**: 3 PDF exports/month, cloud saving, draft management, shareable links
+- **Premium Tier ($3.99/mo)**: Unlimited PDF exports, unlimited AI usage, priority access
 
 ## Technology
 
@@ -28,4 +29,4 @@ Built with Next.js 15, React 19, TypeScript, Supabase (PostgreSQL), and Groq AI 
 
 ## Contact
 
-Website: https://resume-builder-pi-coral.vercel.app
+Website: https://agentrez.space

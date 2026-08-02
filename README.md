@@ -1,11 +1,11 @@
 # 🚀 Agent Rez — The World's #1 AI Resume & Career Builder
 
-[![Try Agent Rez Live](https://img.shields.io/badge/Try_Agent_Rez-Live_App-blue?style=for-the-badge&logo=vercel)](https://resume-builder-pi-coral.vercel.app)
-[![ATS Accuracy](https://img.shields.io/badge/ATS_Accuracy-100%25_Guaranteed-emerald?style=for-the-badge)](https://resume-builder-pi-coral.vercel.app)
+[![Try Agent Rez Live](https://img.shields.io/badge/Try_Agent_Rez-Live_App-blue?style=for-the-badge&logo=vercel)](https://agentrez.space)
+[![ATS Accuracy](https://img.shields.io/badge/ATS_Accuracy-100%25_Guaranteed-emerald?style=for-the-badge)](https://agentrez.space)
 
 > **Beat Canva and Adobe Express. Create recruiter-approved, 100% ATS-optimized resumes in seconds.**
 
-👉 **[Launch Agent Rez Live App ➔](https://resume-builder-pi-coral.vercel.app)**
+👉 **[Launch Agent Rez Live App ➔](https://agentrez.space)**
 
 ---
 
@@ -38,7 +38,7 @@ Stop guessing if your resume works. Toggle the **F-Pattern Visual Hierarchy Over
 
 No installations required. Access Agent Rez directly in your browser:
 
-### 🌐 **[https://resume-builder-pi-coral.vercel.app](https://resume-builder-pi-coral.vercel.app)**
+### 🌐 **[https://agentrez.space](https://agentrez.space)**
 
 ---
 

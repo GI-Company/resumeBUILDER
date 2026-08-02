@@ -446,7 +446,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
           >
             <div className="flex flex-col items-center">
               <span className="text-xl md:text-2xl font-black text-gray-900">100%</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mt-0.5">Free PDF Exports</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mt-0.5">Watermark-Free PDFs</span>
             </div>
             <div className="flex flex-col items-center">
               <span className="text-xl md:text-2xl font-black text-gray-900">0</span>
@@ -554,16 +554,12 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                 </button>
               </div>
 
-              {/* Highlight statistics & feedback */}
-              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-2.5">
+              {/* Highlight statistics */}
+              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4">
                 <div className="flex items-center gap-2 text-blue-800">
                   <CheckCircle size={15} className="text-blue-600" />
                   <span className="text-xs font-bold">100% Recruiter & ATS Readable</span>
                 </div>
-                <p className="text-[11px] text-blue-900/80 leading-relaxed">
-                  "The Harvard template bypassed the recruiter filters instantly and scaled perfectly onto one page. Got response back from top-tier tech firms within 48 hours." 
-                  <br /><strong className="text-blue-950 font-bold block mt-1">— Alexander C., Senior Architect</strong>
-                </p>
               </div>
             </div>
 
@@ -1511,7 +1507,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             {/* E-E-A-T Navigation Links */}
             <nav aria-label="Footer navigation" className="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-400 font-medium">
               <Link href="#about" className="hover:text-white transition-colors">About</Link>
-              <Link href="mailto:support@agentrez.ai" id="contact" className="hover:text-white transition-colors">Contact</Link>
+              <Link href="mailto:support@agentrez.space" id="contact" className="hover:text-white transition-colors">Contact</Link>
               <Link href="/privacy" id="privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
               <Link href="/terms" id="terms" className="hover:text-white transition-colors">Terms of Service</Link>
               <Link href="/llms.txt" className="hover:text-white transition-colors">llms.txt</Link>
