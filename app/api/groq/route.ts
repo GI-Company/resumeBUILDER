@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
             model,
             stream: true,
             temperature: typeof temperature === 'number' ? temperature : 0.4,
+            max_tokens: aiAction === 'guided_interview' ? 8000 : 2048,
             messages: [
               { role: 'system', content: systemPrompt || defaultSystemPrompt },
               { role: 'user', content: prompt },

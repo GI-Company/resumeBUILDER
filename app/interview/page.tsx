@@ -214,6 +214,8 @@ export default function InterviewPage() {
 
             const parsed = JSON.parse(updateMatch[1].trim());
             
+            const hasMissingData = !parsed.experiences?.length || !parsed.educations?.length || !parsed.skills?.length;
+            
             // Replicate applyParsedResumeToState logic
             const storeState = useResumeStore.getState();
             // Apply to global store using shared robust parser
@@ -221,7 +223,12 @@ export default function InterviewPage() {
 
             actionExecuted = "updated_resume";
             setIsFinished(true);
-            toast.success("Resume compiled and ready! ✨");
+            
+            if (hasMissingData) {
+              toast.error("Resume compiled, but some sections might be missing. You may need to add them manually.");
+            } else {
+              toast.success("Resume compiled and ready! ✨");
+            }
           } catch (err) {
             console.error("Failed to parse compile JSON:", err);
           }
