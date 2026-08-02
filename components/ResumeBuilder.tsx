@@ -904,11 +904,38 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 
   // Handle active contentEditable blur on window beforeunload
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
+        document.activeElement.blur(); // Forces ContentEditableField to flush
+      }
+
+      // Synchronously save the absolute latest state to localStorage before the page dies
+      const state = useResumeStore.getState();
+      const trimmedPayload = {
+        name: state.name,
+        contactLine: state.contactLine,
+        summary: state.summary,
+        footer: state.footer,
+        design: state.design,
+        sections: state.sections,
+        manualBreaks: state.manualBreaks,
+        licenses: state.licenses,
+        skills: state.skills,
+        experiences: state.experiences,
+        educations: state.educations,
+        sectionHeaders: state.sectionHeaders,
+        projects: state.projects,
+        publications: state.publications,
+        awards: state.awards,
+      };
+
+      try {
+        localStorage.setItem("resume_autosave_content", JSON.stringify(trimmedPayload));
+      } catch (err) {
+        // Ignore quota issues
       }
     };
+    
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);

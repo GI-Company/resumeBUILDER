@@ -218,6 +218,12 @@ export default function InterviewPage() {
             
             // Replicate applyParsedResumeToState logic
             const storeState = useResumeStore.getState();
+            
+            // TEMPORARY LOGGING FOR DEBUGGING
+            console.log("=== RAW PARSED AI JSON ===");
+            console.log(JSON.stringify(parsed, null, 2));
+            console.log("==========================");
+
             // Apply to global store using shared robust parser
             applyAiResumeUpdate(parsed);
 
