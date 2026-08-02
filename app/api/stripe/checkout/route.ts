@@ -54,11 +54,11 @@ export async function POST(req: Request) {
       billing_address_collection: 'auto',
       allow_promotion_codes: true,
       customer_email: user.email,
+      client_reference_id: user.id,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       success_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/dashboard?canceled=true`,
-      client_reference_id: user.id,
     });
 
     return NextResponse.json({ url: checkoutSession.url });
