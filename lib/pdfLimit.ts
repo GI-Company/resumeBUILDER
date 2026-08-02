@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
 
 export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boolean = false) {
@@ -27,8 +28,21 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
   }
 
   if (userObj) {
+    // Create an authenticated client to bypass RLS on entitlements
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader || ''
+          }
+        }
+      }
+    );
+
     // 1. Check user tier
-    const { data: entitlement } = await supabase
+    const { data: entitlement } = await userClient
       .from('entitlements')
       .select('tier')
       .eq('user_id', userObj.id)
