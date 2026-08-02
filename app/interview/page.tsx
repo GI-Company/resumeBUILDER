@@ -90,12 +90,12 @@ export default function InterviewPage() {
 
         const userName = useResumeStore.getState().name || 'Candidate';
         const compilePrompt = `Please compile a complete, highly professional, impact-driven resume based on these career interview answers. Tailor the content, skills, and bullet points specifically for the target role:
-        - User's Name: ${userName}
-        - Target Role / Target Job Title: ${currentAnswers.step0}
-        - Contact Details: ${currentAnswers.step1}
-        - Work Experience: ${currentAnswers.step2}
-        - Education & Certifications: ${currentAnswers.step3}
-        - Skills & Competencies: ${rawInput}
+        - name: ${userName}
+        - contactLine: ${currentAnswers.step1}
+        - summary: (Draft a professional summary for a ${currentAnswers.step0})
+        - experiences: ${currentAnswers.step2}
+        - educations: ${currentAnswers.step3}
+        - skills: ${rawInput}
         
         Generate the professional experience with high-impact STAR method bullet points tailored to the target role. Return the full resume in our specialized JSON format.`;
 
@@ -225,11 +225,15 @@ export default function InterviewPage() {
               }
             }
 
+            const expArray = parsed.experiences || parsed.experience || parsed.workExperience || parsed.workExperiences || [];
+            const eduArray = parsed.educations || parsed.education || parsed.educationAndCertifications || [];
+            const skillArray = parsed.skills || parsed.skill || parsed.skillsAndCompetencies || [];
+
             useResumeStore.setState({
               name: parsed.name || storeState.name,
               contactLine: newContactLine || storeState.contactLine,
               summary: parsed.summary || storeState.summary,
-              experiences: parsed.experiences?.length > 0 ? parsed.experiences.map((exp: any, i: number) => {
+              experiences: expArray.length > 0 ? expArray.map((exp: any, i: number) => {
                 const rawBullets = exp.bullets || exp.responsibilities || exp.achievements || [];
                 return {
                   id: exp.id || `exp-ai-${i}-${Date.now()}`,
@@ -242,7 +246,7 @@ export default function InterviewPage() {
                   meta: exp.meta || exp.location || "",
                 };
               }) : storeState.experiences,
-              educations: parsed.educations?.length > 0 ? parsed.educations.map((edu: any, i: number) => {
+              educations: eduArray.length > 0 ? eduArray.map((edu: any, i: number) => {
                 const rawBullets = edu.bullets || edu.details || [];
                 return {
                   id: edu.id || `edu-ai-${i}-${Date.now()}`,
@@ -253,7 +257,7 @@ export default function InterviewPage() {
                   })) : [],
                 };
               }) : storeState.educations,
-              skills: parsed.skills?.length > 0 ? parsed.skills.map((s: any, i: number) => ({
+              skills: skillArray.length > 0 ? skillArray.map((s: any, i: number) => ({
                 id: s.id || `sk-ai-${i}-${Date.now()}`,
                 title: s.title || s.name || s.category || "",
                 items: Array.isArray(s.items) ? s.items.join(", ") : (s.items || s.details || s.skills || ""),
