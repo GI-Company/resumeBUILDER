@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bot, ChevronRight, CheckSquare, X } from 'lucide-react';
-import { useResumeStore } from '@/lib/store/useResumeStore';
+import { useResumeStore } from "@/lib/store/useResumeStore";
+import { applyAiResumeUpdate } from "@/lib/applyAiResumeUpdate";
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -211,58 +212,8 @@ export default function InterviewPage() {
             
             // Replicate applyParsedResumeToState logic
             const storeState = useResumeStore.getState();
-            let newContactLine = parsed.contactLine;
-            if (!newContactLine) {
-              const parts = [
-                parsed.location || parsed.cityState || parsed.address,
-                parsed.phone,
-                parsed.email,
-                parsed.linkedin,
-                parsed.website || parsed.portfolio,
-              ].filter(Boolean);
-              if (parts.length > 0) {
-                newContactLine = parts.join(' | ');
-              }
-            }
-
-            const expArray = parsed.experiences || parsed.experience || parsed.workExperience || parsed.workExperiences || [];
-            const eduArray = parsed.educations || parsed.education || parsed.educationAndCertifications || [];
-            const skillArray = parsed.skills || parsed.skill || parsed.skillsAndCompetencies || [];
-
-            useResumeStore.setState({
-              name: parsed.name || storeState.name,
-              contactLine: newContactLine || storeState.contactLine,
-              summary: parsed.summary || storeState.summary,
-              experiences: expArray.length > 0 ? expArray.map((exp: any, i: number) => {
-                const rawBullets = exp.bullets || exp.responsibilities || exp.achievements || [];
-                return {
-                  id: exp.id || `exp-ai-${i}-${Date.now()}`,
-                  title: exp.title || exp.jobTitle || exp.role || exp.company || "",
-                  date: exp.date || exp.duration || exp.timeframe || "",
-                  bullets: Array.isArray(rawBullets) ? rawBullets.map((b: any, j: number) => ({
-                    id: b.id || `b-ai-${i}-${j}-${Date.now()}`,
-                    text: typeof b === "string" ? b : (b.text || b.description || b.content || ""),
-                  })) : [],
-                  meta: exp.meta || exp.location || "",
-                };
-              }) : storeState.experiences,
-              educations: eduArray.length > 0 ? eduArray.map((edu: any, i: number) => {
-                const rawBullets = edu.bullets || edu.details || [];
-                return {
-                  id: edu.id || `edu-ai-${i}-${Date.now()}`,
-                  degree: edu.degree || edu.school || edu.institution || "",
-                  bullets: Array.isArray(rawBullets) ? rawBullets.map((b: any, j: number) => ({
-                    id: b.id || `eb-ai-${i}-${j}-${Date.now()}`,
-                    text: typeof b === "string" ? b : (b.text || b.description || ""),
-                  })) : [],
-                };
-              }) : storeState.educations,
-              skills: skillArray.length > 0 ? skillArray.map((s: any, i: number) => ({
-                id: s.id || `sk-ai-${i}-${Date.now()}`,
-                title: s.title || s.name || s.category || "",
-                items: Array.isArray(s.items) ? s.items.join(", ") : (s.items || s.details || s.skills || ""),
-              })) : storeState.skills,
-            });
+            // Apply to global store using shared robust parser
+            applyAiResumeUpdate(parsed);
 
             actionExecuted = "updated_resume";
             setIsFinished(true);

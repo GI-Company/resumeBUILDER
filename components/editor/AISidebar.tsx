@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
+import { applyAiResumeUpdate } from "@/lib/applyAiResumeUpdate";
 import posthog from 'posthog-js';
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -200,121 +201,7 @@ export default function AISidebar({
 
   const applyParsedResumeToState = (data: any) => {
     isHistoryActionRef.current = true;
-    
-    if (data.name) setName(data.name);
-    
-    let constructedContact = data.contactLine;
-    if (!constructedContact) {
-      const parts = [
-        data.location || data.cityState || data.address,
-        data.phone,
-        data.email,
-        data.linkedin,
-        data.website || data.portfolio,
-      ].filter(Boolean);
-      if (parts.length > 0) {
-        const pipe = ' <span class="text-[var(--hairline)] mx-2">|</span> ';
-        constructedContact = parts.join(pipe);
-      }
-    }
-    if (constructedContact) setContactLine(constructedContact);
-    if (data.summary) setSummary(data.summary);
-    
-    // Defensive: only overwrite array fields if the AI returned a non-empty array,
-    // preventing an accidental empty array from clearing real user data.
-    if (Array.isArray(data.experiences) && data.experiences.length > 0) {
-      const sanitizedExps = data.experiences.map((exp: any, i: number) => ({
-        id: exp.id || `exp-ai-${i}-${Date.now()}`,
-        title: exp.title || "",
-        date: exp.date || "",
-        bullets: Array.isArray(exp.bullets)
-          ? exp.bullets.map((b: any, j: number) => ({
-              id: b.id || `b-ai-${i}-${j}-${Date.now()}`,
-              text: typeof b === "string" ? b : (b.text || ""),
-            }))
-          : [],
-        meta: exp.meta || "",
-      }));
-      setExperiences(sanitizedExps);
-    }
-    
-    if (Array.isArray(data.educations) && data.educations.length > 0) {
-      const sanitizedEdus = data.educations.map((edu: any, i: number) => ({
-        id: edu.id || `edu-ai-${i}-${Date.now()}`,
-        degree: edu.degree || "",
-        bullets: Array.isArray(edu.bullets)
-          ? edu.bullets.map((b: any, j: number) => ({
-              id: b.id || `eb-ai-${i}-${j}-${Date.now()}`,
-              text: typeof b === "string" ? b : (b.text || ""),
-            }))
-          : [],
-      }));
-      setEducations(sanitizedEdus);
-    }
-    
-    if (Array.isArray(data.skills) && data.skills.length > 0) {
-      const sanitizedSkills = data.skills.map((sk: any, i: number) => ({
-        id: sk.id || `sk-ai-${i}-${Date.now()}`,
-        title: sk.title || "Skills",
-        items: sk.items || "",
-      }));
-      setSkills(sanitizedSkills);
-    }
-
-    if (Array.isArray(data.projects) && data.projects.length > 0) {
-      const sanitizedProjects = data.projects.map((p: any, i: number) => ({
-        id: p.id || `proj-ai-${i}-${Date.now()}`,
-        title: p.title || "",
-        date: p.date || "",
-        bullets: Array.isArray(p.bullets)
-          ? p.bullets.map((b: any, j: number) => ({
-              id: b.id || `bp-ai-${i}-${j}-${Date.now()}`,
-              text: typeof b === "string" ? b : (b.text || ""),
-            }))
-          : [],
-      }));
-      setProjects(sanitizedProjects);
-    }
-
-    if (Array.isArray(data.publications) && data.publications.length > 0) {
-      const sanitizedPubs = data.publications.map((p: any, i: number) => ({
-        id: p.id || `pub-ai-${i}-${Date.now()}`,
-        title: p.title || "",
-        date: p.date || "",
-        bullets: Array.isArray(p.bullets)
-          ? p.bullets.map((b: any, j: number) => ({
-              id: b.id || `bpub-ai-${i}-${j}-${Date.now()}`,
-              text: typeof b === "string" ? b : (b.text || ""),
-            }))
-          : [],
-      }));
-      setPublications(sanitizedPubs);
-    }
-
-    if (Array.isArray(data.awards) && data.awards.length > 0) {
-      const sanitizedAwards = data.awards.map((a: any, i: number) => ({
-        id: a.id || `award-ai-${i}-${Date.now()}`,
-        title: a.title || "",
-        date: a.date || "",
-        bullets: Array.isArray(a.bullets)
-          ? a.bullets.map((b: any, j: number) => ({
-              id: b.id || `ba-ai-${i}-${j}-${Date.now()}`,
-              text: typeof b === "string" ? b : (b.text || ""),
-            }))
-          : [],
-      }));
-      setAwards(sanitizedAwards);
-    }
-
-    if (Array.isArray(data.licenses) && data.licenses.length > 0) {
-      const sanitizedLicenses = data.licenses.map((l: any, i: number) => ({
-        id: l.id || `lic-ai-${i}-${Date.now()}`,
-        title: l.title || l.name || "",
-        issuer: l.issuer || "",
-        date: l.date || "",
-      }));
-      setLicenses(sanitizedLicenses);
-    }
+    applyAiResumeUpdate(data);
   };
 
   const handleStartInterview = () => {
