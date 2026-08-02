@@ -27,16 +27,12 @@ export async function checkAndLogPdfLimit(request: NextRequest, checkOnly: boole
 
   if (userObj) {
     // Create an authenticated client to bypass RLS on entitlements
+    const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const cleanUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+    
     const userClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader || ''
-          }
-        }
-      }
+      cleanUrl,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key'
     );
 
     // 1. Check user tier
