@@ -207,9 +207,7 @@ export default function ShareTemplate({ resumeData }: ShareTemplateProps) {
             <div className="space-y-3">
               {licenses.map((lic: any, idx: number) => (
                 <div key={idx} className="text-sm">
-                  <span className="font-bold text-gray-900">{lic.name}</span>
-                  {lic.issuer && <span className="text-gray-600"> — {lic.issuer}</span>}
-                  {lic.date && <div className="text-xs font-mono text-gray-500 mt-0.5">{lic.date}</div>}
+                  <span className="font-bold text-gray-900" dangerouslySetInnerHTML={{ __html: lic.text || "" }} />
                 </div>
               ))}
             </div>

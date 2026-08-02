@@ -114,12 +114,13 @@ export function applyAiResumeUpdate(parsed: any) {
   }) : storeState.awards;
 
   const newLicenses = (Array.isArray(licArray) && licArray.length > 0) ? licArray.map((l: any, i: number) => {
-    if (typeof l === "string") return { id: `lic-ai-${i}-${Date.now()}`, title: l, issuer: "", date: "" };
+    if (typeof l === "string") return { id: `lic-ai-${i}-${Date.now()}`, text: l };
+    const nameStr = l.title || l.name || l.text || "";
+    const issuerStr = l.issuer ? ` — ${l.issuer}` : "";
+    const dateStr = l.date ? ` (${l.date})` : "";
     return {
       id: l.id || `lic-ai-${i}-${Date.now()}`,
-      title: l.title || l.name || "",
-      issuer: l.issuer || "",
-      date: l.date || "",
+      text: `${nameStr}${issuerStr}${dateStr}`.trim(),
     };
   }) : storeState.licenses;
 
