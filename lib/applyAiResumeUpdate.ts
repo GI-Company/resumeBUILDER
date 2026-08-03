@@ -124,12 +124,35 @@ export function applyAiResumeUpdate(parsed: any) {
     };
   }) : storeState.licenses;
 
+  const eduRegex = /\b(B\.S\.|B\.A\.|Bachelor|Master|University|College|GPA|Ph\.D)\b/i;
+  const finalExperiences: any[] = [];
+  const extractedEducations: any[] = [];
+
+  for (const exp of (newExperiences || [])) {
+    const titleText = exp.title || "";
+    const metaText = exp.meta || "";
+    const firstBulletText = exp.bullets?.[0]?.text || "";
+    
+    // Safety net: Check if title, meta, or the first bullet strongly signals an education entry
+    if (eduRegex.test(titleText) || eduRegex.test(metaText) || eduRegex.test(firstBulletText)) {
+      extractedEducations.push({
+        id: `edu-ai-fallback-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        degree: titleText + (metaText ? ` | ${metaText}` : ""),
+        bullets: exp.bullets || []
+      });
+    } else {
+      finalExperiences.push(exp);
+    }
+  }
+
+  const finalEducations = [...(newEducations || []), ...extractedEducations];
+
   useResumeStore.setState({
     name: newName,
     contactLine: newContactLine || storeState.contactLine,
     summary: parsed.summary || storeState.summary,
-    experiences: newExperiences,
-    educations: newEducations,
+    experiences: finalExperiences,
+    educations: finalEducations,
     skills: newSkills,
     projects: newProjects,
     publications: newPublications,

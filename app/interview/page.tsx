@@ -150,6 +150,7 @@ export default function InterviewPage() {
         
         CRITICAL: Do NOT use placeholder names like 'Jane Doe' or placeholder companies. If the user did not provide a specific piece of information, leave it blank or omit it, but NEVER invent fake personal details.
         CRITICAL: You MUST use the exact JSON keys shown above: "title", "date", "bullets", "text", "meta", "degree", "items". If you use different keys, the resume will break and render empty!
+        CRITICAL: Education entries (degrees, GPA, university names) must ONLY go in the 'educations' array, NEVER in 'experiences' — even if the user described their education in the same message as their work history. If an item mentions a degree or university, it belongs in educations, period.
         
         Provide a friendly, conversational message before the XML block congratulating the user on finishing their career interview and explaining how their resume was crafted.`;
 
@@ -212,18 +213,20 @@ export default function InterviewPage() {
           try {
             // BUG 2 LOGGING removed
 
-            const parsed = JSON.parse(updateMatch[1].trim());
+            let jsonString = updateMatch[1].trim();
+            // Robust extraction in case the AI outputs conversational text inside the XML tags
+            const firstBrace = jsonString.indexOf('{');
+            const lastBrace = jsonString.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+              jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+            }
+            const parsed = JSON.parse(jsonString);
             
             const hasMissingData = !parsed.experiences?.length || !parsed.educations?.length || !parsed.skills?.length;
             
             // Replicate applyParsedResumeToState logic
             const storeState = useResumeStore.getState();
             
-            // TEMPORARY LOGGING FOR DEBUGGING
-            console.log("=== RAW PARSED AI JSON ===");
-            console.log(JSON.stringify(parsed, null, 2));
-            console.log("==========================");
-
             // Apply to global store using shared robust parser
             applyAiResumeUpdate(parsed);
 
@@ -317,16 +320,18 @@ export default function InterviewPage() {
                 )}
               >
                 <div className="whitespace-pre-wrap font-sans">
-                  {msg.content.split("\n").map((line: string, lIdx: number) => {
-                    let rendered = line;
-                    if (rendered.includes("<UPDATE_RESUME>")) rendered = rendered.split("<UPDATE_RESUME>")[0] + "\n*(Resume loaded in editor!)*";
-                    if (rendered.includes("</UPDATE_RESUME>")) return null;
-                    const isBullet = rendered.startsWith("•") || rendered.startsWith("- ") || rendered.startsWith("* ");
-                    
-                    const parts = rendered.split(/\*\*(.*?)\*\*/g);
-                    const element = parts.map((part, pIdx) => (pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold">{part}</strong> : part));
-                    return <div key={lIdx} className={cn(isBullet ? "pl-4 py-1" : "py-1")}>{element}</div>;
-                  })}
+                  {(() => {
+                    let displayContent = msg.content;
+                    if (displayContent.includes("<UPDATE_RESUME>")) {
+                      displayContent = displayContent.replace(/<UPDATE_RESUME>[\s\S]*?(<\/UPDATE_RESUME>|$)/, "\n*(Resume loaded in editor!)*");
+                    }
+                    return displayContent.split("\n").map((line: string, lIdx: number) => {
+                      const isBullet = line.startsWith("•") || line.startsWith("- ") || line.startsWith("* ");
+                      const parts = line.split(/\*\*(.*?)\*\*/g);
+                      const element = parts.map((part, pIdx) => (pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold">{part}</strong> : part));
+                      return <div key={lIdx} className={cn(isBullet ? "pl-4 py-1" : "py-1")}>{element}</div>;
+                    });
+                  })()}
                 </div>
                 {msg.actionExecuted === "updated_resume" && (
                   <div className="mt-3 pt-3 border-t border-gray-200 text-sm font-bold text-emerald-600 flex items-center gap-1.5">
