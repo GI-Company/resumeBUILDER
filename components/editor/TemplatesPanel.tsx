@@ -128,7 +128,17 @@ export default function TemplatesPanel({
                 : "border-gray-100 bg-white",
             )}
           >
-            <div className="font-bold text-gray-900 mb-1">{t.name}</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="font-bold text-gray-900">{t.name}</div>
+              {t.layout === "sidebar" && (
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded"
+                  title="Two-column layouts can be read out of order by some ATS parsers. Use a single-column template if you're optimizing for ATS screening."
+                >
+                  ATS risk
+                </span>
+              )}
+            </div>
             <div className="text-xs text-gray-600 leading-snug">
               {t.desc}
             </div>

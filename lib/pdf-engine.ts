@@ -316,7 +316,7 @@ export async function runClientSideRetinaFallback(
  * Main Enterprise Export Pipeline
  * Orchestrates the full SAAS PDF export workflow with automatic fallbacks.
  */
-export async function exportResumeToPdf(options: PdfExportOptions): Promise<void> {
+export async function exportResumeToPdf(options: PdfExportOptions): Promise<{ stage: 'server' | 'client_canvas' }> {
   const { resumeElement, canvasWrapElement, filename, pageSize, onProgress } = options;
   const cleanFilename = filename.endsWith('.pdf') ? filename : `${filename.replace(/[^a-z0-9]/gi, '_')}_Resume.pdf`;
 
@@ -408,6 +408,7 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
     URL.revokeObjectURL(url);
 
     onProgress?.('completed', 'High-quality vector PDF downloaded successfully!');
+    return { stage: 'server' };
   } catch (serverError: any) {
     if (serverError.code === 'RATE_LIMIT_EXCEEDED') {
       onProgress?.('error', serverError.message);
@@ -425,13 +426,24 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
         pageSize,
         (msg) => onProgress?.('client_fallback', msg)
       );
-      onProgress?.('completed', 'Retina canvas PDF generated and downloaded successfully!');
+      // IMPORTANT: this PDF is a rasterized image, not real text. It looks
+      // identical on screen but an ATS (or Ctrl+F) cannot read a word of it.
+      // Callers should NOT claim "vector" or "ATS-optimized" for this path.
+      onProgress?.('completed', 'PDF downloaded — note: this fallback method embeds your resume as an image, so it will NOT be machine-readable by ATS systems. Try exporting again in a moment for the searchable version.');
+      return { stage: 'client_canvas' };
     } catch (clientError: any) {
       console.error('[PDF Engine] Client canvas rendering also failed. Invoking native system print fallback:', clientError);
       onProgress?.('error', 'PDF generation fallback initiated. Opening system print dialogue...');
       
       // Stage 3: Native System Print Fallback
       window.print();
+      // window.print() is fire-and-forget (no completion signal, and the user
+      // may cancel the dialog) so we can't claim success here — the caller's
+      // catch block already handles messaging for this path. Tag the error so
+      // the caller knows NOT to call window.print() again itself.
+      const printFallbackError = new Error('Automatic PDF generation failed. Opened your browser\'s print dialog instead — choose "Save as PDF" to finish.');
+      (printFallbackError as any).code = 'PRINT_FALLBACK_ALREADY_TRIGGERED';
+      throw printFallbackError;
     }
   }
 }

@@ -7,3 +7,5 @@ export * from './structural-parser';
 export * from './layout-balancer';
 export * from './gaze-profiler';
 export * from './sync-engine';
+export * from './skills-taxonomy';
+export * from './ats-engine';

@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore
 import pdfParse from 'pdf-parse';
-import Groq from 'groq-sdk';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { getPostHogClient } from '@/lib/posthog-server';
-import { env } from '@/lib/env';
+import { runAtsAudit } from '@/lib/agent-rez';
 
 export async function POST(req: NextRequest) {
-  const groq = new Groq({
-    apiKey: env.GROQ,
-  });
-
   try {
-    // 1. Enforce Rate Limiting
+    // 1. Enforce Rate Limiting.
+    // Note: this route no longer calls an LLM, so the guest limit here is
+    // now protecting against scraping/abuse of PDF parsing rather than AI
+    // spend — worth revisiting if it should be a separate, looser limit.
     const { errorResponse, ip } = await enforceRateLimit(req);
-    
+
     if (errorResponse) {
       return errorResponse;
     }
@@ -36,33 +34,15 @@ export async function POST(req: NextRequest) {
     const pdfData = await pdfParse(buffer);
     const resumeText = pdfData.text;
 
-    const prompt = `You are an expert ATS (Applicant Tracking System) parser and resume reviewer. 
-Analyze the following resume against the provided job description.
-Return ONLY a valid JSON object containing exactly two keys:
-1. "score": an integer between 0 and 100 representing the ATS match score.
-2. "flaws": an array of exactly 3 concise strings describing the major keyword or structural gaps.
+    if (!resumeText || resumeText.trim().length < 50) {
+      return NextResponse.json(
+        { error: 'Could not extract enough text from that PDF. Try a text-based (non-scanned) resume.' },
+        { status: 422 }
+      );
+    }
 
-Job Description:
-${jobDescription}
-
-Resume Text:
-${resumeText}`;
-
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-    });
-
-    const content = completion.choices[0]?.message?.content || '{}';
-    const result = JSON.parse(content);
-
-    const score = result.score || 50;
-    const flaws = result.flaws || [
-      'Missing key industry keywords',
-      'Formatting incompatible with standard ATS',
-      'Lack of quantified impact metrics',
-    ];
+    // Deterministic, reproducible scan — same resume + JD always yields the same result.
+    const audit = runAtsAudit(resumeText, jobDescription);
 
     // Fire server-side PostHog completion event
     const posthogClient = getPostHogClient();
@@ -70,14 +50,24 @@ ${resumeText}`;
       posthogClient.capture({
         distinctId: ip,
         event: 'scanner_completed',
-        properties: { score, flawsCount: flaws.length },
+        properties: {
+          score: audit.score,
+          keywordCoverage: audit.keywordCoverage,
+          missingKeywordCount: audit.missingKeywords.length,
+        },
       });
       await posthogClient.shutdown();
     }
 
     return NextResponse.json({
-      score,
-      flaws,
+      score: audit.score,
+      keywordCoverage: audit.keywordCoverage,
+      matchedKeywords: audit.matchedKeywords,
+      missingKeywords: audit.missingKeywords,
+      sectionChecks: audit.sectionChecks,
+      metricsScore: audit.metricsScore,
+      verbScore: audit.verbScore,
+      weakVerbsFound: audit.weakVerbsFound,
       resumeText,
     });
   } catch (error: any) {

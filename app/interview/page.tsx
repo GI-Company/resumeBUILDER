@@ -5,9 +5,75 @@ import { useRouter } from 'next/navigation';
 import { Bot, ChevronRight, CheckSquare, X } from 'lucide-react';
 import { useResumeStore } from "@/lib/store/useResumeStore";
 import { applyAiResumeUpdate } from "@/lib/applyAiResumeUpdate";
+import { checkResumeCompleteness } from "@/lib/agent-rez";
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+
+/** Streams one Groq completion and extracts the <UPDATE_RESUME> JSON payload, if any. */
+async function requestResumeCompletion(
+  prompt: string,
+  systemPrompt: string,
+  headers: Record<string, string>
+): Promise<{ textResponse: string; parsed: any | null }> {
+  const response = await fetch("/api/groq", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ prompt, systemPrompt, temperature: 0.3, aiAction: "guided_interview" }),
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData?.error || "Failed to compile resume.");
+  }
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+  let textResponse = "";
+
+  if (reader) {
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            const token = parsed.choices?.[0]?.delta?.content ?? "";
+            textResponse += token;
+          } catch (e: any) {
+            textResponse += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
+          }
+        }
+      }
+    }
+  }
+
+  const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
+  let parsed: any = null;
+  if (updateMatch) {
+    try {
+      let jsonString = updateMatch[1].trim();
+      const firstBrace = jsonString.indexOf('{');
+      const lastBrace = jsonString.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+        jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+      }
+      parsed = JSON.parse(jsonString);
+    } catch (err) {
+      console.error("Failed to parse compile JSON:", err);
+    }
+  }
+
+  return { textResponse, parsed };
+}
 
 export default function InterviewPage() {
   const router = useRouter();
@@ -160,86 +226,39 @@ export default function InterviewPage() {
           headers["Authorization"] = `Bearer ${session.access_token}`;
         }
 
-        const response = await fetch("/api/groq", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            prompt: compilePrompt,
-            systemPrompt,
-            temperature: 0.3,
-            aiAction: "guided_interview"
-          })
-        });
+        let { textResponse, parsed } = await requestResumeCompletion(compilePrompt, systemPrompt, headers);
+        let completeness = parsed ? checkResumeCompleteness(parsed) : { complete: false, missingSections: ['experiences', 'educations', 'skills', 'summary'] };
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData?.error || "Failed to compile resume.");
-        }
-
-        // Consume the SSE stream
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let textResponse = "";
-
-        if (reader) {
-          let buffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-            
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6).trim();
-                if (data === "[DONE]") break;
-                try {
-                  const parsed = JSON.parse(data);
-                  const token = parsed.choices?.[0]?.delta?.content ?? "";
-                  textResponse += token;
-                } catch (e: any) {
-                  textResponse += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
-                }
-              }
+        // Verification gate: if the AI dropped whole sections (the "header only"
+        // failure mode), retry once with an explicit correction prompt instead of
+        // silently committing a broken resume. Capped at 1 retry to bound latency/cost.
+        if (parsed && !completeness.complete) {
+          console.warn('[Interview] AI response missing sections, retrying:', completeness.missingSections);
+          const retryPrompt = `${compilePrompt}\n\nYour previous response was missing these required sections: ${completeness.missingSections.join(', ')}. Regenerate the COMPLETE resume JSON with every section filled in from the interview answers above — do not omit any of them.`;
+          const retryResult = await requestResumeCompletion(retryPrompt, systemPrompt, headers);
+          if (retryResult.parsed) {
+            const retryCompleteness = checkResumeCompleteness(retryResult.parsed);
+            // Use the retry if it's more complete than the original attempt.
+            if (retryCompleteness.missingSections.length < completeness.missingSections.length) {
+              textResponse = retryResult.textResponse;
+              parsed = retryResult.parsed;
+              completeness = retryCompleteness;
             }
           }
         }
+
         const updatedHistory = [...updatedMessages, generatingMsg];
-        const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
         let actionExecuted = undefined;
 
-        if (updateMatch) {
-          try {
-            // BUG 2 LOGGING removed
+        if (parsed) {
+          applyAiResumeUpdate(parsed);
+          actionExecuted = "updated_resume";
+          setIsFinished(true);
 
-            let jsonString = updateMatch[1].trim();
-            // Robust extraction in case the AI outputs conversational text inside the XML tags
-            const firstBrace = jsonString.indexOf('{');
-            const lastBrace = jsonString.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
-              jsonString = jsonString.substring(firstBrace, lastBrace + 1);
-            }
-            const parsed = JSON.parse(jsonString);
-            
-            const hasMissingData = !parsed.experiences?.length || !parsed.educations?.length || !parsed.skills?.length;
-            
-            // Replicate applyParsedResumeToState logic
-            const storeState = useResumeStore.getState();
-            
-            // Apply to global store using shared robust parser
-            applyAiResumeUpdate(parsed);
-
-            actionExecuted = "updated_resume";
-            setIsFinished(true);
-            
-            if (hasMissingData) {
-              toast.error("Resume compiled, but some sections might be missing. You may need to add them manually.");
-            } else {
-              toast.success("Resume compiled and ready! ✨");
-            }
-          } catch (err) {
-            console.error("Failed to parse compile JSON:", err);
+          if (!completeness.complete) {
+            toast.error(`Resume compiled, but still missing: ${completeness.missingSections.join(', ')}. You may need to add it manually.`);
+          } else {
+            toast.success("Resume compiled and ready! ✨");
           }
         }
 

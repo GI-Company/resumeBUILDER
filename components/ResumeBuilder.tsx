@@ -1223,7 +1223,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       toastId = toast.loading("Initializing high-fidelity PDF engine...");
       const { data: { session } } = await supabase.auth.getSession();
 
-      await exportResumeToPdf({
+      const { stage } = await exportResumeToPdf({
         resumeElement,
         canvasWrapElement,
         filename: `${name.replace(/\s+/g, '_') || 'Resume'}.pdf`,
@@ -1238,23 +1238,38 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
         },
       });
 
-      toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
-      posthog.capture('pdf_exported', { page_size: design.pageSize === 'a4' ? 'a4' : 'letter' });
+      if (stage === 'server') {
+        toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
+      } else {
+        // Client-canvas fallback: real download, but it's a rasterized image —
+        // do not claim "vector" or "ATS-optimized" for this path.
+        toast.error(
+          "PDF downloaded, but this fallback method isn't machine-readable by ATS systems. Try exporting again in a moment for the searchable version.",
+          { id: toastId, duration: 7000 }
+        );
+      }
+      posthog.capture('pdf_exported', { page_size: design.pageSize === 'a4' ? 'a4' : 'letter', stage });
 
-      // Fire-and-forget: Log to public activity feed for landing page social proof
-      fetch('/api/log-activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_type: 'PDF_EXPORTED',
-          display_message: '📄 Someone just exported an ATS-optimized PDF resume'
-        })
-      }).catch(e => console.error("Failed to log activity:", e));
+      // Fire-and-forget: Log to public activity feed for landing page social proof.
+      // Only log the "ATS-optimized" claim for the real vector export path.
+      if (stage === 'server') {
+        fetch('/api/log-activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_type: 'PDF_EXPORTED',
+            display_message: '📄 Someone just exported an ATS-optimized PDF resume'
+          })
+        }).catch(e => console.error("Failed to log activity:", e));
+      }
 
     } catch (err: any) {
       console.error("PDF export failed:", err);
       if (err.code === 'RATE_LIMIT_EXCEEDED' || (err.message && err.message.includes('limit reached'))) {
         toast.error(err.message, { id: toastId, duration: 6000 });
+      } else if (err.code === 'PRINT_FALLBACK_ALREADY_TRIGGERED') {
+        // pdf-engine already opened the system print dialog — don't open it twice.
+        toast.error(err.message, { id: toastId, duration: 7000 });
       } else {
         toast.error("PDF export failed. Opening system print as fallback...", { id: toastId });
         window.print();

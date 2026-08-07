@@ -5,9 +5,26 @@ import { Upload, FileText, AlertCircle, ArrowRight, Loader2 } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 
+interface KeywordHit {
+  term: string;
+  category: string;
+  weight: number;
+}
+
+interface SectionCheck {
+  category: string;
+  present: boolean;
+}
+
 interface ScanResult {
   score: number;
-  flaws: string[];
+  keywordCoverage: number;
+  matchedKeywords: KeywordHit[];
+  missingKeywords: KeywordHit[];
+  sectionChecks: SectionCheck[];
+  metricsScore: number;
+  verbScore: number;
+  weakVerbsFound: string[];
   resumeText: string;
 }
 
@@ -212,18 +229,29 @@ export function PublicATSScanner({ onSignupClick }: PublicATSScannerProps) {
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-500" />
-                    Identified Gaps & Flaws
+                    Missing Keywords ({result.missingKeywords.length})
                   </h4>
-                  <div className="space-y-3">
-                    {result.flaws.map((flaw, index) => (
-                      <div key={index} className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-sm font-medium text-foreground hover:bg-amber-500/10 transition-colors">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-xs font-bold">
-                          {index + 1}
-                        </span>
-                        <span className="leading-relaxed text-muted-foreground">{flaw}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {result.missingKeywords.length === 0 ? (
+                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-sm font-medium text-emerald-700">
+                      Every keyword we found in the job description is present in your resume.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {result.missingKeywords.map((kw) => (
+                        <div key={kw.term} className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-sm font-medium text-foreground hover:bg-amber-500/10 transition-colors">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-xs font-bold">
+                            !
+                          </span>
+                          <span className="leading-relaxed text-muted-foreground">
+                            <span className="text-foreground font-semibold">{kw.term}</span> appears in the job description but not in your resume.
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Keyword coverage: {result.keywordCoverage}% &middot; Quantified impact: {result.metricsScore}% &middot; Strong verbs: {result.verbScore}%
+                  </p>
                 </div>
               </div>
 

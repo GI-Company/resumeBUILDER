@@ -1,0 +1,976 @@
+<USER_REQUEST>
+diff --git a/app/api/scanner/route.ts b/app/api/scanner/route.ts
+index b5ed957..a07b8dc 100644
+--- a/app/api/scanner/route.ts
++++ b/app/api/scanner/route.ts
+@@ -1,20 +1,18 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ // @ts-ignore
+ import pdfParse from 'pdf-parse';
+-import Groq from 'groq-sdk';
+ import { enforceRateLimit } from '@/lib/rateLimit';
+ import { getPostHogClient } from '@/lib/posthog-server';
+-import { env } from '@/lib/env';
++import { runAtsAudit } from '@/lib/agent-rez';
+ 
+ export async function POST(req: NextRequest) {
+-  const groq = new Groq({
+-    apiKey: env.GROQ,
+-  });
+-
+   try {
+-    // 1. Enforce Rate Limiting
++    // 1. Enforce Rate Limiting.
++    // Note: this route no longer calls an LLM, so the guest limit here is
++    // now protecting against scraping/abuse of PDF parsing rather than AI
++    // spend — worth revisiting if it should be a separate, looser limit.
+     const { errorResponse, ip } = await enforceRateLimit(req);
+-    
++
+     if (errorResponse) {
+       return errorResponse;
+     }
+@@ -36,33 +34,15 @@ export async function POST(req: NextRequest) {
+     const pdfData = await pdfParse(buffer);
+     const resumeText = pdfData.text;
+ 
+-    const prompt = `You are an expert ATS (Applicant Tracking System) parser and resume reviewer. 
+-Analyze the following resume against the provided job description.
+-Return ONLY a valid JSON object containing exactly two keys:
+-1. "score": an integer between 0 and 100 representing the ATS match score.
+-2. "flaws": an array of exactly 3 concise strings describing the major keyword or structural gaps.
+-
+-Job Description:
+-${jobDescription}
+-
+-Resume Text:
+-${resumeText}`;
+-
+-    const completion = await groq.chat.completions.create({
+-      model: 'llama-3.3-70b-versatile',
+-      messages: [{ role: 'user', content: prompt }],
+-      response_format: { type: 'json_object' },
+-    });
+-
+-    const content = completion.choices[0]?.message?.content || '{}';
+-    const result = JSON.parse(content);
++    if (!resumeText || resumeText.trim().length < 50) {
++      return NextResponse.json(
++        { error: 'Could not extract enough text from that PDF. Try a text-based (non-scanned) resume.' },
++        { status: 422 }
++      );
++    }
+ 
+-    const score = result.score || 50;
+-    const flaws = result.flaws || [
+-      'Missing key industry keywords',
+-      'Formatting incompatible with standard ATS',
+-      'Lack of quantified impact metrics',
+-    ];
++    // Deterministic, reproducible scan — same resume + JD always yields the same result.
++    const audit = runAtsAudit(resumeText, jobDescription);
+ 
+     // Fire server-side PostHog completion event
+     const posthogClient = getPostHogClient();
+@@ -70,14 +50,24 @@ ${resumeText}`;
+       posthogClient.capture({
+         distinctId: ip,
+         event: 'scanner_completed',
+-        properties: { score, flawsCount: flaws.length },
++        properties: {
++          score: audit.score,
++          keywordCoverage: audit.keywordCoverage,
++          missingKeywordCount: audit.missingKeywords.length,
++        },
+       });
+       await posthogClient.shutdown();
+     }
+ 
+     return NextResponse.json({
+-      score,
+-      flaws,
++      score: audit.score,
++      keywordCoverage: audit.keywordCoverage,
++      matchedKeywords: audit.matchedKeywords,
++      missingKeywords: audit.missingKeywords,
++      sectionChecks: audit.sectionChecks,
++      metricsScore: audit.metricsScore,
++      verbScore: audit.verbScore,
++      weakVerbsFound: audit.weakVerbsFound,
+       resumeText,
+     });
+   } catch (error: any) {
+diff --git a/app/interview/page.tsx b/app/interview/page.tsx
+index ea73ca4..49ee533 100644
+--- a/app/interview/page.tsx
++++ b/app/interview/page.tsx
+@@ -5,10 +5,76 @@ import { useRouter } from 'next/navigation';
+ import { Bot, ChevronRight, CheckSquare, X } from 'lucide-react';
+ import { useResumeStore } from "@/lib/store/useResumeStore";
+ import { applyAiResumeUpdate } from "@/lib/applyAiResumeUpdate";
++import { checkResumeCompleteness } from "@/lib/agent-rez";
+ import { toast } from 'react-hot-toast';
+ import { supabase } from '@/lib/supabase';
+ import { cn } from '@/lib/utils';
+ 
++/** Streams one Groq completion and extracts the <UPDATE_RESUME> JSON payload, if any. */
++async function requestResumeCompletion(
++  prompt: string,
++  systemPrompt: string,
++  headers: Record<string, string>
++): Promise<{ textResponse: string; parsed: any | null }> {
++  const response = await fetch("/api/groq", {
++    method: "POST",
++    headers,
++    body: JSON.stringify({ prompt, systemPrompt, temperature: 0.3, aiAction: "guided_interview" }),
++  });
++
++  if (!response.ok) {
++    const errData = await response.json().catch(() => ({}));
++    throw new Error(errData?.error || "Failed to compile resume.");
++  }
++
++  const reader = response.body?.getReader();
++  const decoder = new TextDecoder();
++  let textResponse = "";
++
++  if (reader) {
++    let buffer = "";
++    while (true) {
++      const { done, value } = await reader.read();
++      if (done) break;
++      buffer += decoder.decode(value, { stream: true });
++      const lines = buffer.split("\n");
++      buffer = lines.pop() || "";
++
++      for (const line of lines) {
++        if (line.startsWith("data: ")) {
++          const data = line.slice(6).trim();
++          if (data === "[DONE]") break;
++          try {
++            const parsed = JSON.parse(data);
++            const token = parsed.choices?.[0]?.delta?.content ?? "";
++            textResponse += token;
++          } catch (e: any) {
++            textResponse += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
++          }
++        }
++      }
++    }
++  }
++
++  const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
++  let parsed: any = null;
++  if (updateMatch) {
++    try {
++      let jsonString = updateMatch[1].trim();
++      const firstBrace = jsonString.indexOf('{');
++      const lastBrace = jsonString.lastIndexOf('}');
++      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
++        jsonString = jsonString.substring(firstBrace, lastBrace + 1);
++      }
++      parsed = JSON.parse(jsonString);
++    } catch (err) {
++      console.error("Failed to parse compile JSON:", err);
++    }
++  }
++
++  return { textResponse, parsed };
++}
++
+ export default function InterviewPage() {
+   const router = useRouter();
+ 
+@@ -160,86 +226,39 @@ export default function InterviewPage() {
+           headers["Authorization"] = `Bearer ${session.access_token}`;
+         }
+ 
+-        const response = await fetch("/api/groq", {
+-          method: "POST",
+-          headers,
+-          body: JSON.stringify({
+-            prompt: compilePrompt,
+-            systemPrompt,
+-            temperature: 0.3,
+-            aiAction: "guided_interview"
+-          })
+-        });
+-
+-        if (!response.ok) {
+-          const errData = await response.json().catch(() => ({}));
+-          throw new Error(errData?.error || "Failed to compile resume.");
+-        }
+-
+-        // Consume the SSE stream
+-        const reader = response.body?.getReader();
+-        const decoder = new TextDecoder();
+-        let textResponse = "";
++        let { textResponse, parsed } = await requestResumeCompletion(compilePrompt, systemPrompt, headers);
++        let completeness = parsed ? checkResumeCompleteness(parsed) : { complete: false, missingSections: ['experiences', 'educations', 'skills', 'summary'] };
+ 
+-        if (reader) {
+-          let buffer = "";
+-          while (true) {
+-            const { done, value } = await reader.read();
+-            if (done) break;
+-            buffer += decoder.decode(value, { stream: true });
+-            const lines = buffer.split("\n");
+-            buffer = lines.pop() || "";
+-            
+-            for (const line of lines) {
+-              if (line.startsWith("data: ")) {
+-                const data = line.slice(6).trim();
+-                if (data === "[DONE]") break;
+-                try {
+-                  const parsed = JSON.parse(data);
+-                  const token = parsed.choices?.[0]?.delta?.content ?? "";
+-                  textResponse += token;
+-                } catch (e: any) {
+-                  textResponse += `\n[ERROR: ${e.message} | RAW: ${data}]\n`;
+-                }
+-              }
++        // Verification gate: if the AI dropped whole sections (the "header only"
++        // failure mode), retry once with an explicit correction prompt instead of
++        // silently committing a broken resume. Capped at 1 retry to bound latency/cost.
++        if (parsed && !completeness.complete) {
++          console.warn('[Interview] AI response missing sections, retrying:', completeness.missingSections);
++          const retryPrompt = `${compilePrompt}\n\nYour previous response was missing these required sections: ${completeness.missingSections.join(', ')}. Regenerate the COMPLETE resume JSON with every section filled in from the interview answers above — do not omit any of them.`;
++          const retryResult = await requestResumeCompletion(retryPrompt, systemPrompt, headers);
++          if (retryResult.parsed) {
++            const retryCompleteness = checkResumeCompleteness(retryResult.parsed);
++            // Use the retry if it's more complete than the original attempt.
++            if (retryCompleteness.missingSections.length < completeness.missingSections.length) {
++              textResponse = retryResult.textResponse;
++              parsed = retryResult.parsed;
++              completeness = retryCompleteness;
+             }
+           }
+         }
++
+         const updatedHistory = [...updatedMessages, generatingMsg];
+-        const updateMatch = textResponse.match(/<UPDATE_RESUME>([\s\S]*?)<\/UPDATE_RESUME>/);
+         let actionExecuted = undefined;
+ 
+-        if (updateMatch) {
+-          try {
+-            // BUG 2 LOGGING removed
+-
+-            let jsonString = updateMatch[1].trim();
+-            // Robust extraction in case the AI outputs conversational text inside the XML tags
+-            const firstBrace = jsonString.indexOf('{');
+-            const lastBrace = jsonString.lastIndexOf('}');
+-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+-              jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+-            }
+-            const parsed = JSON.parse(jsonString);
+-            
+-            const hasMissingData = !parsed.experiences?.length || !parsed.educations?.length || !parsed.skills?.length;
+-            
+-            // Replicate applyParsedResumeToState logic
+-            const storeState = useResumeStore.getState();
+-            
+-            // Apply to global store using shared robust parser
+-            applyAiResumeUpdate(parsed);
++        if (parsed) {
++          applyAiResumeUpdate(parsed);
++          actionExecuted = "updated_resume";
++          setIsFinished(true);
+ 
+-            actionExecuted = "updated_resume";
+-            setIsFinished(true);
+-            
+-            if (hasMissingData) {
+-              toast.error("Resume compiled, but some sections might be missing. You may need to add them manually.");
+-            } else {
+-              toast.success("Resume compiled and ready! ✨");
+-            }
+-          } catch (err) {
+-            console.error("Failed to parse compile JSON:", err);
++          if (!completeness.complete) {
++            toast.error(`Resume compiled, but still missing: ${completeness.missingSections.join(', ')}. You may need to add it manually.`);
++          } else {
++            toast.success("Resume compiled and ready! ✨");
+           }
+         }
+ 
+diff --git a/components/ResumeBuilder.tsx b/components/ResumeBuilder.tsx
+index 6c9d97e..57f2302 100644
+--- a/components/ResumeBuilder.tsx
++++ b/components/ResumeBuilder.tsx
+@@ -1223,7 +1223,7 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?:
+       toastId = toast.loading("Initializing high-fidelity PDF engine...");
+       const { data: { session } } = await supabase.auth.getSession();
+ 
+-      await exportResumeToPdf({
++      const { stage } = await exportResumeToPdf({
+         resumeElement,
+         canvasWrapElement,
+         filename: `${name.replace(/\s+/g, '_') || 'Resume'}.pdf`,
+@@ -1238,23 +1238,38 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?:
+         },
+       });
+ 
+-      toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
+-      posthog.capture('pdf_exported', { page_size: design.pageSize === 'a4' ? 'a4' : 'letter' });
+-
+-      // Fire-and-forget: Log to public activity feed for landing page social proof
+-      fetch('/api/log-activity', {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({
+-          event_type: 'PDF_EXPORTED',
+-          display_message: '📄 Someone just exported an ATS-optimized PDF resume'
+-        })
+-      }).catch(e => console.error("Failed to log activity:", e));
++      if (stage === 'server') {
++        toast.success("High-quality vector PDF downloaded! 🎉", { id: toastId });
++      } else {
++        // Client-canvas fallback: real download, but it's a rasterized image —
++        // do not claim "vector" or "ATS-optimized" for this path.
++        toast.error(
++          "PDF downloaded, but this fallback method isn't machine-readable by ATS systems. Try exporting again in a moment for the searchable version.",
++          { id: toastId, duration: 7000 }
++        );
++      }
++      posthog.capture('pdf_exported', { page_size: design.pageSize === 'a4' ? 'a4' : 'letter', stage });
++
++      // Fire-and-forget: Log to public activity feed for landing page social proof.
++      // Only log the "ATS-optimized" claim for the real vector export path.
++      if (stage === 'server') {
++        fetch('/api/log-activity', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify({
++            event_type: 'PDF_EXPORTED',
++            display_message: '📄 Someone just exported an ATS-optimized PDF resume'
++          })
++        }).catch(e => console.error("Failed to log activity:", e));
++      }
+ 
+     } catch (err: any) {
+       console.error("PDF export failed:", err);
+       if (err.code === 'RATE_LIMIT_EXCEEDED' || (err.message && err.message.includes('limit reached'))) {
+         toast.error(err.message, { id: toastId, duration: 6000 });
++      } else if (err.code === 'PRINT_FALLBACK_ALREADY_TRIGGERED') {
++        // pdf-engine already opened the system print dialog — don't open it twice.
++        toast.error(err.message, { id: toastId, duration: 7000 });
+       } else {
+         toast.error("PDF export failed. Opening system print as fallback...", { id: toastId });
+         window.print();
+diff --git a/components/editor/TemplatesPanel.tsx b/components/editor/TemplatesPanel.tsx
+index fbb87a5..03e63e4 100644
+--- a/components/editor/TemplatesPanel.tsx
++++ b/components/editor/TemplatesPanel.tsx
+@@ -128,7 +128,17 @@ export default function TemplatesPanel({
+                 : "border-gray-100 bg-white",
+             )}
+           >
+-            <div className="font-bold text-gray-900 mb-1">{t.name}</div>
++            <div className="flex items-center gap-2 mb-1">
++              <div className="font-bold text-gray-900">{t.name}</div>
++              {t.layout === "sidebar" && (
++                <span
++                  className="text-[9px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded"
++                  title="Two-column layouts can be read out of order by some ATS parsers. Use a single-column template if you're optimizing for ATS screening."
++                >
++                  ATS risk
++                </span>
++              )}
++            </div>
+             <div className="text-xs text-gray-600 leading-snug">
+               {t.desc}
+             </div>
+diff --git a/components/landing/PublicATSScanner.tsx b/components/landing/PublicATSScanner.tsx
+index 1748acb..d8d97c5 100644
+--- a/components/landing/PublicATSScanner.tsx
++++ b/components/landing/PublicATSScanner.tsx
+@@ -5,9 +5,26 @@ import { Upload, FileText, AlertCircle, ArrowRight, Loader2 } from 'lucide-react
+ import { useRouter } from 'next/navigation';
+ import { usePostHog } from 'posthog-js/react';
+ 
++interface KeywordHit {
++  term: string;
++  category: string;
++  weight: number;
++}
++
++interface SectionCheck {
++  category: string;
++  present: boolean;
++}
++
+ interface ScanResult {
+   score: number;
+-  flaws: string[];
++  keywordCoverage: number;
++  matchedKeywords: KeywordHit[];
++  missingKeywords: KeywordHit[];
++  sectionChecks: SectionCheck[];
++  metricsScore: number;
++  verbScore: number;
++  weakVerbsFound: string[];
+   resumeText: string;
+ }
+ 
+@@ -212,18 +229,29 @@ export function PublicATSScanner({ onSignupClick }: PublicATSScannerProps) {
+                 <div className="space-y-4">
+                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                     <AlertCircle className="w-4 h-4 text-amber-500" />
+-                    Identified Gaps & Flaws
++                    Missing Keywords ({result.missingKeywords.length})
+                   </h4>
+-                  <div className="space-y-3">
+-                    {result.flaws.map((flaw, index) => (
+-                      <div key={index} className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-sm font-medium text-foreground hover:bg-amber-500/10 transition-colors">
+-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-xs font-bold">
+-                          {index + 1}
+-                        </span>
+-                        <span className="leading-relaxed text-muted-foreground">{flaw}</span>
+-                      </div>
+-                    ))}
+-                  </div>
++                  {result.missingKeywords.length === 0 ? (
++                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-sm font-medium text-emerald-700">
++                      Every keyword we found in the job description is present in your resume.
++                    </div>
++                  ) : (
++                    <div className="space-y-3">
++                      {result.missingKeywords.map((kw) => (
++                        <div key={kw.term} className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-sm font-medium text-foreground hover:bg-amber-500/10 transition-colors">
++                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center text-xs font-bold">
++                            !
++                          </span>
++                          <span className="leading-relaxed text-muted-foreground">
++                            <span className="text-foreground font-semibold">{kw.term}</span> appears in the job description but not in your resume.
++                          </span>
++                        </div>
++                      ))}
++                    </div>
++                  )}
++                  <p className="text-xs text-muted-foreground pt-1">
++                    Keyword coverage: {result.keywordCoverage}% &middot; Quantified impact: {result.metricsScore}% &middot; Strong verbs: {result.verbScore}%
++                  </p>
+                 </div>
+               </div>
+ 
+diff --git a/lib/agent-rez/ats-engine.ts b/lib/agent-rez/ats-engine.ts
+new file mode 100644
+index 0000000..c8edee1
+--- /dev/null
++++ b/lib/agent-rez/ats-engine.ts
+@@ -0,0 +1,272 @@
++/**
++ * Agent Rez: Deterministic ATS Engine (Rez-ATS)
++ * Replaces LLM-guessed scoring with reproducible keyword extraction + matching.
++ * Same (resumeText, jobDescription) pair ALWAYS produces the same score.
++ *
++ * Score = weighted sum of:
++ *   - keyword coverage   (60%) — canonical taxonomy terms from the JD found in the resume
++ *   - section completeness (15%) — header/experience/education/skills sections present
++ *   - quantified metrics  (15%) — lines with numbers/%/$ (real, measurable impact)
++ *   - action-verb strength (10%) — weak-verb ratio vs. total verb-led lines
++ *
++ * Weights are constants, not tuned per-request, so results are auditable.
++ */
++
++import { SKILLS_TAXONOMY, VARIANT_LOOKUP, MAX_VARIANT_WORDS, TaxonomyEntry } from './skills-taxonomy';
++import { StructuralParser } from './structural-parser';
++import { verbReplacements } from './verb-booster';
++
++export interface KeywordHit {
++  term: string;
++  category: TaxonomyEntry['category'];
++  weight: number;
++}
++
++export interface SectionCheck {
++  category: 'header' | 'experience' | 'education' | 'skills';
++  present: boolean;
++}
++
++export interface AtsAuditResult {
++  score: number; // 0-100, deterministic
++  keywordCoverage: number; // 0-100
++  matchedKeywords: KeywordHit[];
++  missingKeywords: KeywordHit[]; // sorted by weight desc, highest-impact gaps first
++  sectionChecks: SectionCheck[];
++  metricsScore: number; // 0-100
++  verbScore: number; // 0-100
++  weakVerbsFound: string[];
++  breakdown: {
++    keywordContribution: number;
++    sectionContribution: number;
++    metricsContribution: number;
++    verbContribution: number;
++  };
++}
++
++export interface CompletenessCheck {
++  complete: boolean;
++  missingSections: string[];
++}
++
++/**
++ * Structural completeness gate for AI-generated resume JSON — run this
++ * BEFORE committing an AI response to the store, not after. Distinct from
++ * runAtsAudit's sectionChecks (which inspects rendered resume text); this
++ * checks the parsed JSON payload directly, e.g. right after a Groq call.
++ */
++export function checkResumeCompleteness(parsed: any): CompletenessCheck {
++  const missingSections: string[] = [];
++  if (!Array.isArray(parsed?.experiences) || parsed.experiences.length === 0) missingSections.push('experiences');
++  if (!Array.isArray(parsed?.educations) || parsed.educations.length === 0) missingSections.push('educations');
++  if (!Array.isArray(parsed?.skills) || parsed.skills.length === 0) missingSections.push('skills');
++  if (!parsed?.summary || String(parsed.summary).trim().length < 10) missingSections.push('summary');
++  return { complete: missingSections.length === 0, missingSections };
++}
++
++const WEIGHTS = {
++  keyword: 0.6,
++  section: 0.15,
++  metrics: 0.15,
++  verb: 0.1,
++};
++
++// Section lines that boost keyword weight (requirements are what actually gets screened on)
++const REQUIREMENTS_HEADER = /(requirements|qualifications|must have|what you.?ll need|skills required|you have|minimum qualifications)/i;
++
++function normalize(text: string): string {
++  return text.toLowerCase().replace(/[^\w\s+#./-]/g, ' ').replace(/\s+/g, ' ').trim();
++}
++
++function scanPass(normalizedText: string): Map<string, { entry: TaxonomyEntry; count: number }> {
++  const words = normalizedText.split(' ');
++  const found = new Map<string, { entry: TaxonomyEntry; count: number }>();
++
++  for (let i = 0; i < words.length; i++) {
++    for (let n = Math.min(MAX_VARIANT_WORDS, words.length - i); n >= 1; n--) {
++      const phrase = words.slice(i, i + n).join(' ');
++      const entry = VARIANT_LOOKUP.get(phrase);
++      if (entry) {
++        const existing = found.get(entry.canonical);
++        if (existing) {
++          existing.count += 1;
++        } else {
++          found.set(entry.canonical, { entry, count: 1 });
++        }
++        break; // longest match wins at this position, avoid double counting substrings
++      }
++    }
++  }
++  return found;
++}
++
++/**
++ * Scans text for taxonomy terms. Runs two passes — one with '/' preserved
++ * (catches compound tokens like "CI/CD", "A/B testing") and one with '/'
++ * split into a space (catches "or" usage like "Agile/Scrum" meaning two
++ * separate terms) — and merges results. Both passes are pure functions of
++ * the input text, so the merged result stays fully deterministic.
++ */
++function scanForTaxonomyTerms(normalizedText: string): Map<string, { entry: TaxonomyEntry; count: number }> {
++  const joined = scanPass(normalizedText);
++  const split = scanPass(normalizedText.replace(/\//g, ' ').replace(/\s+/g, ' ').trim());
++
++  const merged = new Map(joined);
++  split.forEach((value, key) => {
++    const existing = merged.get(key);
++    if (existing) {
++      existing.count = Math.max(existing.count, value.count);
++    } else {
++      merged.set(key, value);
++    }
++  });
++  return merged;
++}
++
++/**
++ * Extracts weighted keywords from a job description. Frequency is capped
++ * (a term repeated 20 times isn't 20x more important) and terms appearing
++ * under a requirements/qualifications header get a fixed bonus.
++ */
++function extractJobKeywords(jobDescription: string): KeywordHit[] {
++  const normalized = normalize(jobDescription);
++  const found = scanForTaxonomyTerms(normalized);
++
++  // Determine which lines fall under a requirements-style header for weighting
++  const lines = jobDescription.split('\n');
++  let inRequirementsBlock = false;
++  const requirementsText: string[] = [];
++  for (const line of lines) {
++    if (REQUIREMENTS_HEADER.test(line)) {
++      inRequirementsBlock = true;
++      continue;
++    }
++    if (inRequirementsBlock) {
++      if (line.trim() === '') continue;
++      requirementsText.push(line);
++    }
++  }
++  const requirementsTerms = scanForTaxonomyTerms(normalize(requirementsText.join(' ')));
++
++  const hits: KeywordHit[] = [];
++  found.forEach(({ entry, count }, canonical) => {
++    const cappedFrequency = Math.min(count, 5); // diminishing returns after 5 mentions
++    const baseWeight = 1 + (cappedFrequency - 1) * 0.2; // 1.0 to 1.8
++    const requirementsBonus = requirementsTerms.has(canonical) ? 0.75 : 0;
++    hits.push({ term: canonical, category: entry.category, weight: parseFloat((baseWeight + requirementsBonus).toFixed(2)) });
++  });
++
++  return hits.sort((a, b) => b.weight - a.weight);
++}
++
++function matchKeywords(resumeText: string, jobKeywords: KeywordHit[]): { matched: KeywordHit[]; missing: KeywordHit[] } {
++  const normalizedResume = normalize(resumeText);
++  const resumeTerms = scanForTaxonomyTerms(normalizedResume);
++
++  const matched: KeywordHit[] = [];
++  const missing: KeywordHit[] = [];
++
++  for (const kw of jobKeywords) {
++    if (resumeTerms.has(kw.term)) {
++      matched.push(kw);
++    } else {
++      missing.push(kw);
++    }
++  }
++
++  return { matched, missing: missing.sort((a, b) => b.weight - a.weight) };
++}
++
++function checkSections(resumeText: string): SectionCheck[] {
++  const lines = resumeText.split('\n').filter((l) => l.trim().length > 0);
++  const present = new Set<string>();
++  for (const line of lines) {
++    const category = StructuralParser.classifySemanticBlock(line);
++    if (category !== 'general' && category !== 'projects') present.add(category);
++  }
++  return (['header', 'experience', 'education', 'skills'] as const).map((category) => ({
++    category,
++    present: present.has(category),
++  }));
++}
++
++function scoreMetrics(resumeText: string): number {
++  // Only count metrics in experience/project lines — a graduation year or
++  // GPA under Education isn't a quantified *achievement*, and counting it
++  // was inflating scores on resumes with no real impact metrics at all.
++  const lines = resumeText
++    .split('\n')
++    .filter((l) => l.trim().length > 20)
++    .filter((l) => {
++      const category = StructuralParser.classifySemanticBlock(l);
++      return category === 'experience' || category === 'projects' || category === 'general';
++    });
++  if (lines.length === 0) return 0;
++  const metricLines = lines.filter((l) => /\b\d+(%|\+|k|m|b)?\b/i.test(l) || /\$\d+/.test(l));
++  // A well-quantified resume has metrics on roughly a third of substantive lines; 33%+ scores full marks.
++  const ratio = metricLines.length / lines.length;
++  return Math.min(100, Math.round((ratio / 0.33) * 100));
++}
++
++function scoreVerbs(resumeText: string): { score: number; weakVerbsFound: string[] } {
++  const lines = resumeText.split('\n').filter((l) => l.trim().length > 20);
++  if (lines.length === 0) return { score: 0, weakVerbsFound: [] };
++
++  const weakVerbsFound = new Set<string>();
++  let weakCount = 0;
++  for (const line of lines) {
++    for (const weak of Object.keys(verbReplacements)) {
++      const regex = new RegExp(`\\b${weak}\\b`, 'i');
++      if (regex.test(line)) {
++        weakVerbsFound.add(weak);
++        weakCount++;
++        break; // count each line once
++      }
++    }
++  }
++  const weakRatio = weakCount / lines.length;
++  const score = Math.max(0, Math.min(100, Math.round((1 - weakRatio) * 100)));
++  return { score, weakVerbsFound: Array.from(weakVerbsFound) };
++}
++
++/**
++ * Runs the full deterministic ATS audit. Same inputs -> same outputs, always.
++ */
++export function runAtsAudit(resumeText: string, jobDescription: string): AtsAuditResult {
++  const jobKeywords = extractJobKeywords(jobDescription);
++  const { matched, missing } = matchKeywords(resumeText, jobKeywords);
++
++  const totalWeight = jobKeywords.reduce((sum, k) => sum + k.weight, 0);
++  const matchedWeight = matched.reduce((sum, k) => sum + k.weight, 0);
++  const keywordCoverage = totalWeight > 0 ? Math.round((matchedWeight / totalWeight) * 100) : 0;
++
++  const sectionChecks = checkSections(resumeText);
++  const sectionScore = Math.round((sectionChecks.filter((s) => s.present).length / sectionChecks.length) * 100);
++
++  const metricsScore = scoreMetrics(resumeText);
++  const { score: verbScore, weakVerbsFound } = scoreVerbs(resumeText);
++
++  const keywordContribution = keywordCoverage * WEIGHTS.keyword;
++  const sectionContribution = sectionScore * WEIGHTS.section;
++  const metricsContribution = metricsScore * WEIGHTS.metrics;
++  const verbContribution = verbScore * WEIGHTS.verb;
++
++  const score = Math.round(keywordContribution + sectionContribution + metricsContribution + verbContribution);
++
++  return {
++    score,
++    keywordCoverage,
++    matchedKeywords: matched,
++    missingKeywords: missing.slice(0, 10), // top 10 highest-impact gaps
++    sectionChecks,
++    metricsScore,
++    verbScore,
++    weakVerbsFound,
++    breakdown: {
++      keywordContribution: parseFloat(keywordContribution.toFixed(1)),
++      sectionContribution: parseFloat(sectionContribution.toFixed(1)),
++      metricsContribution: parseFloat(metricsContribution.toFixed(1)),
++      verbContribution: parseFloat(verbContribution.toFixed(1)),
++    },
++  };
++}
+diff --git a/lib/agent-rez/index.ts b/lib/agent-rez/index.ts
+index 22b2cec..0d010b0 100644
+--- a/lib/agent-rez/index.ts
++++ b/lib/agent-rez/index.ts
+@@ -7,3 +7,5 @@ export * from './structural-parser';
+ export * from './layout-balancer';
+ export * from './gaze-profiler';
+ export * from './sync-engine';
++export * from './skills-taxonomy';
++export * from './ats-engine';
+diff --git a/lib/agent-rez/skills-taxonomy.ts b/lib/agent-rez/skills-taxonomy.ts
+new file mode 100644
+index 0000000..f2b94fa
+--- /dev/null
++++ b/lib/agent-rez/skills-taxonomy.ts
+@@ -0,0 +1,170 @@
++/**
++ * Agent Rez: ATS Skills Taxonomy (Rez-Taxonomy)
++ * Curated, deterministic dictionary of resume/JD keywords used for exact
++ * (post-normalization) matching. No AI, no external calls — every match is
++ * reproducible and auditable against this list.
++ *
++ * `variants` must be lowercase and include common abbreviations, plurals,
++ * and alternate phrasings. `canonical` is the display form shown to users.
++ */
++
++export type SkillCategory =
++  | 'language'
++  | 'framework'
++  | 'database'
++  | 'cloud'
++  | 'devops'
++  | 'data_ml'
++  | 'design'
++  | 'methodology'
++  | 'soft_skill'
++  | 'certification'
++  | 'tool';
++
++export interface TaxonomyEntry {
++  canonical: string;
++  category: SkillCategory;
++  variants: string[];
++}
++
++export const SKILLS_TAXONOMY: TaxonomyEntry[] = [
++  // Languages
++  { canonical: 'JavaScript', category: 'language', variants: ['javascript', 'js', 'es6', 'ecmascript'] },
++  { canonical: 'TypeScript', category: 'language', variants: ['typescript', 'ts'] },
++  { canonical: 'Python', category: 'language', variants: ['python', 'python3'] },
++  { canonical: 'Java', category: 'language', variants: ['java'] },
++  { canonical: 'C++', category: 'language', variants: ['c++', 'cpp'] },
++  { canonical: 'C#', category: 'language', variants: ['c#', 'csharp', '.net'] },
++  { canonical: 'Go', category: 'language', variants: ['golang', 'go lang'] },
++  { canonical: 'Rust', category: 'language', variants: ['rust'] },
++  { canonical: 'Ruby', category: 'language', variants: ['ruby', 'ruby on rails', 'rails'] },
++  { canonical: 'PHP', category: 'language', variants: ['php'] },
++  { canonical: 'Swift', category: 'language', variants: ['swift'] },
++  { canonical: 'Kotlin', category: 'language', variants: ['kotlin'] },
++  { canonical: 'SQL', category: 'language', variants: ['sql', 'structured query language'] },
++  { canonical: 'HTML', category: 'language', variants: ['html', 'html5'] },
++  { canonical: 'CSS', category: 'language', variants: ['css', 'css3'] },
++  { canonical: 'Bash', category: 'language', variants: ['bash', 'shell scripting', 'shell script'] },
++
++  // Frameworks / Libraries
++  { canonical: 'React', category: 'framework', variants: ['react', 'react.js', 'reactjs'] },
++  { canonical: 'Next.js', category: 'framework', variants: ['next.js', 'nextjs', 'next js'] },
++  { canonical: 'Vue.js', category: 'framework', variants: ['vue', 'vue.js', 'vuejs'] },
++  { canonical: 'Angular', category: 'framework', variants: ['angular', 'angularjs'] },
++  { canonical: 'Node.js', category: 'framework', variants: ['node', 'node.js', 'nodejs'] },
++  { canonical: 'Express.js', category: 'framework', variants: ['express', 'express.js', 'expressjs'] },
++  { canonical: 'Django', category: 'framework', variants: ['django'] },
++  { canonical: 'Flask', category: 'framework', variants: ['flask'] },
++  { canonical: 'Spring Boot', category: 'framework', variants: ['spring boot', 'spring framework', 'spring'] },
++  { canonical: 'ASP.NET', category: 'framework', variants: ['asp.net', 'asp .net'] },
++  { canonical: 'Tailwind CSS', category: 'framework', variants: ['tailwind', 'tailwindcss', 'tailwind css'] },
++  { canonical: 'GraphQL', category: 'framework', variants: ['graphql'] },
++  { canonical: 'REST API', category: 'framework', variants: ['rest api', 'restful', 'rest', 'restful api'] },
++
++  // Databases
++  { canonical: 'PostgreSQL', category: 'database', variants: ['postgresql', 'postgres'] },
++  { canonical: 'MySQL', category: 'database', variants: ['mysql'] },
++  { canonical: 'MongoDB', category: 'database', variants: ['mongodb', 'mongo'] },
++  { canonical: 'Redis', category: 'database', variants: ['redis'] },
++  { canonical: 'SQLite', category: 'database', variants: ['sqlite'] },
++  { canonical: 'DynamoDB', category: 'database', variants: ['dynamodb'] },
++  { canonical: 'Supabase', category: 'database', variants: ['supabase'] },
++  { canonical: 'Firebase', category: 'database', variants: ['firebase', 'firestore'] },
++  { canonical: 'Elasticsearch', category: 'database', variants: ['elasticsearch', 'elastic search'] },
++
++  // Cloud
++  { canonical: 'AWS', category: 'cloud', variants: ['aws', 'amazon web services'] },
++  { canonical: 'Google Cloud Platform', category: 'cloud', variants: ['gcp', 'google cloud platform', 'google cloud'] },
++  { canonical: 'Microsoft Azure', category: 'cloud', variants: ['azure', 'microsoft azure'] },
++  { canonical: 'Vercel', category: 'cloud', variants: ['vercel'] },
++  { canonical: 'Netlify', category: 'cloud', variants: ['netlify'] },
++  { canonical: 'Heroku', category: 'cloud', variants: ['heroku'] },
++  { canonical: 'Cloudflare', category: 'cloud', variants: ['cloudflare'] },
++
++  // DevOps / Infra
++  { canonical: 'Docker', category: 'devops', variants: ['docker', 'containerization'] },
++  { canonical: 'Kubernetes', category: 'devops', variants: ['kubernetes', 'k8s'] },
++  { canonical: 'CI/CD', category: 'devops', variants: ['ci/cd', 'cicd', 'continuous integration', 'continuous deployment', 'continuous delivery'] },
++  { canonical: 'Terraform', category: 'devops', variants: ['terraform', 'iac', 'infrastructure as code'] },
++  { canonical: 'Git', category: 'devops', variants: ['git', 'version control'] },
++  { canonical: 'GitHub Actions', category: 'devops', variants: ['github actions'] },
++  { canonical: 'Jenkins', category: 'devops', variants: ['jenkins'] },
++  { canonical: 'Linux', category: 'devops', variants: ['linux', 'unix'] },
++  { canonical: 'Nginx', category: 'devops', variants: ['nginx'] },
++  { canonical: 'Microservices', category: 'devops', variants: ['microservices', 'microservice architecture'] },
++  { canonical: 'Serverless', category: 'devops', variants: ['serverless', 'lambda', 'aws lambda'] },
++  { canonical: 'Webhooks', category: 'devops', variants: ['webhook', 'webhooks'] },
++
++  // Data / ML / AI
++  { canonical: 'Machine Learning', category: 'data_ml', variants: ['machine learning', 'ml'] },
++  { canonical: 'Artificial Intelligence', category: 'data_ml', variants: ['artificial intelligence', 'ai'] },
++  { canonical: 'Large Language Models', category: 'data_ml', variants: ['llm', 'llms', 'large language model', 'large language models'] },
++  { canonical: 'Natural Language Processing', category: 'data_ml', variants: ['nlp', 'natural language processing'] },
++  { canonical: 'TensorFlow', category: 'data_ml', variants: ['tensorflow'] },
++  { canonical: 'PyTorch', category: 'data_ml', variants: ['pytorch'] },
++  { canonical: 'Pandas', category: 'data_ml', variants: ['pandas'] },
++  { canonical: 'NumPy', category: 'data_ml', variants: ['numpy'] },
++  { canonical: 'Data Analysis', category: 'data_ml', variants: ['data analysis', 'data analytics'] },
++  { canonical: 'Data Visualization', category: 'data_ml', variants: ['data visualization', 'data viz'] },
++  { canonical: 'ETL', category: 'data_ml', variants: ['etl', 'extract transform load'] },
++  { canonical: 'A/B Testing', category: 'data_ml', variants: ['a/b testing', 'ab testing', 'split testing'] },
++
++  // Design
++  { canonical: 'Figma', category: 'design', variants: ['figma'] },
++  { canonical: 'UI/UX Design', category: 'design', variants: ['ui/ux', 'ui ux', 'user experience', 'user interface design', 'ux design', 'ui design'] },
++  { canonical: 'Responsive Design', category: 'design', variants: ['responsive design', 'responsive web design'] },
++  { canonical: 'Design Systems', category: 'design', variants: ['design system', 'design systems'] },
++  { canonical: 'Accessibility', category: 'design', variants: ['accessibility', 'a11y', 'wcag'] },
++
++  // Methodology / PM
++  { canonical: 'Agile', category: 'methodology', variants: ['agile', 'agile methodology'] },
++  { canonical: 'Scrum', category: 'methodology', variants: ['scrum'] },
++  { canonical: 'Kanban', category: 'methodology', variants: ['kanban'] },
++  { canonical: 'Project Management', category: 'methodology', variants: ['project management'] },
++  { canonical: 'Product Management', category: 'methodology', variants: ['product management'] },
++  { canonical: 'Stakeholder Management', category: 'methodology', variants: ['stakeholder management', 'stakeholder communication'] },
++  { canonical: 'Roadmapping', category: 'methodology', variants: ['roadmap', 'roadmapping', 'product roadmap'] },
++  { canonical: 'Jira', category: 'methodology', variants: ['jira'] },
++  { canonical: 'Confluence', category: 'methodology', variants: ['confluence'] },
++
++  // Tools
++  { canonical: 'Stripe', category: 'tool', variants: ['stripe'] },
++  { canonical: 'Salesforce', category: 'tool', variants: ['salesforce'] },
++  { canonical: 'HubSpot', category: 'tool', variants: ['hubspot'] },
++  { canonical: 'Slack', category: 'tool', variants: ['slack'] },
++  { canonical: 'Excel', category: 'tool', variants: ['excel', 'microsoft excel'] },
++  { canonical: 'Tableau', category: 'tool', variants: ['tableau'] },
++  { canonical: 'Power BI', category: 'tool', variants: ['power bi', 'powerbi'] },
++  { canonical: 'Zendesk', category: 'tool', variants: ['zendesk'] },
++
++  // Certifications
++  { canonical: 'PMP', category: 'certification', variants: ['pmp', 'project management professional'] },
++  { canonical: 'AWS Certified', category: 'certification', variants: ['aws certified', 'aws certification'] },
++  { canonical: 'CPA', category: 'certification', variants: ['cpa', 'certified public accountant'] },
++  { canonical: 'Six Sigma', category: 'certification', variants: ['six sigma', 'lean six sigma'] },
++  { canonical: 'CISSP', category: 'certification', variants: ['cissp'] },
++  { canonical: 'Scrum Master', category: 'certification', variants: ['csm', 'certified scrum master'] },
++
++  // Soft skills (kept narrow — these are heavily gamed, low weight in scoring)
++  { canonical: 'Cross-functional Collaboration', category: 'soft_skill', variants: ['cross-functional', 'cross functional', 'cross-functional collaboration'] },
++  { canonical: 'Leadership', category: 'soft_skill', variants: ['leadership', 'team lead', 'people management'] },
++  { canonical: 'Communication', category: 'soft_skill', variants: ['communication skills', 'verbal communication', 'written communication'] },
++  { canonical: 'Problem Solving', category: 'soft_skill', variants: ['problem solving', 'problem-solving'] },
++  { canonical: 'Mentorship', category: 'soft_skill', variants: ['mentorship', 'mentoring', 'coaching'] },
++];
++
++/**
++ * Flat lookup: normalized variant string -> taxonomy entry.
++ * Built once at module load for O(1) matching.
++ */
++export const VARIANT_LOOKUP: Map<string, TaxonomyEntry> = new Map();
++for (const entry of SKILLS_TAXONOMY) {
++  for (const variant of entry.variants) {
++    VARIANT_LOOKUP.set(variant.toLowerCase(), entry);
++  }
++}
++
++/** Longest variant phrase (in words) — bounds n-gram window during scanning. */
++export const MAX_VARIANT_WORDS = Math.max(
++  ...SKILLS_TAXONOMY.flatMap((e) => e.variants.map((v) => v.split(/\s+/).length))
++);
+diff --git a/lib/pdf-engine.ts b/lib/pdf-engine.ts
+index 4b44bcf..e328301 100644
+--- a/lib/pdf-engine.ts
++++ b/lib/pdf-engine.ts
+@@ -316,7 +316,7 @@ export async function runClientSideRetinaFallback(
+  * Main Enterprise Export Pipeline
+  * Orchestrates the full SAAS PDF export workflow with automatic fallbacks.
+  */
+-export async function exportResumeToPdf(options: PdfExportOptions): Promise<void> {
++export async function exportResumeToPdf(options: PdfExportOptions): Promise<{ stage: 'server' | 'client_canvas' }> {
+   const { resumeElement, canvasWrapElement, filename, pageSize, onProgress } = options;
+   const cleanFilename = filename.endsWith('.pdf') ? filename : `${filename.replace(/[^a-z0-9]/gi, '_')}_Resume.pdf`;
+ 
+@@ -408,6 +408,7 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
+     URL.revokeObjectURL(url);
+ 
+     onProgress?.('completed', 'High-quality vector PDF downloaded successfully!');
++    return { stage: 'server' };
+   } catch (serverError: any) {
+     if (serverError.code === 'RATE_LIMIT_EXCEEDED') {
+       onProgress?.('error', serverError.message);
+@@ -425,13 +426,24 @@ export async function exportResumeToPdf(options: PdfExportOptions): Promise<void
+         pageSize,
+         (msg) => onProgress?.('client_fallback', msg)
+       );
+-      onProgress?.('completed', 'Retina canvas PDF generated and downloaded successfully!');
++      // IMPORTANT: this PDF is a rasterized image, not real text. It looks
++      // identical on screen but an ATS (or Ctrl+F) cannot read a word of it.
++      // Callers should NOT claim "vector" or "ATS-optimized" for this path.
++      onProgress?.('completed', 'PDF downloaded — note: this fallback method embeds your resume as an image, so it will NOT be machine-readable by ATS systems. Try exporting again in a moment for the searchable version.');
++      return { stage: 'client_canvas' };
+     } catch (clientError: any) {
+       console.error('[PDF Engine] Client canvas rendering also failed. Invoking native system print fallback:', clientError);
+       onProgress?.('error', 'PDF generation fallback initiated. Opening system print dialogue...');
+       
+       // Stage 3: Native System Print Fallback
+       window.print();
++      // window.print() is fire-and-forget (no completion signal, and the user
++      // may cancel the dialog) so we can't claim success here — the caller's
++      // catch block already handles messaging for this path. Tag the error so
++      // the caller knows NOT to call window.print() again itself.
++      const printFallbackError = new Error('Automatic PDF generation failed. Opened your browser\'s print dialog instead — choose "Save as PDF" to finish.');
++      (printFallbackError as any).code = 'PRINT_FALLBACK_ALREADY_TRIGGERED';
++      throw printFallbackError;
+     }
+   }
+ }
+Good. Now let's wire it into the interview flow with a retry loop:Now replacing this whole block with the retry-gated version:Now check the AISidebar for quick-edit AI calls that use the same `applyAiResumeUpdate` path, since that's the other AI-write surface you mentioned:That's a genuinely different case — AISidebar's incremental edits (e.g. "rewrite my summary") are *supposed* to touch only one section, and `applyAiResumeUpdate` already falls back to existing store values for anything omitted. Applying the same "all 4 sections required" gate there would misfire constantly on legitimate partial edits, so I left that path alone — the completeness gate only makes sense for the interview's full-compile case, where there's no prior resume to fall back on.Clean. Now let's fix the PDF fallback order and flag sidebar templates as ATS-risky.I looked closer at the actual fallback code, and reordering it isn't a clean swap — Stage 3 (`window.print()`) requires the user to manually complete a system print dialog, unlike Stages 1/2 which auto-download. Silently changing that changes the whole export UX. Safer, more honest fix: make sure the user is warned clearly when the raster fallback fires, rather than reorder behavior you haven't reviewed. Let me check how the export modal surfaces progress.Found a related overclaiming bug while I was in there: `ResumeBuilder.tsx` shows "High-quality vector PDF downloaded!" and logs "exported an ATS-optimized PDF resume" to the public activity feed **unconditionally** — even when Stage 2 (rasterized, non-text) fallback actually fired. That's exactly the kind of overclaim you already went through a pass fixing elsewhere. Let me correct it properly:That throw-after-print change means the outer catch in `ResumeBuilder.tsx` would now also fire `window.print()` — a double dialog. Let me trace and fix that caller properly, using the returned stage for accurate messaging:Now fix the caller in `ResumeBuilder.tsx` to use the real stage and stop double-printing:Clean. Now let's check for other callers of `exportResumeToPdf` and `runClientSideRetinaFallback`/`pdf-fallback.ts` I should be aware of before flagging templates:Only one caller, already fixed. Now let's flag the two-column templates as ATS-risky in the UI:I don't need a new field — `layout === "sidebar"` already tells us which templates are two-column. Cleanest fix is in `TemplatesPanel.tsx` where they're rendered:Clean. Let's regenerate the patch with everything and do a final review pass on the diff:That diff looks correct and matches the intended behavior. Let me regenerate the final patch file:Same patch file, updated with everything from this session. Summary of what's new since the last version:
+
+**Sensitivity testing (your first ask):** ran incremental resume edits through the engine — score moved 28→32→41→70→73 as I added real skills, then quantified an achievement, then upgraded a weak verb. Monotonic, not noisy. That test also caught a real bug: metrics scoring was crediting a graduation year (`2019`) as a "quantified achievement." Fixed — now only counts numbers in experience/project lines, not education.
+
+**Interview auto-verify/retry loop:** `app/interview/page.tsx` now runs `checkResumeCompleteness()` on the AI's parsed JSON before committing it. If sections are missing (the "header only" bug), it retries once with an explicit "you're missing X, regenerate everything" prompt, and only accepts the retry if it's actually more complete. Capped at one retry so it can't loop or blow up latency. Left `AISidebar.tsx`'s incremental-edit flow untouched — that one's supposed to touch only the section the user asked about, and already falls back to existing data for the rest, so the same gate would misfire there.
+
+**PDF export honesty fix:** while tracing the fallback chain I found `ResumeBuilder.tsx` was claiming "High-quality vector PDF downloaded!" and logging "exported an ATS-optimized PDF resume" to the public activity feed **unconditionally** — even when the raster fallback
+<truncated 1538 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.
