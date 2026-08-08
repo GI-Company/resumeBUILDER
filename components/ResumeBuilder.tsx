@@ -1168,7 +1168,13 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        let errMsg = `HTTP error ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData.error) errMsg = errData.error;
+          else if (errData.message) errMsg = errData.message;
+        } catch (e) {}
+        throw new Error(errMsg);
       }
 
       const parsedData = await response.json();
@@ -1199,10 +1205,10 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
       }
     } catch (err: any) {
       console.error("Save failed", err);
-      if (err.message?.includes("3 active resumes")) {
+      if (err.message?.includes("3 active resume")) {
          toast.error("You have reached the 3 resume limit. Please overwrite an existing one.");
       } else {
-         toast.error("Failed to save to cloud");
+         toast.error(err.message || "Failed to save to cloud");
       }
     } finally {
       setIsSaving(false);
