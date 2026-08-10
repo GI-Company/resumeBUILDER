@@ -72,6 +72,28 @@ import { z } from "zod";
 import AuthModal from "./AuthModal";
 import { User } from "@supabase/supabase-js";
 import type { DesignConfig } from "@/lib/types";
+import { Joyride, STATUS } from 'react-joyride';
+const JoyrideComponent = Joyride as any;
+
+const EDITOR_TOUR_STEPS = [
+  {
+    target: '#sidebar-tabs',
+    content: 'Switch between content editing, layout design, and selecting templates here.',
+    disableBeacon: true,
+  },
+  {
+    target: '#ai-assistant-btn',
+    content: 'Stuck? Ask Agent Rez to rewrite your bullets or summarize your career.',
+  },
+  {
+    target: '#resume-canvas',
+    content: 'Your live preview. What you see is exactly what exports to PDF.',
+  },
+  {
+    target: '#export-pdf-btn',
+    content: 'When you are ready, export a pixel-perfect ATS-friendly PDF here.',
+  }
+];
 
 import { hexToRgb, shadeColor, getCookie, setCookie } from "@/lib/resume-utils";
 import { PRESET_AVATARS, TEMPLATES, TUTORIAL_STEPS } from "@/lib/resume-constants";
@@ -265,6 +287,26 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
   const [designPanelOpen, setDesignPanelOpen] = useState(false);
   const [pageDrawerOpen, setPageDrawerOpen] = useState(false);
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    // Check if the user has seen the editor tour
+    if (typeof window !== 'undefined') {
+      const hasSeenTour = localStorage.getItem('hasSeenEditorTour');
+      if (!hasSeenTour) {
+        setRunTour(true);
+      }
+    }
+  }, []);
+
+  const handleJoyrideCallback = (data: any) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+      localStorage.setItem('hasSeenEditorTour', 'true');
+    }
+  };
 
   // --- Design State ---
 
@@ -1509,6 +1551,20 @@ export default function ResumeBuilder({ onBack, initialTemplateId }: { onBack?: 
 
   return (
     <div className="h-screen w-full flex bg-[#f8f9fa] text-gray-900 antialiased overflow-hidden font-sans">
+      <JoyrideComponent
+        steps={EDITOR_TOUR_STEPS}
+        run={runTour}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: '#4f46e5', // indigo-600
+            zIndex: 10000,
+          }
+        } as any}
+      />
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes photo-wobble {
           0%, 100% { transform: rotate(0deg) scale(1); }

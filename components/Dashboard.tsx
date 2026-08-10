@@ -25,6 +25,24 @@ import {
 import AuthModal from './AuthModal';
 import { User } from '@supabase/supabase-js';
 import { JobTracker } from './JobTracker';
+import { Joyride, STATUS } from 'react-joyride';
+const JoyrideComponent = Joyride as any;
+
+const DASHBOARD_TOUR_STEPS = [
+  {
+    target: '#new-resume-btn',
+    content: 'Start here! Create a new ATS-optimized resume from scratch or import your data.',
+    disableBeacon: true,
+  },
+  {
+    target: '#job-tracker-tab',
+    content: 'Keep track of your applications with our built-in job tracker.',
+  },
+  {
+    target: '#cloud-resumes-tab',
+    content: 'Your saved resumes live here. Duplicate, rename, or trash them.',
+  }
+];
 
 export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string) => void }) {
   const [allResumes, setAllResumes] = useState<any[]>([]);
@@ -40,6 +58,26 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
   const [editTitleValue, setEditTitleValue] = useState("");
   const [entitlement, setEntitlement] = useState<{ tier: string; stripe_subscription_id?: string; subscription_status?: string } | null>(null);
   const [aiLimit, setAiLimit] = useState<{ count: number; allowed: boolean; remaining: number } | null>(null);
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    // Check if the user has seen the dashboard tour
+    if (typeof window !== 'undefined') {
+      const hasSeenTour = localStorage.getItem('hasSeenDashboardTour');
+      if (!hasSeenTour) {
+        setRunTour(true);
+      }
+    }
+  }, []);
+
+  const handleJoyrideCallback = (data: any) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+      localStorage.setItem('hasSeenDashboardTour', 'true');
+    }
+  };
 
   const resumes = allResumes.filter((r) => r.status === activeTab);
 
@@ -321,8 +359,22 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
     );
   }
 
+  const JoyrideComponent = Joyride as any;
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-600 selection:text-white">
+      <JoyrideComponent
+        steps={DASHBOARD_TOUR_STEPS}
+        run={runTour}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: '#4f46e5', // indigo-600
+          }
+        } as any}
+      />
       {/* Upper Navigation Header */}
       <header className="border-b border-gray-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -378,6 +430,7 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
           
           <div className="relative z-10 flex flex-col justify-center gap-3 shrink-0">
             <button
+              id="new-resume-btn"
               onClick={handleCreateNew}
               className="bg-white hover:bg-blue-50 text-indigo-950 px-5 py-3.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
@@ -437,12 +490,14 @@ export default function Dashboard({ onOpenResume }: { onOpenResume: (id?: string
         {/* Dashboard Navigation */}
         <div className="flex items-center gap-4 mb-8">
           <button 
+            id="cloud-resumes-tab"
             onClick={() => setCurrentView('resumes')}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${currentView === 'resumes' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
           >
             <FileText size={16} /> Cloud Resumes
           </button>
           <button 
+            id="job-tracker-tab"
             onClick={() => setCurrentView('tracker')}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${currentView === 'tracker' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
           >

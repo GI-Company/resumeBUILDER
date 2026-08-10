@@ -161,6 +161,7 @@ export default function ResumeCanvas({
     <>
       <FloatingToolbar />
       <div
+          id="resume-canvas"
           className={cn(
             "flex-1 overflow-y-auto overflow-x-auto px-2 py-4 md:px-4 md:py-10 flex justify-start md:justify-center canvas-wrap",
             layoutClasses,

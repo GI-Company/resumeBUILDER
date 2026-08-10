@@ -29,6 +29,8 @@ import { toast } from 'react-hot-toast';
 import AuthModal from './AuthModal';
 import LiveActivityFeed from './LiveActivityFeed';
 import { PublicATSScanner } from './landing/PublicATSScanner';
+import { useExitIntent } from '@/hooks/useExitIntent';
+import ExitIntentModal from './ExitIntentModal';
 
 // Templates details for interactive preview
 const TEMPLATES_INFO = [
@@ -97,6 +99,8 @@ const SANDBOX_PRESETS = {
 export default function LandingPage({ onOpenResume }: { onOpenResume: (templateId: string) => void }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<'signin' | 'signup'>('signin');
+  
+  const { isShowing: showExitIntent, closeExitIntent } = useExitIntent({ delay: 500 });
 
   const openAuth = (view: 'signin' | 'signup' = 'signin', intent?: 'upgrade') => {
     if (intent) {
@@ -145,71 +149,7 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
   };
 
   const handleRunSandboxAI = async () => {
-    if (!sandboxInput.trim()) {
-      toast.error("Please enter some text or load a sample first!");
-      return;
-    }
-
-    setSandboxLoading(true);
-    setSandboxOutput("");
-
-    try {
-      const response = await fetch("/api/groq", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: sandboxInput.slice(0, 10000),
-          systemPrompt: SANDBOX_PRESETS[activeSandboxTab].systemPrompt,
-          temperature: 0.4
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error((errData as any).error || "Sandbox evaluation limited. Guests get 5 requests daily.");
-      }
-
-      // Consume the SSE stream
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
-
-      if (!reader) throw new Error("No response stream received.");
-
-      setSandboxOutput(""); // Clear before streaming
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete segment
-        
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") break;
-            try {
-              const parsed = JSON.parse(data);
-              const token = parsed.choices?.[0]?.delta?.content ?? "";
-              if (token) {
-                accumulated += token;
-                setSandboxOutput(accumulated);
-              }
-            } catch { /* skip incomplete chunk */ }
-          }
-        }
-      }
-
-      if (!accumulated.trim()) throw new Error("Failed to generate suggestions.");
-      toast.success("AI suggestion generated! ✨");
-    } catch (err: any) {
-      toast.error(err.message || "An error occurred");
-      setSandboxOutput(`⚠️ LIMITATION NOTICE: ${err.message || "AI engine request failed. Guest tier is limited to 5 daily requests. Sign up to unlock more daily AI requests, with priority access for founding members"}`);
-    } finally {
-      setSandboxLoading(false);
-    }
+    openAuth('signup');
   };
 
   return (
@@ -290,9 +230,9 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             id="hero-heading"
             className="text-4xl md:text-6xl font-extrabold tracking-tighter text-gray-900 leading-[1.1] mb-6"
           >
-            The Ultimate AI-Agent <br />
+            Land Your Dream Job with an <br />
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Career & Resume Builder
+              AI-Perfected Resume
             </span>
           </motion.h1>
 
@@ -382,35 +322,185 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-center"
+            className="text-left w-full max-w-4xl mx-auto mb-10"
           >
-            <Link 
-              href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id);
-              }} 
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 group cursor-pointer"
-            >
-              <Play size={16} />
-              <span>Launch Editor (Blank)</span>
-            </Link>
+            <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl gap-8 mx-auto mb-16">            {/* 2. Free Account Tier (Founding vs Standard) */}
+            {foundingCount === null || foundingCount < FOUNDING_LIMIT ? (
+              <div className="border-2 border-blue-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
+                <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
+                  Founding Member
+                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">Founding Tier</h3>
+                      <p className="text-xs text-blue-600 font-semibold mt-0.5">Free for the first {FOUNDING_LIMIT}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-blue-600">FREE</span>
+                      <span className="block text-[9px] text-gray-400 font-bold uppercase">For Life</span>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                  <ul className="space-y-3.5 text-xs text-gray-700">
+                    <li className="flex items-start gap-2.5 font-semibold text-blue-900">
+                      <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
+                      <div>
+                        <span><strong>75 Daily AI Requests ⚡</strong></span>
+                        <p className="text-[11px] text-gray-500 font-normal mt-0.5">Free forever, priority AI access.</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>Access to all <strong>6 premium templates</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Secure Cloud Saving</strong> for up to 3 drafts</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>3 PDF exports/month</strong>, no watermarks</span>
+                    </li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => openAuth('signup')}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
+                >
+                  Claim Free Founding Spot
+                </button>
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-sm">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">Free Tier</h3>
+                      <p className="text-xs text-gray-500 font-semibold mt-0.5">Basic cloud features</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-gray-900">FREE</span>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                  <ul className="space-y-3.5 text-xs text-gray-700">
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>15 Daily AI Requests</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>Access to all premium templates</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>Secure Cloud Saving</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>3 PDF exports/month</strong>, no watermarks</span>
+                    </li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => openAuth('signup')}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer"
+                >
+                  Sign Up Free
+                </button>
+              </div>
+            )}
 
-            <Link 
-              href="/interview"
-              className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Users size={16} className="text-indigo-600" />
-              <span>Start Guided Interview</span>
-            </Link>
-
-            <Link 
-              href="/audit"
-              className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 px-8 py-4 rounded-xl font-bold transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <FileText size={16} className="text-emerald-600" />
-              <span>Instant Resume Audit</span>
-            </Link>
+            {/* 3. Premium Tier (Founding vs Standard) */}
+            {paidFoundingCount === null || paidFoundingCount < FOUNDING_LIMIT ? (
+              <div className="border-2 border-indigo-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-xl transform md:scale-105 z-10">
+                <div className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
+                  Founding Premium
+                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">Premium Tier</h3>
+                      <p className="text-xs text-indigo-600 font-semibold mt-0.5">First {FOUNDING_LIMIT} subscribers</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-indigo-600">$3.99</span>
+                      <span className="block text-[9px] text-gray-400 font-bold uppercase">/ month</span>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                  <ul className="space-y-3.5 text-xs text-gray-700">
+                    <li className="flex items-start gap-2.5 font-semibold text-indigo-900">
+                      <CheckCircle size={14} className="text-indigo-600 mt-0.5 shrink-0 animate-pulse" />
+                      <span><strong>100 Daily AI Requests ⚡</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>Highest priority model routing</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>All Free tier features</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Unlimited PDF exports</strong></span>
+                    </li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => openAuth('signup', 'upgrade')}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
+                >
+                  Upgrade to Premium
+                </button>
+              </div>
+            ) : (
+              <div className="border-2 border-indigo-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-xl transform md:scale-105 z-10">
+                <div className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
+                  Premium
+                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">Premium Tier</h3>
+                      <p className="text-xs text-indigo-600 font-semibold mt-0.5">High-speed AI priority</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-indigo-600">$9.99</span>
+                      <span className="block text-[9px] text-gray-400 font-bold uppercase">/ month</span>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
+                  <ul className="space-y-3.5 text-xs text-gray-700">
+                    <li className="flex items-start gap-2.5 font-semibold text-indigo-900">
+                      <CheckCircle size={14} className="text-indigo-600 mt-0.5 shrink-0 animate-pulse" />
+                      <span><strong>75 Daily AI Requests ⚡</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>Priority model routing</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span>All Free tier features</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
+                      <span><strong>Unlimited PDF exports</strong></span>
+                    </li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => openAuth('signup', 'upgrade')}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
+                >
+                  Upgrade to Premium
+                </button>
+              </div>
+            )}
+          </div>
           </motion.div>
 
           {/* Transparency Guarantee under CTAs */}
@@ -1221,257 +1311,14 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
                   </div>
                 )}
               </div>
-              <Link
-                href={`/editor?templateId=${TEMPLATES_INFO[activeTemplateIdx].id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onOpenResume(TEMPLATES_INFO[activeTemplateIdx].id);
-                }}
+              <button
+                onClick={() => openAuth('signup')}
                 className="w-full sm:w-auto self-end bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer"
               >
                 <span>Edit template now</span>
                 <ChevronRight size={13} />
-              </Link>
+              </button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Side-by-side Pricing Comparison Matrix (The Core Offer) */}
-      <section className="py-16 bg-white border-b border-gray-200/80">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center max-w-xl mx-auto mb-14">
-            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">
-              Guaranteed No Paywall. Ever.
-            </h2>
-            <p className="text-sm text-gray-600 mt-2">
-              Unlike other platforms that wait until you've spent hours editing to ask for credit card info, we are 100% upfront. Here is our straightforward plan outline:
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 max-w-5xl gap-8 mx-auto mb-16">
-            {/* 1. Guest Tier */}
-            <div className="border border-gray-200 rounded-2xl p-6 flex flex-col justify-between bg-gray-50/20">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">Guest Tier</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Perfect for quick one-off edits</p>
-                  </div>
-                  <span className="text-xl font-black text-gray-900">FREE</span>
-                </div>
-                <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
-                <ul className="space-y-3.5 text-xs text-gray-700">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><strong>5 daily requests</strong> for Sidebar AI Agent & quick tools</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span>Access to all <strong>6 premium templates</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span><strong>1 free PDF export/month</strong>, no watermarks</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <span>Local storage draft autosaving</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 opacity-40">
-                    <CheckCircle size={14} className="text-gray-400 mt-0.5 shrink-0" />
-                    <span>Save multiple resumes in the cloud</span>
-                  </li>
-                </ul>
-              </div>
-              <Link 
-                href="/editor?templateId=classic"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onOpenResume("classic");
-                }}
-                className="w-full bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer shadow-xs flex items-center justify-center"
-              >
-                Start Editing Instantly (No signup)
-              </Link>
-            </div>
-
-            {/* 2. Free Account Tier (Founding vs Standard) */}
-            {foundingCount === null || foundingCount < FOUNDING_LIMIT ? (
-              <div className="border-2 border-blue-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
-                <div className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
-                  Founding Member
-                </div>
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-base font-bold text-gray-900">Founding Tier</h3>
-                      <p className="text-xs text-blue-600 font-semibold mt-0.5">Free for the first {FOUNDING_LIMIT}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xl font-black text-blue-600">FREE</span>
-                      <span className="block text-[9px] text-gray-400 font-bold uppercase">For Life</span>
-                    </div>
-                  </div>
-                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
-                  <ul className="space-y-3.5 text-xs text-gray-700">
-                    <li className="flex items-start gap-2.5 font-semibold text-blue-900">
-                      <CheckCircle size={14} className="text-blue-600 mt-0.5 shrink-0 animate-pulse" />
-                      <div>
-                        <span><strong>75 Daily AI Requests ⚡</strong></span>
-                        <p className="text-[11px] text-gray-500 font-normal mt-0.5">Free forever, priority AI access.</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>Access to all <strong>6 premium templates</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>Secure Cloud Saving</strong> for up to 3 drafts</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>3 PDF exports/month</strong>, no watermarks</span>
-                    </li>
-                  </ul>
-                </div>
-                <button 
-                  onClick={() => openAuth('signup')}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
-                >
-                  Claim Free Founding Spot
-                </button>
-              </div>
-            ) : (
-              <div className="border border-gray-200 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-sm">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-base font-bold text-gray-900">Free Tier</h3>
-                      <p className="text-xs text-gray-500 font-semibold mt-0.5">Basic cloud features</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xl font-black text-gray-900">FREE</span>
-                    </div>
-                  </div>
-                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
-                  <ul className="space-y-3.5 text-xs text-gray-700">
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>15 Daily AI Requests</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>Access to all premium templates</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>Secure Cloud Saving</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>3 PDF exports/month</strong>, no watermarks</span>
-                    </li>
-                  </ul>
-                </div>
-                <button 
-                  onClick={() => openAuth('signup')}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-3 rounded-xl transition-all mt-8 cursor-pointer"
-                >
-                  Sign Up Free
-                </button>
-              </div>
-            )}
-
-            {/* 3. Premium Tier (Founding vs Standard) */}
-            {paidFoundingCount === null || paidFoundingCount < FOUNDING_LIMIT ? (
-              <div className="border-2 border-indigo-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
-                <div className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
-                  Founding Premium
-                </div>
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-base font-bold text-gray-900">Premium Tier</h3>
-                      <p className="text-xs text-indigo-600 font-semibold mt-0.5">First {FOUNDING_LIMIT} subscribers</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xl font-black text-indigo-600">$3.99</span>
-                      <span className="block text-[9px] text-gray-400 font-bold uppercase">/ month</span>
-                    </div>
-                  </div>
-                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
-                  <ul className="space-y-3.5 text-xs text-gray-700">
-                    <li className="flex items-start gap-2.5 font-semibold text-indigo-900">
-                      <CheckCircle size={14} className="text-indigo-600 mt-0.5 shrink-0 animate-pulse" />
-                      <span><strong>100 Daily AI Requests ⚡</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>Highest priority model routing</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>All Free tier features</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>Unlimited PDF exports</strong></span>
-                    </li>
-                  </ul>
-                </div>
-                <button 
-                  onClick={() => openAuth('signup', 'upgrade')}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
-                >
-                  Upgrade to Premium
-                </button>
-              </div>
-            ) : (
-              <div className="border-2 border-indigo-600 rounded-2xl p-6 flex flex-col justify-between bg-white relative shadow-md">
-                <div className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full border border-white">
-                  Premium
-                </div>
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-base font-bold text-gray-900">Premium Tier</h3>
-                      <p className="text-xs text-indigo-600 font-semibold mt-0.5">High-speed AI priority</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xl font-black text-indigo-600">$9.99</span>
-                      <span className="block text-[9px] text-gray-400 font-bold uppercase">/ month</span>
-                    </div>
-                  </div>
-                  <div className="h-px bg-gray-200 my-4" aria-hidden="true" />
-                  <ul className="space-y-3.5 text-xs text-gray-700">
-                    <li className="flex items-start gap-2.5 font-semibold text-indigo-900">
-                      <CheckCircle size={14} className="text-indigo-600 mt-0.5 shrink-0 animate-pulse" />
-                      <span><strong>75 Daily AI Requests ⚡</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>Priority model routing</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span>All Free tier features</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <span><strong>Unlimited PDF exports</strong></span>
-                    </li>
-                  </ul>
-                </div>
-                <button 
-                  onClick={() => openAuth('signup', 'upgrade')}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-3 rounded-xl shadow-md active:scale-95 transition-all mt-8 cursor-pointer"
-                >
-                  Upgrade to Premium
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -1529,6 +1376,13 @@ export default function LandingPage({ onOpenResume }: { onOpenResume: (templateI
 
       {/* Authentication Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} defaultView={authModalView} />
+      
+      {/* Exit Intent Modal */}
+      <ExitIntentModal 
+        isOpen={showExitIntent} 
+        onClose={closeExitIntent} 
+        onSignupClick={() => openAuth('signup')} 
+      />
     </div>
   );
 }

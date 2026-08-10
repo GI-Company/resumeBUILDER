@@ -99,7 +99,7 @@ export default function Toolbar({
             </div>
           </div>
           
-          <motion.div drag dragMomentum={false} className={cn("hidden md:flex flex-none items-center bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0 transition-all duration-300 group cursor-grab active:cursor-grabbing", isTopMenuMinimized ? "w-auto" : "gap-1")}>
+          <motion.div id="sidebar-tabs" drag dragMomentum={false} className={cn("hidden md:flex flex-none items-center bg-gray-50/80 backdrop-blur-sm p-1 rounded-xl border border-gray-200 shadow-sm shrink-0 transition-all duration-300 group cursor-grab active:cursor-grabbing", isTopMenuMinimized ? "w-auto" : "gap-1")}>
             {isTopMenuMinimized ? (
                <button onClick={() => setIsTopMenuMinimized(false)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white text-sm font-medium text-gray-600 transition-all cursor-pointer shadow-sm border border-transparent hover:border-gray-200">
                  <Menu size={16} /> Menu
@@ -134,6 +134,7 @@ export default function Toolbar({
                   <Plus size={16} /> Add
                 </button>
                 <button
+                  id="ai-assistant-btn"
                   onClick={() => setActiveSidebarTab(activeSidebarTab === "ai" ? null : "ai")}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:bg-white hover:shadow-sm text-sm font-medium",
@@ -225,6 +226,7 @@ export default function Toolbar({
             </button>
             <div className="relative group flex items-center">
               <button
+                id="export-pdf-btn"
                 onClick={() => setExportModalOpen(true)}
                 className="bg-blue-600 text-white border border-blue-600 px-2.5 py-1.5 md:px-4 md:py-1.5 rounded-lg text-xs md:text-sm font-bold inline-flex items-center gap-1 md:gap-1.5 transition-all hover:bg-blue-700 active:scale-95 shadow-sm cursor-pointer"
               >
